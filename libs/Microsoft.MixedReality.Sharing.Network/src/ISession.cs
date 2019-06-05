@@ -4,10 +4,30 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Microsoft.MixedReality.Sharing.Network
 {
+    /// <summary>
+    /// Sharing session that this process is a part of.
+    /// </summary>
     public interface ISession
     {
+        /// <summary>
+        /// Room that this session belongs to. Can be null if this session was not created from a room.
+        /// </summary>
+        IRoom Room { get; }
+
+        /// <summary>
+        /// Identifies this session.
+        /// There should not be two sessions with the same ID active at the same time.
+        /// </summary>
+        string Id { get; }
+
+        /// <summary>
+        /// Leave this room.
+        /// </summary>
+        /// <returns></returns>
+        Task LeaveAsync();
     }
 }
