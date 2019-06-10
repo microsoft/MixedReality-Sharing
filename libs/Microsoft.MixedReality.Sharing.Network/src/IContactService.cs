@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.MixedReality.Sharing.Network
@@ -24,12 +25,12 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// <summary>
         /// Return the contacts whose ID or DisplayName match the regex.
         /// </summary>
-        Task<IEnumerable<IContact>> SearchAsync(string regex);
+        Task<IEnumerable<IContact>> SearchAsync(string regex, CancellationToken cancellationToken);
 
         /// <summary>
         /// Get the details for the contact with the given ID.
         /// </summary>
-        Task<IContact> GetContactAsync(string id);
+        Task<IContact> GetContactAsync(string id, CancellationToken cancellationToken);
 
         /// <summary>
         /// Get the details corresponding to the user associated to this service instance.
