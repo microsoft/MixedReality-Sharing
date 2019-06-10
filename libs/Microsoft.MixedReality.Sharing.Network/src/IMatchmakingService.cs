@@ -11,7 +11,7 @@ namespace Microsoft.MixedReality.Sharing.Network
     public interface IMatchmakingService
     {
         /// <summary>
-        /// Join any available existing room.
+        /// Join a random available existing room.
         /// </summary>
         /// <param name="expectedProperties">Only consider the rooms that have these properties.</param>
         /// <param name="reservedContacts">
@@ -19,7 +19,7 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// Depending on the implementation, the method might return a joined IRoom immediately
         /// or after all contacts have joined.
         /// </param>
-        Task<IRoom> JoinAnyRoomAsync(RoomProperties expectedProperties = null, IEnumerable<IContact> reservedContacts = null);
+        Task<IRoom> JoinRandomRoomAsync(RoomProperties expectedProperties = null, IEnumerable<IContact> reservedContacts = null);
 
         /// <summary>
         /// Room manager. Can be null if the implementation does not provide room managing services.
