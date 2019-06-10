@@ -21,8 +21,19 @@ namespace Microsoft.MixedReality.Sharing.Network
     /// </summary>
     public interface IContactService
     {
-        Task<IEnumerable<IContact>> SearchAsync(string query);
+        /// <summary>
+        /// Return the contacts whose ID or DisplayName match the regex.
+        /// </summary>
+        Task<IEnumerable<IContact>> SearchAsync(string regex);
+
+        /// <summary>
+        /// Get the details for the contact with the given ID.
+        /// </summary>
         Task<IContact> GetContactAsync(string id);
-        Task<IContact> GetMyContactAsync();
+
+        /// <summary>
+        /// Get the details corresponding to the user associated to this service instance.
+        /// </summary>
+        Task<IContact> GetUserContactAsync();
     }
 }
