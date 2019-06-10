@@ -18,17 +18,16 @@ namespace Microsoft.MixedReality.Sharing.Network
         Task<IRoom> FindRoomByIdAsync(string roomId, CancellationToken cancellationToken);
 
         /// <summary>
-        /// Get the current list of available rooms.
+        /// Get the list of all rooms matching the given query.
         /// </summary>
-        Task<IEnumerable<IRoom>> FindRoomsAsync(FindRoomQuery options, CancellationToken cancellationToken);
+        Task<IEnumerable<IRoom>> FindRoomsAsync(FindRoomQuery query, CancellationToken cancellationToken);
 
         /// <summary>
         /// Start listening for the list of rooms. After this is called, the list of current joinable rooms
-        /// will be queryable through RoomListUpdated.
+        /// will be queryable through <see cref="RoomListUpdated"/>.
         /// </summary>
-        /// <see cref="RoomListUpdated"/>
         // todo: do we want multiple subscriptions?
-        void SubscribeToRooms(FindRoomQuery options);
+        void SubscribeToRooms(FindRoomQuery query);
 
         /// <summary>
         /// Stop listening for the list of rooms.
@@ -61,9 +60,9 @@ namespace Microsoft.MixedReality.Sharing.Network
     public class FindRoomQuery
     {
         /// <summary>
-        /// Only find rooms with this host.
+        /// Only find rooms with this owner.
         /// </summary>
-        public IContact host;
+        public IContact owner;
 
         /// <summary>
         /// Only find rooms containing any of these contacts.

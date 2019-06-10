@@ -10,6 +10,7 @@ namespace Microsoft.MixedReality.Sharing.Network
 {
     /// <summary>
     /// Sharing session that this process is a part of.
+    /// A sharing session is a collection of contacts who joined a room and are interacting with each other.
     /// </summary>
     public interface ISession
     {
@@ -25,7 +26,7 @@ namespace Microsoft.MixedReality.Sharing.Network
         string Id { get; }
 
         /// <summary>
-        /// Leave this room.
+        /// Leave this session.
         /// </summary>
         /// <returns></returns>
         Task LeaveAsync();

@@ -10,7 +10,12 @@ using System.Threading.Tasks;
 namespace Microsoft.MixedReality.Sharing.Network
 {
     /// <summary>
-    /// Represents a room created in the matchmaking service.
+    /// Container for contacts intending to interact with each other and for the state shared between them.
+    /// Created/managed through an <see cref="IMatchmakingService"/> or <see cref="IRoomManager"/>.
+    /// A room can host an <see cref="ISession"/>. A contact joining/leaving the room will also join/leave
+    /// the corresponding session.
+    /// The session is initiated when a contact first creates/joins the room. The lifetime of the room and
+    /// its sessions are implementation-dependent.
     /// </summary>
     public interface IRoom
     {
@@ -23,14 +28,14 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// <summary>
         /// The user that created this room.
         /// </summary>
-        IContact Host { get; }
+        IContact Owner { get; }
 
         RoomProperties Properties { get; }
         Task SetPropertiesAsync(RoomProperties properties);
 
         /// <summary>
         /// Try to join the room. Gets the current session if already joined.
-        /// Should only be called if no room is joined at the moment.
+        /// Some implementation might only allow joining one room (or a limited number) at a time.
         /// </summary>
         Task<ISession> TryJoinAsync(CancellationToken token);
     }
