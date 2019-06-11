@@ -51,7 +51,9 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// or after all contacts have joined the room.
         /// </param>
         /// <returns>The ISession corresponding to the joined room.</returns>
-        Task<IMatchRoom> CreateRoomAsync(string roomId, RoomProperties properties = null, IEnumerable<IMatchParticipant> reservedParticipants = null);
+        Task<IMatchRoom> CreateRoomAsync(string roomId,
+            Dictionary<string, object> properties = null,
+            IEnumerable<IMatchParticipant> reservedParticipants = null);
     }
 
     /// <summary>
@@ -72,6 +74,6 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// <summary>
         /// Only find rooms containing all of these properties with the specified value.
         /// </summary>
-        public RoomProperties properties;
+        public Dictionary<string, object> properties;
     }
 }

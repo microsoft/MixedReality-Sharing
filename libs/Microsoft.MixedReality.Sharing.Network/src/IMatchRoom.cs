@@ -30,8 +30,21 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// </summary>
         IMatchParticipant Owner { get; }
 
-        RoomProperties Properties { get; }
-        Task SetPropertiesAsync(RoomProperties properties);
+        /// <summary>
+        /// Read-only room properties.
+        /// </summary>
+        /// <seealso cref="SetPropertiesAsync(Dictionary{string, object})"/>
+        Dictionary<string, object> Properties { get; }
+
+        /// <summary>
+        /// Set some property values on the room.
+        /// The method will set the keys contained in the passed dictionary to the passed values.
+        /// If the room properties do not contain some of the keys, those will be added.
+        /// The types supported for the property values are defined by each implementation.
+        /// </summary>
+        /// <param name="properties"></param>
+        /// <returns></returns>
+        Task SetPropertiesAsync(Dictionary<string, object> properties);
 
         /// <summary>
         /// Try to join the room. Gets the current session if already joined.
@@ -39,9 +52,4 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// </summary>
         Task<ISession> TryJoinAsync(CancellationToken token);
     }
-
-    /// <summary>
-    /// Custom properties of a room.
-    /// </summary>
-    public class RoomProperties : Dictionary<string, object> {}
 }
