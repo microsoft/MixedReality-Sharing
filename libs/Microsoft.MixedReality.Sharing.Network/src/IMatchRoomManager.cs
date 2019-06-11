@@ -9,18 +9,18 @@ namespace Microsoft.MixedReality.Sharing.Network
     /// <summary>
     /// Exposes methods to create and list rooms.
     /// </summary>
-    public interface IRoomManager
+    public interface IMatchRoomManager
     {
         /// <summary>
         /// Find a room by its unique ID.
         /// </summary>
         /// <returns>null if there are no rooms with the provided ID.</returns>
-        Task<IRoom> FindRoomByIdAsync(string roomId, CancellationToken cancellationToken);
+        Task<IMatchRoom> FindRoomByIdAsync(string roomId, CancellationToken cancellationToken);
 
         /// <summary>
         /// Get the list of all rooms matching the given query.
         /// </summary>
-        Task<IEnumerable<IRoom>> FindRoomsAsync(FindRoomQuery query, CancellationToken cancellationToken);
+        Task<IEnumerable<IMatchRoom>> FindRoomsAsync(FindRoomQuery query, CancellationToken cancellationToken);
 
         /// <summary>
         /// Start listening for the list of rooms. After this is called, the list of current joinable rooms
@@ -38,7 +38,7 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// If the process has subscribed to the room list with SubscribeToRooms, this triggers when the current list
         /// of joinable room changes. The exact frequency depends on the implementation.
         /// </summary>
-        event Action<IEnumerable<IRoom>> RoomListUpdated;
+        event Action<IEnumerable<IMatchRoom>> RoomListUpdated;
 
         /// <summary>
         /// Create a new room and join it.
@@ -51,7 +51,7 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// or after all contacts have joined the room.
         /// </param>
         /// <returns>The ISession corresponding to the joined room.</returns>
-        Task<IRoom> CreateRoomAsync(string roomId, RoomProperties properties = null, IEnumerable<IMatchParticipant> reservedParticipants = null);
+        Task<IMatchRoom> CreateRoomAsync(string roomId, RoomProperties properties = null, IEnumerable<IMatchParticipant> reservedParticipants = null);
     }
 
     /// <summary>

@@ -11,13 +11,13 @@ namespace Microsoft.MixedReality.Sharing.Network
 {
     /// <summary>
     /// Container for contacts intending to interact with each other and for the state shared between them.
-    /// Created/managed through an <see cref="IMatchmakingService"/> or <see cref="IRoomManager"/>.
+    /// Created/managed through an <see cref="IMatchmakingService"/> or <see cref="IMatchRoomManager"/>.
     /// A room can host an <see cref="ISession"/>. A contact joining/leaving the room will also join/leave
     /// the corresponding session.
     /// The session is initiated when a contact first creates/joins the room. The lifetime of the room and
     /// its sessions are implementation-dependent.
     /// </summary>
-    public interface IRoom
+    public interface IMatchRoom
     {
         /// <summary>
         /// Identifies this room.

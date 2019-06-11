@@ -17,7 +17,7 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// <summary>
         /// Room that this session belongs to. Can be null if this session was not created from a room.
         /// </summary>
-        IRoom Room { get; }
+        IMatchRoom Room { get; }
 
         /// <summary>
         /// Identifies this session.
