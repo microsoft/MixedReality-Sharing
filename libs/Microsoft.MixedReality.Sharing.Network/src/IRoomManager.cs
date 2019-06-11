@@ -45,13 +45,13 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// </summary>
         /// <param name="roomId">ID of the new room. Must be unique.</param>
         /// <param name="properties">Properties to set on the new room.</param>
-        /// <param name="reservedContacts">
+        /// <param name="reservedParticipants">
         /// The method will reserve slots for these contacts in the created room.
         /// Depending on the implementation, the method might return a joined IRoom immediately
         /// or after all contacts have joined the room.
         /// </param>
         /// <returns>The ISession corresponding to the joined room.</returns>
-        Task<IRoom> CreateRoomAsync(string roomId, RoomProperties properties = null, IEnumerable<IContact> reservedContacts = null);
+        Task<IRoom> CreateRoomAsync(string roomId, RoomProperties properties = null, IEnumerable<IMatchParticipant> reservedParticipants = null);
     }
 
     /// <summary>
@@ -62,12 +62,12 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// <summary>
         /// Only find rooms with this owner.
         /// </summary>
-        public IContact owner;
+        public IMatchParticipant owner;
 
         /// <summary>
         /// Only find rooms containing any of these contacts.
         /// </summary>
-        public List<IContact> members;
+        public List<IMatchParticipant> members;
 
         /// <summary>
         /// Only find rooms containing all of these properties with the specified value.

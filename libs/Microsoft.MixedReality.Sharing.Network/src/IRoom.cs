@@ -26,9 +26,9 @@ namespace Microsoft.MixedReality.Sharing.Network
         string Id { get; }
 
         /// <summary>
-        /// The user that created this room.
+        /// The participant that created this room.
         /// </summary>
-        IContact Owner { get; }
+        IMatchParticipant Owner { get; }
 
         RoomProperties Properties { get; }
         Task SetPropertiesAsync(RoomProperties properties);
