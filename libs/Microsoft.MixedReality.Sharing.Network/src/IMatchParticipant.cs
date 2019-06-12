@@ -28,8 +28,8 @@ namespace Microsoft.MixedReality.Sharing.Network
         Task<IMatchParticipant> GetParticipantAsync(string id, CancellationToken cancellationToken);
 
         /// <summary>
-        /// ID corresponding to the user associated to this service instance.
+        /// ID of the matchmaking participant corresponding to the local user.
         /// </summary>
-        string LocalUserId { get; }
+        string LocalParticipantId { get; }
     }
 }

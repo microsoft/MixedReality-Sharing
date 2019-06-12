@@ -14,7 +14,7 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// <summary>
         /// Find a room by its unique ID.
         /// </summary>
-        /// <returns>null if there are no rooms with the provided ID.</returns>
+        /// <returns>a Task containing a null room if there are no rooms with the provided ID.</returns>
         Task<IMatchRoom> FindRoomByIdAsync(string roomId, CancellationToken cancellationToken);
 
         /// <summary>

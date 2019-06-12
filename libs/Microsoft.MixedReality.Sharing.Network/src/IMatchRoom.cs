@@ -26,7 +26,8 @@ namespace Microsoft.MixedReality.Sharing.Network
         string Id { get; }
 
         /// <summary>
-        /// The participant that created this room.
+        /// Current owner of this room. The owner is initially the participant who created the room.
+        /// The implementation can choose a new owner if e.g. the current owner is disconnected.
         /// </summary>
         IMatchParticipant Owner { get; }
 
