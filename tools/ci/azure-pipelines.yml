@@ -25,3 +25,18 @@ jobs:
     inputs:
       workingDirectory: $(Build.SourcesDirectory)\build\x64-Release-vs2019
       cmakeArgs: --build .
+- job: Linux
+  pool:
+    vmImage: 'ubuntu-16.04'
+  steps:
+  - task: CMake@1
+    displayName: 'Generate solution'
+    inputs:
+      workingDirectory: $(Build.SourcesDirectory)\build\x64-Release-linux
+      cmakeArgs: ..\.. -G"Ninja" -A x64
+
+  - task: CMake@1
+    displayName: 'Compile'
+    inputs:
+      workingDirectory: $(Build.SourcesDirectory)\build\x64-Release-linux
+      cmakeArgs: --build .
