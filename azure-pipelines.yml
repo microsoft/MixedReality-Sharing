@@ -7,7 +7,10 @@ trigger:
 - feature/pipeline
 
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: 'windows-2019'
+
+variables:
+  buildConfiguration: 'Release'
 
 steps:
 - script: echo Hello, world!
