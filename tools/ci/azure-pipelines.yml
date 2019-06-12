@@ -14,16 +14,13 @@ variables:
 
 steps:
 - task: CMake@1
+  displayName: 'Generate solution'
   inputs:
-    workingDirectory: $(Build.SourcesDirectory)\build\x64-Release-vs2017
+    workingDirectory: $(Build.SourcesDirectory)\build\x64-Release-vs2019
     cmakeArgs: ..\.. -G"Visual Studio 16 2019" -A x64
 
 - task: CMake@1
+  displayName: 'Compile'
   inputs:
-    workingDirectory: $(Build.SourcesDirectory)\build\x64-Release-vs2017
+    workingDirectory: $(Build.SourcesDirectory)\build\x64-Release-vs2019
     cmakeArgs: --build .
-
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
