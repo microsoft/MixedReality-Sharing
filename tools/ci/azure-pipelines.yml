@@ -10,8 +10,11 @@ variables:
   buildConfiguration: 'Release'
 
 jobs:
+
+#
+# VS2019
+#
 - job: VS2019
-  condition: false
   pool:
     vmImage: 'windows-2019'
   steps:
@@ -26,7 +29,12 @@ jobs:
     inputs:
       workingDirectory: $(Build.SourcesDirectory)\build\x64-Release-vs2019
       cmakeArgs: --build .
+
+#
+# Linux
+#
 - job: Linux
+  condition: false # not yet supported
   pool:
     vmImage: 'ubuntu-16.04'
   steps:
