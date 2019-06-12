@@ -16,7 +16,7 @@ steps:
 - task: CMake@1
   inputs:
     workingDirectory: $(Build.SourcesDirectory)\build\x64-Release-vs2017
-    cmakeArgs: ..\.. -G"Visual Studio 16 2019" -A Win64
+    cmakeArgs: ..\.. -G"Visual Studio 16 2019" -A x64
 
 - task: CMake@1
   inputs:
