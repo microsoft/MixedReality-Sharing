@@ -11,6 +11,7 @@ variables:
 
 jobs:
 - job: VS2019
+  condition: false
   pool:
     vmImage: 'windows-2019'
   steps:
@@ -33,7 +34,7 @@ jobs:
     displayName: 'Generate solution'
     inputs:
       workingDirectory: $(Build.SourcesDirectory)\build\x64-Release-linux
-      cmakeArgs: ..\.. -G"Unix Makefiles" -A x64
+      cmakeArgs: ..\.. -G"Unix Makefiles"
 
   - task: CMake@1
     displayName: 'Compile'
