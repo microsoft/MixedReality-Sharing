@@ -13,8 +13,15 @@ variables:
   buildConfiguration: 'Release'
 
 steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+- task: CMake@1
+  inputs:
+    workingDirectory: $(Build.SourcesDirectory)\build\x64-Release-vs2017
+    cmakeArgs: ..\.. -G"Visual Studio 16 2019 Win64"
+
+- task: CMake@1
+  inputs:
+    workingDirectory: $(Build.SourcesDirectory)\build\x64-Release-vs2017
+    cmakeArgs: --build .
 
 - script: |
     echo Add other tasks to build, test, and deploy your project.
