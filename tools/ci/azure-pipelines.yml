@@ -20,7 +20,7 @@ jobs:
   steps:
   - task: NuGetRestore@1
     displayName: 'Restore NuGet Packages'
-    restoreSolution: $(Build.SourcesDirectory)/*.sln
+    solution: $(Build.SourcesDirectory)/*.sln
 
   - task: MSBuild@1
     displayName: 'Generate solution'
