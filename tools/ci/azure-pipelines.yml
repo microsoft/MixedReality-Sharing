@@ -28,5 +28,6 @@ jobs:
   - task: MSBuild@1
     displayName: 'Generate solution'
     inputs:
+      configuration: 'Debug'
       solution: '$(solution)'
 
