@@ -19,10 +19,11 @@ jobs:
   pool:
     vmImage: 'windows-2019'
   steps:
-  - task: NuGetRestore@1
+  - task: NuGetCommand@2
     displayName: 'Restore NuGet Packages'
     inputs:
-      solution: '$(solution)'
+      command: 'restore'
+      restoreSolution: '$(solution)'
 
   - task: MSBuild@1
     displayName: 'Generate solution'
