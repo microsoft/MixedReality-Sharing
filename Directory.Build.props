@@ -4,11 +4,11 @@
   <PropertyGroup>
     <!-- SolutionDir is not defined when building projects explicitly -->
     <SolutionDir Condition=" '$(SolutionDir)' == '' ">$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), Microsoft.MixedReality.Sharing.sln))\</SolutionDir>
-    <!-- Output paths -->
+    <!-- Output paths 
     <BaseIntermediateOutputPath>$(SolutionDir)build\$(Configuration)\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(SolutionDir)build\$(Configuration)\obj\$(MSBuildProjectName)\</IntermediateOutputPath>
     <MSBuildProjectExtensionsPath>$(IntermediateOutputPath)\</MSBuildProjectExtensionsPath>
     <OutputPath>$(SolutionDir)build\$(Configuration)\out\</OutputPath>
-    <OutDir>$(OutputPath)</OutDir>
+    <OutDir>$(OutputPath)</OutDir>-->
   </PropertyGroup>
 </Project>
