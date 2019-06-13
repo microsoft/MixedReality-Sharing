@@ -18,34 +18,12 @@ jobs:
   pool:
     vmImage: 'windows-2019'
   steps:
-  - task: CMake@1
+  - task: NuGetRestore@1
+    displayName: 'Restore NuGet Packages'
+    restoreSolution: $(Build.SourcesDirectory)/*.sln
+
+  - task: MSBuild@1
     displayName: 'Generate solution'
     inputs:
-      workingDirectory: $(Build.SourcesDirectory)\build\x64-Release-vs2019
-      cmakeArgs: ..\.. -G"Visual Studio 16 2019" -A x64
+      solution: $(Build.SourcesDirectory)/*.sln
 
-  - task: CMake@1
-    displayName: 'Compile'
-    inputs:
-      workingDirectory: $(Build.SourcesDirectory)\build\x64-Release-vs2019
-      cmakeArgs: --build .
-
-#
-# Linux
-#
-- job: Linux
-  condition: false # not yet supported
-  pool:
-    vmImage: 'ubuntu-16.04'
-  steps:
-  - task: CMake@1
-    displayName: 'Generate solution'
-    inputs:
-      workingDirectory: $(Build.SourcesDirectory)\build\x64-Release-linux
-      cmakeArgs: ..\.. -G"Unix Makefiles"
-
-  - task: CMake@1
-    displayName: 'Compile'
-    inputs:
-      workingDirectory: $(Build.SourcesDirectory)\build\x64-Release-linux
-      cmakeArgs: --build .
