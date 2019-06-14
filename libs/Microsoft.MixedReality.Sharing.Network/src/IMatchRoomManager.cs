@@ -48,7 +48,10 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// Used to check for cancellation.
         /// Whether and how cancellation is handled is up to the implementation.
         /// </param>
-        /// <returns>The ISession corresponding to the joined room.</returns>
+        /// <returns>
+        /// The newly created, joined room. The implementation must guarantee that
+        /// the room ID is unique for every new room.
+        /// </returns>
         Task<IMatchRoom> CreateRoomAsync(Dictionary<string, object> properties = null, CancellationToken token = default);
     }
 

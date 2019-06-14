@@ -21,7 +21,6 @@ namespace Microsoft.MixedReality.Sharing.Network
     {
         /// <summary>
         /// Identifies this room.
-        /// There should not be two different rooms with the same ID open at the same time.
         /// </summary>
         string Id { get; }
 
