@@ -45,15 +45,8 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// </summary>
         /// <param name="roomId">ID of the new room. Must be unique.</param>
         /// <param name="properties">Properties to set on the new room.</param>
-        /// <param name="reservedParticipants">
-        /// The method will reserve slots for these contacts in the created room.
-        /// Depending on the implementation, the method might return a joined IRoom immediately
-        /// or after all contacts have joined the room.
-        /// </param>
         /// <returns>The ISession corresponding to the joined room.</returns>
-        Task<IMatchRoom> CreateRoomAsync(string roomId,
-            Dictionary<string, object> properties = null,
-            IEnumerable<IMatchParticipant> reservedParticipants = null);
+        Task<IMatchRoom> CreateRoomAsync(string roomId, Dictionary<string, object> properties = null);
     }
 
     /// <summary>
