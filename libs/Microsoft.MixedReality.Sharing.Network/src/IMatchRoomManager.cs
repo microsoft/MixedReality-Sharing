@@ -15,12 +15,12 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// Find a room by its unique ID.
         /// </summary>
         /// <returns>a Task containing a null room if there are no rooms with the provided ID.</returns>
-        Task<IMatchRoom> FindRoomByIdAsync(string roomId, CancellationToken cancellationToken);
+        Task<IMatchRoom> FindRoomByIdAsync(string roomId, CancellationToken token = default);
 
         /// <summary>
         /// Get the list of all rooms matching the given query.
         /// </summary>
-        Task<IEnumerable<IMatchRoom>> FindRoomsAsync(FindRoomQuery query, CancellationToken cancellationToken);
+        Task<IEnumerable<IMatchRoom>> FindRoomsAsync(FindRoomQuery query, CancellationToken token = default);
 
         /// <summary>
         /// Start listening for the list of rooms. After this is called, the list of current joinable rooms
@@ -44,8 +44,12 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// Create a new room and join it.
         /// </summary>
         /// <param name="properties">Properties to set on the new room.</param>
+        /// <param name="token">
+        /// Used to check for cancellation.
+        /// Whether and how cancellation is handled is up to the implementation.
+        /// </param>
         /// <returns>The ISession corresponding to the joined room.</returns>
-        Task<IMatchRoom> CreateRoomAsync(Dictionary<string, object> properties = null);
+        Task<IMatchRoom> CreateRoomAsync(Dictionary<string, object> properties = null, CancellationToken token = default);
     }
 
     /// <summary>
