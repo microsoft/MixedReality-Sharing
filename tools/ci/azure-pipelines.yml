@@ -9,6 +9,7 @@ trigger:
 variables:
   buildConfiguration: 'Release'
   solution: '*.sln'
+  cleanBuild: false
 
 jobs:
 
@@ -24,6 +25,7 @@ jobs:
 
   - task: DeleteFiles@1
     displayName: 'Cleaning build folder'
+    enabled: $(cleanBuild)
     inputs:
       sourceFolder: 'build'
       contents: '**'
@@ -35,7 +37,7 @@ jobs:
       restoreSolution: '$(solution)'
 
   - task: MSBuild@1
-    displayName: 'Generate solution'
+    displayName: 'Build solution'
     inputs:
       configuration: 'Debug'
       solution: '$(solution)'
