@@ -25,6 +25,7 @@ jobs:
 
   - task: DeleteFiles@1
     displayName: 'Cleaning build folder'
+    enabled: false
     condition: variables.cleanBuild
     inputs:
       sourceFolder: 'build'
