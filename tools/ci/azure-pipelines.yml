@@ -9,6 +9,7 @@ trigger:
 variables:
   buildConfiguration: 'Release'
   solution: '*.sln'
+  cleanBuild: false
 
 jobs:
 
@@ -16,16 +17,29 @@ jobs:
 # VS2019
 #
 - job: VS2019
+
   pool:
     vmImage: 'windows-2019'
+
   steps:
-  - task: NuGetRestore@1
+
+  - task: DeleteFiles@1
+    displayName: 'Cleaning build folder'
+    enabled: false
+    condition: variables.cleanBuild
+    inputs:
+      sourceFolder: 'build'
+      contents: '**'
+
+  - task: NuGetCommand@2
     displayName: 'Restore NuGet Packages'
     inputs:
-      solution: '$(solution)'
+      command: 'restore'
+      restoreSolution: '$(solution)'
 
   - task: MSBuild@1
-    displayName: 'Generate solution'
+    displayName: 'Build solution'
     inputs:
+      configuration: 'Debug'
       solution: '$(solution)'
 
