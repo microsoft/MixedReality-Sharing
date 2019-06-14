@@ -43,10 +43,9 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// <summary>
         /// Create a new room and join it.
         /// </summary>
-        /// <param name="roomId">ID of the new room. Must be unique.</param>
         /// <param name="properties">Properties to set on the new room.</param>
         /// <returns>The ISession corresponding to the joined room.</returns>
-        Task<IMatchRoom> CreateRoomAsync(string roomId, Dictionary<string, object> properties = null);
+        Task<IMatchRoom> CreateRoomAsync(Dictionary<string, object> properties = null);
     }
 
     /// <summary>
