@@ -31,6 +31,10 @@ jobs:
       sourceFolder: 'build'
       contents: '**'
 
+  - task: NuGetToolInstaller@0
+    inputs:
+      versionSpec: '4.3.0' 
+
   - task: NuGetCommand@2
     displayName: 'Restore NuGet Packages'
     inputs:
@@ -43,3 +47,9 @@ jobs:
       configuration: 'Debug'
       solution: '$(solution)'
 
+  - task: VSTest@2
+    displayName: 'Running tests'
+    inputs:
+      testSelector: 'testAssemblies'
+      testAssemblyVer2: '*Test.dll'
+      searchFolder: 'build\bin\Debug'
