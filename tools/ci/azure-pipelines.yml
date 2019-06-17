@@ -51,7 +51,5 @@ jobs:
     displayName: 'Running tests'
     inputs:
       testSelector: 'testAssemblies'
-      testAssemblyVer2: |
-        '*Test.dll'
-        '*Test.exe'
+      testAssemblyVer2: '*Test.(dll|exe)'
       searchFolder: 'build\bin\Debug'
