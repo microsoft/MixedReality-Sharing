@@ -8,6 +8,8 @@ trigger:
 
 variables:
   buildConfiguration: 'Release'
+  solution: '*.sln'
+  cleanBuild: false
 
 jobs:
 
@@ -15,37 +17,39 @@ jobs:
 # VS2019
 #
 - job: VS2019
+
   pool:
     vmImage: 'windows-2019'
+
   steps:
-  - task: CMake@1
-    displayName: 'Generate solution'
-    inputs:
-      workingDirectory: $(Build.SourcesDirectory)\build\x64-Release-vs2019
-      cmakeArgs: ..\.. -G"Visual Studio 16 2019" -A x64
 
-  - task: CMake@1
-    displayName: 'Compile'
+  - task: DeleteFiles@1
+    displayName: 'Cleaning build folder'
+    enabled: false
+    condition: variables.cleanBuild
     inputs:
-      workingDirectory: $(Build.SourcesDirectory)\build\x64-Release-vs2019
-      cmakeArgs: --build .
+      sourceFolder: 'build'
+      contents: '**'
 
-#
-# Linux
-#
-- job: Linux
-  condition: false # not yet supported
-  pool:
-    vmImage: 'ubuntu-16.04'
-  steps:
-  - task: CMake@1
-    displayName: 'Generate solution'
+  - task: NuGetToolInstaller@0
     inputs:
-      workingDirectory: $(Build.SourcesDirectory)\build\x64-Release-linux
-      cmakeArgs: ..\.. -G"Unix Makefiles"
+      versionSpec: '4.3.0' 
 
-  - task: CMake@1
-    displayName: 'Compile'
+  - task: NuGetCommand@2
+    displayName: 'Restore NuGet Packages'
     inputs:
-      workingDirectory: $(Build.SourcesDirectory)\build\x64-Release-linux
-      cmakeArgs: --build .
+      command: 'restore'
+      restoreSolution: '$(solution)'
+
+  - task: MSBuild@1
+    displayName: 'Build solution'
+    inputs:
+      configuration: 'Debug'
+      solution: '$(solution)'
+
+  - task: VSTest@2
+    displayName: 'Running tests'
+    inputs:
+      testSelector: 'testAssemblies'
+      testAssemblyVer2: '*Test.dll'
+      searchFolder: 'build\bin\Debug'
