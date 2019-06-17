@@ -4,13 +4,13 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Microsoft.MixedReality.Sharing.Network
+namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
     /// <summary>
     /// Participant available for matchmaking.
     /// Can correspond to a user or to a device depending on the matchmaking implementation.
     /// </summary>
-    public interface IMatchParticipant
+    public interface IParticipant
     {
         string Id { get; }
         string DisplayName { get; }
@@ -20,12 +20,12 @@ namespace Microsoft.MixedReality.Sharing.Network
     /// <summary>
     /// Gets a participant object from an ID.
     /// </summary>
-    public interface IMatchParticipantFactory
+    public interface IParticipantFactory
     {
         /// <summary>
         /// Gets a participant object from an ID.
         /// </summary>
-        Task<IMatchParticipant> GetParticipantAsync(string id, CancellationToken cancellationToken);
+        Task<IParticipant> GetParticipantAsync(string id, CancellationToken cancellationToken);
 
         /// <summary>
         /// ID of the matchmaking participant corresponding to the local user.

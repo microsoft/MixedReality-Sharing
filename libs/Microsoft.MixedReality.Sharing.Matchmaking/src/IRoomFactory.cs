@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Microsoft.MixedReality.Sharing.Network
+namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
     public interface IRoomFactory
     {

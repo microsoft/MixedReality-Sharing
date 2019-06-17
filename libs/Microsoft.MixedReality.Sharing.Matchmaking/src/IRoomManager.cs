@@ -5,23 +5,23 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Microsoft.MixedReality.Sharing.Network
+namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
     /// <summary>
     /// Exposes methods to create and list rooms.
     /// </summary>
-    public interface IMatchRoomManager
+    public interface IRoomManager
     {
         /// <summary>
         /// Find a room by its unique ID.
         /// </summary>
         /// <returns>a Task containing a null room if there are no rooms with the provided ID.</returns>
-        Task<IMatchRoom> FindRoomByIdAsync(string roomId, CancellationToken token = default);
+        Task<IRoom> FindRoomByIdAsync(string roomId, CancellationToken token = default);
 
         /// <summary>
         /// Get the list of all rooms matching the given query.
         /// </summary>
-        IMatchRoomList FindRooms(FindRoomQuery query);
+        IRoomList FindRooms(FindRoomQuery query);
 
         /// <summary>
         /// Create a new room and join it.
@@ -34,7 +34,7 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// <returns>
         /// The newly created, joined room, or a canceled task if the operation was canceled before completion.
         /// </returns>
-        Task<IMatchRoom> CreateRoomAsync(Dictionary<string, object> properties = null, CancellationToken token = default);
+        Task<IRoom> CreateRoomAsync(Dictionary<string, object> properties = null, CancellationToken token = default);
     }
 
     /// <summary>
@@ -45,12 +45,12 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// <summary>
         /// Only find rooms with this owner.
         /// </summary>
-        public IMatchParticipant owner;
+        public IParticipant owner;
 
         /// <summary>
         /// Only find rooms containing any of these contacts.
         /// </summary>
-        public List<IMatchParticipant> members;
+        public List<IParticipant> members;
 
         /// <summary>
         /// Only find rooms containing all of these properties with the specified value.
@@ -65,13 +65,13 @@ namespace Microsoft.MixedReality.Sharing.Network
     /// Note that the implementation might prevent callers from subscribing to more than one room list
     /// at the same time.
     /// </summary>
-    public interface IMatchRoomList : INotifyCollectionChanged
+    public interface IRoomList : INotifyCollectionChanged
     {
         /// <summary>
         /// Get the rooms that are active now.
         /// The implementation might return only a subset of the currently active rooms
         /// if the full set is too large.
         /// </summary>
-        Task<IEnumerable<IMatchRoom>> GetRoomsAsync(CancellationToken token = default);
+        Task<IEnumerable<IRoom>> GetRoomsAsync(CancellationToken token = default);
     }
 }

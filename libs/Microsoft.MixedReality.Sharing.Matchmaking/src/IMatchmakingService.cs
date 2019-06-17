@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Microsoft.MixedReality.Sharing.Network
+namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
     public interface IMatchmakingService
     {
@@ -15,12 +15,12 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// Join a random available existing room.
         /// </summary>
         /// <param name="expectedProperties">Only consider the rooms that have these properties.</param>
-        Task<IMatchRoom> JoinRandomRoomAsync(Dictionary<string, object> expectedProperties = null,
+        Task<IRoom> JoinRandomRoomAsync(Dictionary<string, object> expectedProperties = null,
             CancellationToken token = default);
 
         /// <summary>
         /// Room manager. Can be null if the implementation does not provide room managing services.
         /// </summary>
-        IMatchRoomManager RoomManager { get; }
+        IRoomManager RoomManager { get; }
     }
 }

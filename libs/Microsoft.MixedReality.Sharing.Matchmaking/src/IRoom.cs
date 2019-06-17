@@ -1,23 +1,24 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using Microsoft.MixedReality.Sharing.Network;
 using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Microsoft.MixedReality.Sharing.Network
+namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
     /// <summary>
     /// Container for contacts intending to interact with each other and for the state shared between them.
-    /// Created/managed through an <see cref="IMatchmakingService"/> or <see cref="IMatchRoomManager"/>.
+    /// Created/managed through an <see cref="IMatchmakingService"/> or <see cref="IRoomManager"/>.
     /// A room can host an <see cref="ISession"/>. A contact joining/leaving the room will also join/leave
     /// the corresponding session.
     /// The session is initiated when a contact first creates/joins the room. The lifetime of the room and
     /// its sessions are implementation-dependent.
     /// </summary>
-    public interface IMatchRoom
+    public interface IRoom
     {
         /// <summary>
         /// Identifies this room.
@@ -29,7 +30,7 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// Current owner of this room. The owner is initially the participant who created the room.
         /// The implementation can choose a new owner if e.g. the current owner is disconnected.
         /// </summary>
-        IMatchParticipant Owner { get; }
+        IParticipant Owner { get; }
 
         /// <summary>
         /// Read-only room properties.
