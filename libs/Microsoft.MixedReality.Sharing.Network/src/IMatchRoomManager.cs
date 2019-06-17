@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,25 +21,7 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// <summary>
         /// Get the list of all rooms matching the given query.
         /// </summary>
-        Task<IEnumerable<IMatchRoom>> FindRoomsAsync(FindRoomQuery query, CancellationToken token = default);
-
-        /// <summary>
-        /// Start listening for the list of rooms. After this is called, the list of current joinable rooms
-        /// will be queryable through <see cref="RoomListUpdated"/>.
-        /// </summary>
-        // todo: do we want multiple subscriptions?
-        void SubscribeToRooms(FindRoomQuery query);
-
-        /// <summary>
-        /// Stop listening for the list of rooms.
-        /// </summary>
-        void UnsubscribeFromRooms();
-
-        /// <summary>
-        /// If the process has subscribed to the room list with SubscribeToRooms, this triggers when the current list
-        /// of joinable room changes. The exact frequency depends on the implementation.
-        /// </summary>
-        event Action<IEnumerable<IMatchRoom>> RoomListUpdated;
+        IMatchRoomList FindRooms(FindRoomQuery query);
 
         /// <summary>
         /// Create a new room and join it.
@@ -74,5 +57,20 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// Only find rooms containing all of these properties with the specified value.
         /// </summary>
         public Dictionary<string, object> properties;
+    }
+
+    /// <summary>
+    /// Handle to the list of active matchmaking rooms that satisfy certain criteria.
+    /// Can be used to either get the rooms at a specific point in time, or to subscribe and get updates
+    /// as rooms get added/removed.
+    /// </summary>
+    public interface IMatchRoomList : INotifyCollectionChanged
+    {
+        /// <summary>
+        /// Get the rooms that are active now.
+        /// The implementation might return only a subset of the currently active rooms
+        /// if the full set is too large.
+        /// </summary>
+        Task<IEnumerable<IMatchRoom>> GetRoomsAsync(CancellationToken token = default);
     }
 }
