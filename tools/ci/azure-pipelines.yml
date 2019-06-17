@@ -63,4 +63,5 @@ jobs:
       configuration: 'Debug'
       testSelector: 'testAssemblies'
       testAssemblyVer2: '*Test.exe'
+      pathtoCustomTestAdapters: 'packages\GoogleTestAdapter.0.16.1\build\_common'
       searchFolder: 'build\bin\Debug'
