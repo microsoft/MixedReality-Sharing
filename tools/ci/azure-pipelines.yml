@@ -50,14 +50,14 @@ jobs:
       platform: 'x64'
 
   - task: VSTest@2
-    displayName: 'Running tests'
+    displayName: 'Running C# tests'
     inputs:
       testSelector: 'testAssemblies'
       testAssemblyVer2: '*Test.dll'
       searchFolder: 'build\bin\Debug'
 
   - task: VSTest@2
-    displayName: 'Running tests'
+    displayName: 'Running C++ tests'
     inputs:
       platform: 'x64'
       configuration: 'Debug'
