@@ -62,6 +62,8 @@ namespace Microsoft.MixedReality.Sharing.Network
     /// Handle to the list of active matchmaking rooms that satisfy certain criteria.
     /// Can be used to either get the rooms at a specific point in time, or to subscribe and get updates
     /// as rooms get added/removed.
+    /// Note that the implementation might prevent callers from subscribing to more than one room list
+    /// at the same time.
     /// </summary>
     public interface IMatchRoomList : INotifyCollectionChanged
     {
