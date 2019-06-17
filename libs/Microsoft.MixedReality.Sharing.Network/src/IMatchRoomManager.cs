@@ -28,12 +28,11 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// </summary>
         /// <param name="properties">Properties to set on the new room.</param>
         /// <param name="token">
-        /// Used to check for cancellation.
-        /// Whether and how cancellation is handled is up to the implementation.
+        /// If cancellation is requested, the method should either complete the operation and return a valid
+        /// room, or roll back any changes to the system state and return a canceled Task.
         /// </param>
         /// <returns>
-        /// The newly created, joined room. The implementation must guarantee that
-        /// the room ID is unique for every new room.
+        /// The newly created, joined room, or a canceled task if the operation was canceled before completion.
         /// </returns>
         Task<IMatchRoom> CreateRoomAsync(Dictionary<string, object> properties = null, CancellationToken token = default);
     }

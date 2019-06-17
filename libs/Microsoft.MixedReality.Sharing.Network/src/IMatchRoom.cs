@@ -21,6 +21,7 @@ namespace Microsoft.MixedReality.Sharing.Network
     {
         /// <summary>
         /// Identifies this room.
+        /// The matchmaking implementation must guarantee that this is unique for every new room.
         /// </summary>
         string Id { get; }
 
