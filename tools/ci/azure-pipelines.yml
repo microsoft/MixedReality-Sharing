@@ -41,11 +41,12 @@ jobs:
       command: 'restore'
       restoreSolution: '$(solution)'
 
-  - task: MSBuild@1
+  - task: VSBuild@1
     displayName: 'Build solution'
     inputs:
       configuration: 'Debug'
       solution: '$(solution)'
+      msbuildArgs: '/p:PlatformToolset=v142'
       platform: 'x64'
 
   - task: VSTest@2
