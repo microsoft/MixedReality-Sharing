@@ -59,6 +59,8 @@ jobs:
   - task: VSTest@2
     displayName: 'Running tests'
     inputs:
+      platform: 'x64'
+      configuration: 'Debug'
       testSelector: 'testAssemblies'
       testAssemblyVer2: '*Test.exe'
       searchFolder: 'build\bin\Debug'

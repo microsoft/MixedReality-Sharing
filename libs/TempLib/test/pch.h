@@ -5,7 +5,7 @@
 
 #pragma once
 
-// Workaound https://github.com/google/googletest/issues/1138
+// Workaround https://github.com/google/googletest/issues/1138
 #define GTEST_LANG_CXX11 1
 
 #include "gtest/gtest.h"
