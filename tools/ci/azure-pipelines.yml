@@ -46,6 +46,7 @@ jobs:
     inputs:
       configuration: 'Debug'
       solution: '$(solution)'
+      platform: 'x64'
 
   - task: VSTest@2
     displayName: 'Running tests'
