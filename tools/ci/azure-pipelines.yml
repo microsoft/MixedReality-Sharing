@@ -69,13 +69,16 @@ jobs:
   - task: NuGetCommand@2
     inputs:
       command: 'pack'
+      configuration: 'Debug'
       feedsToUse: 'select'
       includeNuGetOrg: false
       packagesToPack: '**/*.csproj'
 
   - task: NuGetCommand@2
+    enabled: false
     inputs:
       command: 'pack'
+      configuration: 'Debug'
       feedsToUse: 'select'
       includeNuGetOrg: false
       packagesToPack: '**/*.nuspec'
