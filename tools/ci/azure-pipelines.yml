@@ -65,3 +65,10 @@ jobs:
       testAssemblyVer2: '*Test.exe'
       pathtoCustomTestAdapters: 'packages\GoogleTestAdapter.0.16.1\build\_common'
       searchFolder: 'build\bin\Debug'
+
+  - task: NuGetCommand@2
+    inputs:
+      command: 'pack'
+      feedsToUse: 'select'
+      includeNuGetOrg: false
+      packagesToPack: '**/*.(nuspec|csproj)'
