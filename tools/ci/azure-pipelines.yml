@@ -71,4 +71,11 @@ jobs:
       command: 'pack'
       feedsToUse: 'select'
       includeNuGetOrg: false
-      packagesToPack: '**/*.(nuspec|csproj)'
+      packagesToPack: '**/*.csproj'
+
+  - task: NuGetCommand@2
+    inputs:
+      command: 'pack'
+      feedsToUse: 'select'
+      includeNuGetOrg: false
+      packagesToPack: '**/*.nuspec'
