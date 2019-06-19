@@ -69,6 +69,7 @@ jobs:
   - task: DotNetCoreCLI@2 # netcore or netstandard should use this instead of nuget
     inputs:
       command: 'pack'
+      nobuild: 'true'
       verbosityPack: 'normal'
       configuration: 'Debug'
       packagesToPack: '**/*.csproj'
