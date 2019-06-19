@@ -15,7 +15,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// <summary>
         /// Find a room by its unique ID.
         /// </summary>
-        /// <returns>a Task containing a null room if there are no rooms with the provided ID.</returns>
+        /// <returns>a <see cref="Task"/> containing a null room if there are no rooms with the provided ID.</returns>
         Task<IRoom> FindRoomByIdAsync(string roomId, CancellationToken token = default);
 
         /// <summary>
@@ -26,15 +26,15 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// <summary>
         /// Create a new room and join it.
         /// </summary>
-        /// <param name="properties">Properties to set on the new room.</param>
+        /// <param name="attributes">Attributes to set on the new room.</param>
         /// <param name="token">
         /// If cancellation is requested, the method should either complete the operation and return a valid
         /// room, or roll back any changes to the system state and return a canceled Task.
         /// </param>
         /// <returns>
-        /// The newly created, joined room, or a canceled task if the operation was canceled before completion.
+        /// The newly created, joined room.
         /// </returns>
-        Task<IRoom> CreateRoomAsync(Dictionary<string, object> properties = null, CancellationToken token = default);
+        Task<IRoom> CreateRoomAsync(Dictionary<string, object> attributes = null, CancellationToken token = default);
     }
 
     /// <summary>
@@ -45,17 +45,17 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// <summary>
         /// Only find rooms with this owner.
         /// </summary>
-        public IParticipant owner;
+        public IParticipant Owner;
 
         /// <summary>
         /// Only find rooms containing any of these contacts.
         /// </summary>
-        public List<IParticipant> members;
+        public List<IParticipant> Members;
 
         /// <summary>
-        /// Only find rooms containing all of these properties with the specified value.
+        /// Only find rooms containing all of these attributes with the specified value.
         /// </summary>
-        public Dictionary<string, object> properties;
+        public Dictionary<string, object> Attributes;
     }
 
     /// <summary>

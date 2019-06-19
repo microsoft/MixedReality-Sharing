@@ -33,20 +33,21 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         IParticipant Owner { get; }
 
         /// <summary>
-        /// Read-only room properties.
+        /// Dictionary used to store data associated with the room, which can be used to filter and query rooms,
+        /// and to store data which can be retrieved by any participant.
         /// </summary>
-        /// <seealso cref="SetPropertiesAsync(Dictionary{string, object})"/>
-        Dictionary<string, object> Properties { get; }
+        /// <seealso cref="SetAttributesAsync(Dictionary{string, object})"/>
+        Dictionary<string, object> Attributes { get; }
 
         /// <summary>
         /// Set some property values on the room.
         /// The method will set the keys contained in the passed dictionary to the passed values.
-        /// If the room properties do not contain some of the keys, those will be added.
+        /// If the room attributes do not contain some of the keys, those will be added.
         /// The types supported for the property values are defined by each implementation.
         /// </summary>
-        /// <param name="properties"></param>
+        /// <param name="attributes"></param>
         /// <returns></returns>
-        Task SetPropertiesAsync(Dictionary<string, object> properties);
+        Task SetAttributesAsync(Dictionary<string, object> attributes);
 
         /// <summary>
         /// Try to join the room. Gets the current session if already joined.

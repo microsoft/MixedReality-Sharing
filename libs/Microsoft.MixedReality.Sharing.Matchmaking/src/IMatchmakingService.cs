@@ -14,8 +14,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// <summary>
         /// Join a random available existing room.
         /// </summary>
-        /// <param name="expectedProperties">Only consider the rooms that have these properties.</param>
-        Task<IRoom> JoinRandomRoomAsync(Dictionary<string, object> expectedProperties = null,
+        /// <param name="expectedAttributes">Only consider the rooms that have these attributes.</param>
+        Task<IRoom> JoinRandomRoomAsync(Dictionary<string, object> expectedAttributes = null,
             CancellationToken token = default);
 
         /// <summary>

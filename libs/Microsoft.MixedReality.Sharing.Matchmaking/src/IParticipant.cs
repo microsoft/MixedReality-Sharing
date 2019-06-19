@@ -8,7 +8,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
     /// <summary>
     /// Participant available for matchmaking.
-    /// Can correspond to a user or to a device depending on the matchmaking implementation.
+    /// It can correspond to different entities (a user account, a device running this application, a
+    /// specific process) depending on the matchmaking implementation.
     /// </summary>
     public interface IParticipant
     {
