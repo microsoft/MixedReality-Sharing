@@ -11,7 +11,8 @@
 
     <!-- Don't transitively copy output files, since everything builds to the same folder. -->
     <UseCommonOutputDirectory>True</UseCommonOutputDirectory>
-    <OutputPath>$(SolutionDir)build\bin\$(Configuration)</OutputPath>
+    <OutputPath>$(SolutionDir)build\bin\$(Configuration)\</OutputPath>
     <OutDir>$(OutputPath)</OutDir>
+    <IntDir>$(SolutionDir)build\obj\$(MSBuildProjectName)\</IntDir>
   </PropertyGroup>
 </Project>

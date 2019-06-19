@@ -41,15 +41,27 @@ jobs:
       command: 'restore'
       restoreSolution: '$(solution)'
 
-  - task: MSBuild@1
+  - task: VSBuild@1
     displayName: 'Build solution'
     inputs:
       configuration: 'Debug'
       solution: '$(solution)'
+      msbuildArgs: '/p:PlatformToolset=v142'
+      platform: 'x64'
 
   - task: VSTest@2
-    displayName: 'Running tests'
+    displayName: 'Running C# tests'
     inputs:
       testSelector: 'testAssemblies'
       testAssemblyVer2: '*Test.dll'
+      searchFolder: 'build\bin\Debug'
+
+  - task: VSTest@2
+    displayName: 'Running C++ tests'
+    inputs:
+      platform: 'x64'
+      configuration: 'Debug'
+      testSelector: 'testAssemblies'
+      testAssemblyVer2: '*Test.exe'
+      pathtoCustomTestAdapters: 'packages\GoogleTestAdapter.0.16.1\build\_common'
       searchFolder: 'build\bin\Debug'
