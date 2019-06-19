@@ -71,7 +71,10 @@ jobs:
       command: 'pack'
       configuration: 'Debug'
       packagesToPack: '**/*.csproj'
-      versioningScheme: 'byBuildNumber'
+      versioningScheme: 'byPrereleaseNumber'
+      majorVersion: '0'
+      minorVersion: '0'
+      patchVersion: '0'
 
   - task: NuGetCommand@2
     enabled: false
