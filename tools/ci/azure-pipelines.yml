@@ -71,6 +71,7 @@ jobs:
   - task: DotNetCoreCLI@2 # netcore or netstandard should use this instead of nuget
     inputs:
       command: 'pack'
+      verbosityPack: 'normal'
       configuration: 'Debug'
       packagesToPack: '**/*.csproj'
       versioningScheme: 'byPrereleaseNumber'
@@ -82,11 +83,22 @@ jobs:
     inputs:
       command: 'pack'
       configuration: 'Debug'
-      feedsToUse: 'select'
-      includeNuGetOrg: false
       packagesToPack: '**/*.nuspec'
       buildProperties: OutputPath=..\..\..\build\bin\Debug # TODO not hardcoded
       versioningScheme: 'byPrereleaseNumber'
       majorVersion: '0'
       minorVersion: '0'
       patchVersion: '0'
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathtoPublish: '$(Build.ArtifactStagingDirectory)'
+      artifactName: 'drop'
+
+  - task: NugetCommand@2
+    enabled: false
+    inputs:
+      command: 'push'
+      feedsToUse: 'select'
+      includeNuGetOrg: true
+      vstsFeed: 'https://secundus.pkgs.visualstudio.com/_packaging/all/nuget/v3/index.json'
