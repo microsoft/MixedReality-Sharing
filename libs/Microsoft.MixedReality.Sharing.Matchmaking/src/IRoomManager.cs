@@ -21,9 +21,19 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         Task<IRoom> JoinRoomByIdAsync(string roomId, CancellationToken token = default);
 
         /// <summary>
-        /// Get the list of all rooms matching the given query.
+        /// Get the list of all rooms with the specified owner.
         /// </summary>
-        IRoomList FindRooms(FindRoomQuery query);
+        IRoomList FindRoomsByOwner(IParticipant owner);
+
+        /// <summary>
+        /// Get the list of all rooms containing any of the specified participants.
+        /// </summary>
+        IRoomList FindRoomsByParticipants(IEnumerable<IParticipant> participants);
+
+        /// <summary>
+        /// Get the list of all rooms containing all of these attributes with the specified value.
+        /// </summary>
+        IRoomList FindRoomsByAttributes(Dictionary<string, object> attributes);
 
         /// <summary>
         /// Create a new room and join it.
@@ -37,27 +47,6 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// The newly created, joined room.
         /// </returns>
         Task<IRoom> CreateRoomAsync(Dictionary<string, object> attributes = null, CancellationToken token = default);
-    }
-
-    /// <summary>
-    /// Collection of the possible options to query rooms for.
-    /// </summary>
-    public class FindRoomQuery
-    {
-        /// <summary>
-        /// Only find rooms with this owner.
-        /// </summary>
-        public IParticipant Owner;
-
-        /// <summary>
-        /// Only find rooms containing any of these contacts.
-        /// </summary>
-        public List<IParticipant> Members;
-
-        /// <summary>
-        /// Only find rooms containing all of these attributes with the specified value.
-        /// </summary>
-        public Dictionary<string, object> Attributes;
     }
 
     /// <summary>
