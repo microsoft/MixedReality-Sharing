@@ -24,11 +24,9 @@ jobs:
   steps:
 
   - task: DeleteFiles@1
-    displayName: 'Cleaning build folder'
-    enabled: false
-    condition: variables.cleanBuild
+    displayName: 'Cleaning artifacts folder'
     inputs:
-      sourceFolder: 'build'
+      sourceFolder: '$(Build.ArtifactStagingDirectory)'
       contents: '**'
 
   - task: NuGetToolInstaller@0
