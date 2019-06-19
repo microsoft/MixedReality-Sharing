@@ -51,12 +51,14 @@ jobs:
 
   - task: VSTest@2
     displayName: 'Running C# tests'
+    enabled: false
     inputs:
       testSelector: 'testAssemblies'
       testAssemblyVer2: '*Test.dll'
       searchFolder: 'build\bin\Debug'
 
   - task: VSTest@2
+    enabled: false
     displayName: 'Running C++ tests'
     inputs:
       platform: 'x64'
@@ -66,7 +68,7 @@ jobs:
       pathtoCustomTestAdapters: 'packages\GoogleTestAdapter.0.16.1\build\_common'
       searchFolder: 'build\bin\Debug'
 
-  - task: DotNetCoreCLI@2 #netcore or netstandard should use this instead of nuget
+  - task: DotNetCoreCLI@2 # netcore or netstandard should use this instead of nuget
     inputs:
       command: 'pack'
       configuration: 'Debug'
@@ -76,11 +78,15 @@ jobs:
       minorVersion: '0'
       patchVersion: '0'
 
-  - task: NuGetCommand@2
-    enabled: false
+  - task: NuGetCommand@2 # c++ needs an explicit nuspec
     inputs:
       command: 'pack'
       configuration: 'Debug'
       feedsToUse: 'select'
       includeNuGetOrg: false
       packagesToPack: '**/*.nuspec'
+      buildProperties: OutputPath=..\..\..\build\bin\Debug # TODO not hardcoded
+      versioningScheme: 'byPrereleaseNumber'
+      majorVersion: '0'
+      minorVersion: '0'
+      patchVersion: '0'

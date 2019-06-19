@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+    <metadata>
+        <!-- Required elements-->
+        <id>Microsoft.MixedReality.Sharing.TempLib</id>
+        <version>0.0.0</version>
+        <description>Temporary Test Lib</description>
+        <authors>Microsoft Mixed Reality Sharing Team</authors>
+
+        <!-- Optional elements -->
+        <title>TempLib</title>
+        <projectUrl>https://github.com/microsoft/MixedReality-Sharing</projectUrl>
+        <license type="expression">MIT</license>
+        <tags>native</tags>
+    </metadata>
+    <!-- Optional 'files' node -->
+    <files>
+        <file src="TempLib.h" target="include" />
+        <file src="$OutputPath$\TempLib.lib" target="lib" />
+    </files>
+</package>
