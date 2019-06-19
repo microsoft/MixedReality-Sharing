@@ -66,13 +66,12 @@ jobs:
       pathtoCustomTestAdapters: 'packages\GoogleTestAdapter.0.16.1\build\_common'
       searchFolder: 'build\bin\Debug'
 
-  - task: NuGetCommand@2
+  - task: DotNetCoreCLI@2 #netcore or netstandard should use this instead of nuget
     inputs:
       command: 'pack'
       configuration: 'Debug'
-      feedsToUse: 'select'
-      includeNuGetOrg: false
       packagesToPack: '**/*.csproj'
+      versioningScheme: 'byBuildNumber'
 
   - task: NuGetCommand@2
     enabled: false
