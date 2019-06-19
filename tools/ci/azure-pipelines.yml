@@ -72,7 +72,7 @@ jobs:
       nobuild: 'true'
       verbosityPack: 'normal'
       configuration: 'Debug'
-      packagesToPack: 'lib/**/*.csproj'
+      packagesToPack: 'libs/**/*.csproj'
       versioningScheme: 'byPrereleaseNumber'
       majorVersion: '0'
       minorVersion: '0'
@@ -82,7 +82,7 @@ jobs:
     inputs:
       command: 'pack'
       configuration: 'Debug'
-      packagesToPack: 'lib/**/*.nuspec'
+      packagesToPack: 'libs/**/*.nuspec'
       buildProperties: OutputPath=..\..\..\build\bin\Debug # TODO not hardcoded
       versioningScheme: 'byPrereleaseNumber'
       majorVersion: '0'
