@@ -4,15 +4,18 @@
   <PropertyGroup>
     <!-- SolutionDir is not defined when building projects explicitly -->
     <SolutionDir Condition=" '$(SolutionDir)' == '' ">$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), Microsoft.MixedReality.Sharing.sln))\</SolutionDir>
-    <!-- Output paths -->
+
+    <!-- Intermediate Output paths -->
     <BaseIntermediateOutputPath>$(SolutionDir)build\obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
     <MSBuildProjectExtensionsPath>$(BaseIntermediateOutputPath)\</MSBuildProjectExtensionsPath>
     <RestoreOutputPath>$(MSBuildProjectExtensionsPath)</RestoreOutputPath>
 
     <!-- Don't transitively copy output files, since everything builds to the same folder. -->
     <UseCommonOutputDirectory>True</UseCommonOutputDirectory>
-    <OutputPath>$(SolutionDir)build\bin\$(Configuration)\</OutputPath>
+    <OutputPath>$(SolutionDir)build\bin\$(Configuration)\$(Platform)\</OutputPath>
+
+    <!-- C++ support -->
     <OutDir>$(OutputPath)</OutDir>
-    <IntDir>$(SolutionDir)build\obj\$(MSBuildProjectName)\</IntDir>
+    <IntDir>$(BaseIntermediateOutputPath)\$(Configuration)\$(Platform)\</IntDir>
   </PropertyGroup>
 </Project>
