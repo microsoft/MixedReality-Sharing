@@ -4,7 +4,7 @@
 # https://aka.ms/yaml
 
 trigger:
-- feature/pipeline
+- feature/dev
 
 variables:
   buildConfiguration: 'Release'
@@ -31,7 +31,7 @@ jobs:
 
   - task: NuGetToolInstaller@0
     inputs:
-      versionSpec: '>=4.9.2'
+      versionSpec: '>=4.9.2' # need this for <license> tag in nuspec
 
   - task: NuGetCommand@2
     displayName: 'Restore NuGet Packages'
@@ -44,7 +44,7 @@ jobs:
     inputs:
       configuration: 'Debug'
       solution: '$(solution)'
-      msbuildArgs: '/p:PlatformToolset=v142'
+      msbuildArgs: '/p:PlatformToolset=v142' # Allows 2019 toolchain with 2017 projects
       platform: 'x64'
 
   - task: VSTest@2
@@ -66,7 +66,7 @@ jobs:
       pathtoCustomTestAdapters: 'packages\GoogleTestAdapter.0.16.1\build\_common'
       searchFolder: 'build\bin\Debug'
 
-  - task: DotNetCoreCLI@2 # netcore or netstandard should use this instead of nuget
+  - task: DotNetCoreCLI@2 # netcore or netstandard project  use this instead of nuget task
     inputs:
       command: 'pack'
       nobuild: 'true'
@@ -94,11 +94,6 @@ jobs:
       pathtoPublish: '$(Build.ArtifactStagingDirectory)'
       artifactName: 'drop'
 
-  - task: NugetCommand@2
-    enabled: false
-    inputs:
-      command: 'push'
-      feedsToUse: 'select'
-      includeNuGetOrg: true
-      vstsFeed: 'https://secundus.pkgs.visualstudio.com/_packaging/all/nuget/v3/index.json'
+  # publishing packages is done from 'release' in ADO
+
 
