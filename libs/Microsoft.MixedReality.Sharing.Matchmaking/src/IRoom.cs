@@ -29,12 +29,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// Current owner of this room. The owner is initially the participant who created the room.
         /// The implementation can choose a new owner if e.g. the current owner is disconnected.
         /// </summary>
-        IParticipant Owner { get; }
+        IMatchParticipant Owner { get; }
 
         /// <summary>
         /// Participants currently in the room.
         /// </summary>
-        IEnumerable<IParticipant> Participants { get; }
+        IEnumerable<IMatchParticipant> Participants { get; }
 
         /// <summary>
         /// Set some property values on the room.

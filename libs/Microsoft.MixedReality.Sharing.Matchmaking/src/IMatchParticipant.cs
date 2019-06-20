@@ -11,7 +11,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     /// It can correspond to different entities (a user account, a device running this application, a
     /// specific process) depending on the matchmaking implementation.
     /// </summary>
-    public interface IParticipant
+    public interface IMatchParticipant
     {
         string Id { get; }
         string DisplayName { get; }
@@ -21,12 +21,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     /// <summary>
     /// Gets a participant object from an ID.
     /// </summary>
-    public interface IParticipantFactory
+    public interface IMatchParticipantFactory
     {
         /// <summary>
         /// Gets a participant object from an ID.
         /// </summary>
-        Task<IParticipant> GetParticipantAsync(string id, CancellationToken cancellationToken);
+        Task<IMatchParticipant> GetParticipantAsync(string id, CancellationToken cancellationToken);
 
         /// <summary>
         /// ID of the matchmaking participant corresponding to the local user.

@@ -23,12 +23,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// <summary>
         /// Get the list of all rooms with the specified owner.
         /// </summary>
-        IRoomList FindRoomsByOwner(IParticipant owner);
+        IRoomList FindRoomsByOwner(IMatchParticipant owner);
 
         /// <summary>
         /// Get the list of all rooms containing any of the specified participants.
         /// </summary>
-        IRoomList FindRoomsByParticipants(IEnumerable<IParticipant> participants);
+        IRoomList FindRoomsByParticipants(IEnumerable<IMatchParticipant> participants);
 
         /// <summary>
         /// Get the list of all rooms containing all of these attributes with the specified value.

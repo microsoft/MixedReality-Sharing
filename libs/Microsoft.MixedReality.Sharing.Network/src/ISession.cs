@@ -14,7 +14,7 @@ namespace Microsoft.MixedReality.Sharing.Network
     /// </summary>
     public interface ISession
     {
-        IEnumerable<IParticipant> Participants { get; }
+        IEnumerable<INetParticipant> Participants { get; }
 
         // TODO state
 
