@@ -1,3 +1,6 @@
+# [Template] Run the unit tests
+
+steps:
 - task: VSTest@2
     displayName: 'Running C# tests'
     inputs:
