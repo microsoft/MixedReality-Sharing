@@ -6,6 +6,7 @@
         <version>0.0.0</version>
         <description>Temporary Test Lib</description>
         <authors>Microsoft Mixed Reality Sharing Team</authors>
+        <product>Microsoft.MixedReality.Sharing</product>
 
         <!-- Optional elements -->
         <title>TempLib</title>
