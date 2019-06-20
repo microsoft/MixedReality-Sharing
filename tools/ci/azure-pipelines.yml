@@ -19,6 +19,8 @@ jobs:
 
   steps:
   - template: templates/steps-build-init.yml
+
+  # Build
   - template: templates/steps-build-solution.yml
     parameters:
       platform: x86
@@ -27,10 +29,9 @@ jobs:
     parameters:
       platform: x64
       configuration: Debug
+
+  # Test
   - template: templates/steps-test-unit.yml
+    parameters:
+      configuration: Debug
   #- template: templates/steps-package-nuget.yml
-
-
-
-
-

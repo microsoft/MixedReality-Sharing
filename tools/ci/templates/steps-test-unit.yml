@@ -1,19 +1,20 @@
 # [Template] Run the unit tests
 
+parameters: # defaults for any parameters that aren't specified
+  configuration: 'Debug'
+
 steps:
   - task: VSTest@2
-    displayName: 'Running C# tests'
+    displayName: 'Running C# tests for ${{ parameters.platform }} ${{ parameters.configuration }}'
     inputs:
       testSelector: 'testAssemblies'
-      testAssemblyVer2: '*Test.dll'
-      searchFolder: 'build\bin\Debug'
+      testAssemblyVer2: '**\*Test.dll'
+      searchFolder: 'build\bin\${{ parameters.configuration }}'
 
   - task: VSTest@2
-    displayName: 'Running C++ tests'
+    displayName: 'Running C# tests for ${{ parameters.platform }} ${{ parameters.configuration }}'
     inputs:
-      platform: 'x64'
-      configuration: 'Debug'
       testSelector: 'testAssemblies'
-      testAssemblyVer2: '*Test.exe'
+      testAssemblyVer2: '**\*Test.exe'
       pathtoCustomTestAdapters: 'packages\GoogleTestAdapter.0.16.1\build\_common'
-      searchFolder: 'build\bin\Debug'
+      searchFolder: 'build\bin\${{ parameters.configuration }}'

@@ -16,6 +16,6 @@
 
     <!-- C++ support -->
     <OutDir>$(OutputPath)</OutDir>
-    <IntDir>$(BaseIntermediateOutputPath)\$(Configuration)\$(Platform)</IntDir>
+    <IntDir>$(BaseIntermediateOutputPath)\$(Configuration)\$(Platform)\</IntDir>
   </PropertyGroup>
 </Project>
