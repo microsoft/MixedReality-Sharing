@@ -1,10 +1,14 @@
 # [Template] Build the solution
 
+parameters: # defaults for any parameters that aren't specified
+  platform: 'x64'
+  configuration: 'Debug'
+
 steps:
   - task: VSBuild@1
     displayName: 'Build solution'
     inputs:
-      configuration: 'Debug'
+      configuration: ${{ parameters.configuration }}
       solution: '$(solution)'
       msbuildArgs: '/p:PlatformToolset=v142' # Allows 2019 toolchain with 2017 projects
-      platform: 'x64'
+      platform: ${{ parameters.platform }}
