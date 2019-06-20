@@ -1,0 +1,10 @@
+# [Template] Build the solution
+
+steps:
+  - task: VSBuild@1
+    displayName: 'Build solution'
+    inputs:
+      configuration: 'Debug'
+      solution: '$(solution)'
+      msbuildArgs: '/p:PlatformToolset=v142' # Allows 2019 toolchain with 2017 projects
+      platform: 'x64'
