@@ -72,7 +72,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     /// Note that the implementation might prevent callers from subscribing to more than one room list
     /// at the same time.
     /// </summary>
-    public interface IRoomList : IEnumerable<IRoom>, INotifyCollectionChanged, IDisposable
+    public interface IRoomList : IEnumerable<IRoomInfo>, INotifyCollectionChanged, IDisposable
     {
         /// <summary>
         /// Get the rooms that are active now.
