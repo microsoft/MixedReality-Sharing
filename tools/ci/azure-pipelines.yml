@@ -1,15 +1,11 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
+# CI build for developer builds.
 
 trigger:
-- feature/pipeline
+- feature/dev
 
 variables:
   buildConfiguration: 'Release'
   solution: '*.sln'
-  cleanBuild: false
 
 jobs:
 
@@ -22,46 +18,20 @@ jobs:
     vmImage: 'windows-2019'
 
   steps:
+  - template: templates/steps-build-init.yml
 
-  - task: DeleteFiles@1
-    displayName: 'Cleaning build folder'
-    enabled: false
-    condition: variables.cleanBuild
-    inputs:
-      sourceFolder: 'build'
-      contents: '**'
+  # Build
+  - template: templates/steps-build-solution.yml
+    parameters:
+      platform: x86
+      configuration: Debug
+  - template: templates/steps-build-solution.yml
+    parameters:
+      platform: x64
+      configuration: Debug
 
-  - task: NuGetToolInstaller@0
-    inputs:
-      versionSpec: '4.3.0' 
-
-  - task: NuGetCommand@2
-    displayName: 'Restore NuGet Packages'
-    inputs:
-      command: 'restore'
-      restoreSolution: '$(solution)'
-
-  - task: VSBuild@1
-    displayName: 'Build solution'
-    inputs:
-      configuration: 'Debug'
-      solution: '$(solution)'
-      msbuildArgs: '/p:PlatformToolset=v142'
-      platform: 'x64'
-
-  - task: VSTest@2
-    displayName: 'Running C# tests'
-    inputs:
-      testSelector: 'testAssemblies'
-      testAssemblyVer2: '*Test.dll'
-      searchFolder: 'build\bin\Debug'
-
-  - task: VSTest@2
-    displayName: 'Running C++ tests'
-    inputs:
-      platform: 'x64'
-      configuration: 'Debug'
-      testSelector: 'testAssemblies'
-      testAssemblyVer2: '*Test.exe'
-      pathtoCustomTestAdapters: 'packages\GoogleTestAdapter.0.16.1\build\_common'
-      searchFolder: 'build\bin\Debug'
+  # Test
+  - template: templates/steps-test-unit.yml
+    parameters:
+      configuration: Debug
+  #- template: templates/steps-package-nuget.yml
