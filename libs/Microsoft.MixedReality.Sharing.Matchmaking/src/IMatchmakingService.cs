@@ -19,6 +19,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             CancellationToken token = default);
 
         /// <summary>
+        /// Rooms currently joined by the local participants.
+        /// </summary>
+        IEnumerable<IRoom> JoinedRooms { get; }
+
+        /// <summary>
         /// Room manager. Can be null if the implementation does not provide room managing services.
         /// </summary>
         IRoomManager RoomManager { get; }

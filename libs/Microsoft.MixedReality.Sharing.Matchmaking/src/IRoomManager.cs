@@ -36,6 +36,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         IRoomList FindRoomsByAttributes(Dictionary<string, object> attributes);
 
         /// <summary>
+        /// Get the list of all rooms.
+        /// </summary>
+        IRoomList FindRooms();
+
+        /// <summary>
         /// Create a new room and join it.
         /// </summary>
         /// <param name="attributes">Attributes to set on the new room.</param>
