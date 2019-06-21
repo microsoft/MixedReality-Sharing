@@ -51,12 +51,23 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
     /// <summary>
     /// Handle to the list of active matchmaking rooms that satisfy certain criteria.
-    /// Can be used to either get the rooms at a specific point in time, or to subscribe and get updates
-    /// as rooms get added/removed.
+    /// Can be used to:
+    /// <list type="bullet">
+    /// <item>
+    /// <description>
+    /// get the rooms at a specific point in time, asynchronously by calling
+    /// <see cref="GetRoomsAsync(CancellationToken)"/></description>, or synchronously by enumeration this object;
+    /// </item>
+    /// <item>
+    /// <description>
+    /// subscribe and get updates as rooms get added/removed, through the `CollectionChanged` event.
+    /// </description>
+    /// </item>
+    /// </list>
     /// Note that the implementation might prevent callers from subscribing to more than one room list
     /// at the same time.
     /// </summary>
-    public interface IRoomList : INotifyCollectionChanged, IDisposable
+    public interface IRoomList : IEnumerable<IRoom>, INotifyCollectionChanged, IDisposable
     {
         /// <summary>
         /// Get the rooms that are active now.
