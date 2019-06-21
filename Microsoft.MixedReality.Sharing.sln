@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.MixedReality.Shar
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.MixedReality.Sharing.StateSync.Test", "libs\Microsoft.MixedReality.Sharing.StateSync\test\Microsoft.MixedReality.Sharing.StateSync.Test.csproj", "{3A6EAB71-070D-4B03-B166-12A8886D0223}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.MixedReality.Sharing.Matchmaking", "libs\Microsoft.MixedReality.Sharing.Matchmaking\src\Microsoft.MixedReality.Sharing.Matchmaking.csproj", "{CC5B96F6-669E-4BAD-98E1-072801F771AA}"
+EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TempLib", "libs\TempLib\src\TempLib.vcxproj", "{B69106CA-ECD6-49CC-A1A1-E5D97E9EB9E0}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TempLib.Test", "libs\TempLib\test\TempLib.test.vcxproj", "{F61890A3-4C11-4057-8F25-8878063EEF2C}"
@@ -69,6 +71,18 @@ Global
 		{B69106CA-ECD6-49CC-A1A1-E5D97E9EB9E0}.Release|x64.Build.0 = Release|x64
 		{B69106CA-ECD6-49CC-A1A1-E5D97E9EB9E0}.Release|x86.ActiveCfg = Release|Win32
 		{B69106CA-ECD6-49CC-A1A1-E5D97E9EB9E0}.Release|x86.Build.0 = Release|Win32
+		{CC5B96F6-669E-4BAD-98E1-072801F771AA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CC5B96F6-669E-4BAD-98E1-072801F771AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CC5B96F6-669E-4BAD-98E1-072801F771AA}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{CC5B96F6-669E-4BAD-98E1-072801F771AA}.Debug|x64.Build.0 = Debug|Any CPU
+		{CC5B96F6-669E-4BAD-98E1-072801F771AA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{CC5B96F6-669E-4BAD-98E1-072801F771AA}.Debug|x86.Build.0 = Debug|Any CPU
+		{CC5B96F6-669E-4BAD-98E1-072801F771AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC5B96F6-669E-4BAD-98E1-072801F771AA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CC5B96F6-669E-4BAD-98E1-072801F771AA}.Release|x64.ActiveCfg = Release|Any CPU
+		{CC5B96F6-669E-4BAD-98E1-072801F771AA}.Release|x64.Build.0 = Release|Any CPU
+		{CC5B96F6-669E-4BAD-98E1-072801F771AA}.Release|x86.ActiveCfg = Release|Any CPU
+		{CC5B96F6-669E-4BAD-98E1-072801F771AA}.Release|x86.Build.0 = Release|Any CPU
 		{F61890A3-4C11-4057-8F25-8878063EEF2C}.Debug|Any CPU.ActiveCfg = Debug|Win32
 		{F61890A3-4C11-4057-8F25-8878063EEF2C}.Debug|x64.ActiveCfg = Debug|x64
 		{F61890A3-4C11-4057-8F25-8878063EEF2C}.Debug|x64.Build.0 = Debug|x64
