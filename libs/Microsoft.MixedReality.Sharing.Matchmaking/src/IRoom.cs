@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using Microsoft.MixedReality.Sharing.Network;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -13,11 +12,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     /// <summary>
     /// Handle to a joined matchmaking room.
     ///
-    /// A room is a container for an <see cref="ISession"/>, that can be created, advertised and/or joined through a
+    /// A room is a container for an <see cref="Network.ISession"/>, that can be created, advertised and/or joined through a
     /// matchmaking service. A participant joining/leaving a room will also join/leave the corresponding session.
     ///
     /// A process can use this interface to interact with a joined room and to access the corresponding
-    /// <see cref="ISession"/>. Instances of this interface are obtained when joining/creating a matchmaking room
+    /// <see cref="Network.ISession"/>. Instances of this interface are obtained when joining/creating a matchmaking room
     /// through an <see cref="IMatchmakingService"/> or <see cref="IRoomManager"/>. See <see cref="IRoomInfo"/> for the
     /// interface that wraps non-joined rooms.
     ///
@@ -54,6 +53,6 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// <summary>
         /// Session corresponding to this room.
         /// </summary>
-        ISession Session { get; }
+        Network.ISession Session { get; }
     }
 }
