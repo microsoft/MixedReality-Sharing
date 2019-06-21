@@ -13,10 +13,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     public interface IRoomManager
     {
         /// <summary>
-        /// Find a room by its unique ID.
+        /// Join a room by its unique ID.
         /// </summary>
-        /// <returns>a <see cref="Task"/> containing a null room if there are no rooms with the provided ID.</returns>
-        Task<IRoom> FindRoomByIdAsync(string roomId, CancellationToken token = default);
+        /// <returns>
+        /// a <see cref="Task"/> containing the joined room if the provided ID is found, otherwise a null room.
+        /// </returns>
+        Task<IRoom> JoinRoomByIdAsync(string roomId, CancellationToken token = default);
 
         /// <summary>
         /// Get the list of all rooms matching the given query.
@@ -72,6 +74,6 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// The implementation might return only a subset of the currently active rooms
         /// if the full set is too large.
         /// </summary>
-        Task<IEnumerable<IRoom>> GetRoomsAsync(CancellationToken token = default);
+        Task<IEnumerable<IRoomInfo>> GetRoomsAsync(CancellationToken token = default);
     }
 }

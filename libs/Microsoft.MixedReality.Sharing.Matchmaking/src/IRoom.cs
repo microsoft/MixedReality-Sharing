@@ -11,21 +11,20 @@ using System.Threading.Tasks;
 namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
     /// <summary>
-    /// Container for contacts intending to interact with each other and for the state shared between them.
-    /// Created/managed through an <see cref="IMatchmakingService"/> or <see cref="IRoomManager"/>.
-    /// A room can host an <see cref="ISession"/>. A contact joining/leaving the room will also join/leave
-    /// the corresponding session.
-    /// The session is initiated when a contact first creates/joins the room. The lifetime of the room and
-    /// its sessions are implementation-dependent.
+    /// Handle to a joined matchmaking room.
+    ///
+    /// A room is a container for an <see cref="ISession"/>, that can be created, advertised and/or joined through a
+    /// matchmaking service. A participant joining/leaving a room will also join/leave the corresponding session.
+    ///
+    /// A process can use this interface to interact with a joined room and to access the corresponding
+    /// <see cref="ISession"/>. Instances of this interface are obtained when joining/creating a matchmaking room
+    /// through an <see cref="IMatchmakingService"/> or <see cref="IRoomManager"/>. See <see cref="IRoomInfo"/> for the
+    /// interface that wraps non-joined rooms.
+    ///
+    /// The lifetime of a room and the corresponding session is implementation-dependent.
     /// </summary>
-    public interface IRoom
+    public interface IRoom : IRoomInfo
     {
-        /// <summary>
-        /// Identifies this room.
-        /// The matchmaking implementation must guarantee that this is unique for every new room.
-        /// </summary>
-        string Id { get; }
-
         /// <summary>
         /// Current owner of this room. The owner is initially the participant who created the room.
         /// The implementation can choose a new owner if e.g. the current owner is disconnected.
@@ -33,11 +32,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         IParticipant Owner { get; }
 
         /// <summary>
-        /// Dictionary used to store data associated with the room, which can be used to filter and query rooms,
-        /// and to store data which can be retrieved by any participant.
+        /// Participants currently in the room.
         /// </summary>
-        /// <seealso cref="SetAttributesAsync(Dictionary{string, object})"/>
-        Dictionary<string, object> Attributes { get; }
+        IEnumerable<IParticipant> Participants { get; }
 
         /// <summary>
         /// Set some property values on the room.
@@ -46,13 +43,17 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// The types supported for the property values are defined by each implementation.
         /// </summary>
         /// <param name="attributes"></param>
-        /// <returns></returns>
         Task SetAttributesAsync(Dictionary<string, object> attributes);
 
         /// <summary>
-        /// Try to join the room. Gets the current session if already joined.
-        /// Some implementation might only allow joining one room (or a limited number) at a time.
+        /// Leave this room.
+        /// Calling this method invalidates this `IRoom` instance - no methods should be called after this.
         /// </summary>
-        Task<ISession> TryJoinAsync(CancellationToken token);
+        Task LeaveAsync();
+
+        /// <summary>
+        /// Session corresponding to this room.
+        /// </summary>
+        ISession Session { get; }
     }
 }

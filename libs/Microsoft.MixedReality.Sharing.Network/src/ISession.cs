@@ -10,20 +10,14 @@ namespace Microsoft.MixedReality.Sharing.Network
 {
     /// <summary>
     /// Sharing session that this process is a part of.
-    /// A sharing session is a collection of contacts who joined a room and are interacting with each other.
+    /// A sharing session is a collection of participants who can interact with each other and edit a shared state.
     /// </summary>
     public interface ISession
     {
-        /// <summary>
-        /// Identifies this session.
-        /// There should not be two sessions with the same ID active at the same time.
-        /// </summary>
-        string Id { get; }
+        IEnumerable<IParticipant> Participants { get; }
 
-        /// <summary>
-        /// Leave this session.
-        /// </summary>
-        /// <returns></returns>
-        Task LeaveAsync();
+        // TODO state
+
+        // TODO channels
     }
 }
