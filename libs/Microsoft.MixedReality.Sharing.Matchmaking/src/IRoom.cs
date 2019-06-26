@@ -9,6 +9,20 @@ using System.Threading.Tasks;
 
 namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
+    public enum RoomVisibility
+    {
+        /// <summary>
+        /// The room is publicly listed and available for searching by attributes.
+        /// </summary>
+        Public,
+
+        /// <summary>
+        /// The room is not publicly listed. It will be visible only when searching for an `IMatchParticipant` that 
+        /// is currently in it.
+        /// </summary>
+        Private
+    }
+
     /// <summary>
     /// Handle to a joined matchmaking room.
     ///
@@ -43,6 +57,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// </summary>
         /// <param name="attributes"></param>
         Task SetAttributesAsync(Dictionary<string, object> attributes);
+
+        /// <summary>
+        /// If set to <see cref="RoomVisibility.Public"/>, adds the room to the public list; otherwise, removes it 
+        /// from the public list.
+        /// </summary>
+        Task SetVisibility(RoomVisibility val);
 
         /// <summary>
         /// Leave this room.

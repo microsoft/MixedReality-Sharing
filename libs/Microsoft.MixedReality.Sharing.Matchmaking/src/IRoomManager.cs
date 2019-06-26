@@ -51,7 +51,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// <returns>
         /// The newly created, joined room.
         /// </returns>
-        Task<IRoom> CreateRoomAsync(Dictionary<string, object> attributes = null, CancellationToken token = default);
+        Task<IRoom> CreateRoomAsync(Dictionary<string, object> attributes = null, 
+            RoomVisibility visibility = RoomVisibility.Public, 
+            CancellationToken token = default);
     }
 
     /// <summary>
