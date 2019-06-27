@@ -3,11 +3,24 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace Microsoft.MixedReality.Sharing.Network
 {
+    public enum ChannelState
+    {
+        Connected,
+        ConnectionLost,
+        Disconnected
+    }
+
     public interface IChannel
     {
+        event Action<ChannelState> StateChanged;
+
+        ChannelState State { get; }
+
+        Stream Stream { get; }
     }
 }
