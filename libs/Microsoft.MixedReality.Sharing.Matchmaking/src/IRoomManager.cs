@@ -21,9 +21,20 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         Task<IRoom> JoinRoomByIdAsync(string roomId, CancellationToken token = default);
 
         /// <summary>
-        /// Get the list of all rooms matching the given query.
+        /// Get the list of all rooms with the specified owner.
         /// </summary>
-        IRoomList FindRooms(FindRoomQuery query);
+        IRoomList FindRoomsByOwner(IMatchParticipant owner);
+
+        /// <summary>
+        /// Get the list of all rooms containing any of the specified participants.
+        /// </summary>
+        IRoomList FindRoomsByParticipants(IEnumerable<IMatchParticipant> participants);
+
+        /// <summary>
+        /// Get the list of all rooms containing all of these attributes with the specified value.
+        /// Passing an empty dictionary will list all searchable rooms.
+        /// </summary>
+        IRoomList FindRoomsByAttributes(Dictionary<string, object> attributes = default);
 
         /// <summary>
         /// Create a new room and join it.
@@ -36,38 +47,30 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// <returns>
         /// The newly created, joined room.
         /// </returns>
-        Task<IRoom> CreateRoomAsync(Dictionary<string, object> attributes = null, CancellationToken token = default);
-    }
-
-    /// <summary>
-    /// Collection of the possible options to query rooms for.
-    /// </summary>
-    public class FindRoomQuery
-    {
-        /// <summary>
-        /// Only find rooms with this owner.
-        /// </summary>
-        public IParticipant Owner;
-
-        /// <summary>
-        /// Only find rooms containing any of these contacts.
-        /// </summary>
-        public List<IParticipant> Members;
-
-        /// <summary>
-        /// Only find rooms containing all of these attributes with the specified value.
-        /// </summary>
-        public Dictionary<string, object> Attributes;
+        Task<IRoom> CreateRoomAsync(Dictionary<string, object> attributes = null, 
+            RoomVisibility visibility = RoomVisibility.NotVisible,
+            CancellationToken token = default);
     }
 
     /// <summary>
     /// Handle to the list of active matchmaking rooms that satisfy certain criteria.
-    /// Can be used to either get the rooms at a specific point in time, or to subscribe and get updates
-    /// as rooms get added/removed.
+    /// Can be used to:
+    /// <list type="bullet">
+    /// <item>
+    /// <description>
+    /// get the rooms at a specific point in time, asynchronously by calling
+    /// <see cref="GetRoomsAsync(CancellationToken)"/></description>, or synchronously by enumeration this object;
+    /// </item>
+    /// <item>
+    /// <description>
+    /// subscribe and get updates as rooms get added/removed, through the `CollectionChanged` event.
+    /// </description>
+    /// </item>
+    /// </list>
     /// Note that the implementation might prevent callers from subscribing to more than one room list
     /// at the same time.
     /// </summary>
-    public interface IRoomList : INotifyCollectionChanged, IDisposable
+    public interface IRoomList : IEnumerable<IRoomInfo>, INotifyCollectionChanged, IDisposable
     {
         /// <summary>
         /// Get the rooms that are active now.

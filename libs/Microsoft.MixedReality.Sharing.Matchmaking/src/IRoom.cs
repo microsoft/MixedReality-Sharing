@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using Microsoft.MixedReality.Sharing.Network;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -10,14 +9,33 @@ using System.Threading.Tasks;
 
 namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
+    public enum RoomVisibility
+    {
+        /// <summary>
+        /// The room is not visible through search methods. It can only be joined if its ID is known.
+        /// </summary>
+        NotVisible,
+
+        /// <summary>
+        /// The room can only be found by searching for a known participant (if the participant has joined the room or
+        /// is its owner).
+        /// </summary>
+        ByParticipantOnly,
+
+        /// <summary>
+        /// The room is publicly available for searching by participants or by attributes.
+        /// </summary>
+        Searchable,
+    }
+
     /// <summary>
     /// Handle to a joined matchmaking room.
     ///
-    /// A room is a container for an <see cref="ISession"/>, that can be created, advertised and/or joined through a
+    /// A room is a container for an <see cref="Network.ISession"/>, that can be created, advertised and/or joined through a
     /// matchmaking service. A participant joining/leaving a room will also join/leave the corresponding session.
     ///
     /// A process can use this interface to interact with a joined room and to access the corresponding
-    /// <see cref="ISession"/>. Instances of this interface are obtained when joining/creating a matchmaking room
+    /// <see cref="Network.ISession"/>. Instances of this interface are obtained when joining/creating a matchmaking room
     /// through an <see cref="IMatchmakingService"/> or <see cref="IRoomManager"/>. See <see cref="IRoomInfo"/> for the
     /// interface that wraps non-joined rooms.
     ///
@@ -29,12 +47,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// Current owner of this room. The owner is initially the participant who created the room.
         /// The implementation can choose a new owner if e.g. the current owner is disconnected.
         /// </summary>
-        IParticipant Owner { get; }
+        IMatchParticipant Owner { get; }
 
         /// <summary>
         /// Participants currently in the room.
         /// </summary>
-        IEnumerable<IParticipant> Participants { get; }
+        IEnumerable<IMatchParticipant> Participants { get; }
 
         /// <summary>
         /// Set some property values on the room.
@@ -46,6 +64,16 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         Task SetAttributesAsync(Dictionary<string, object> attributes);
 
         /// <summary>
+        /// Triggered when the room attributes are changed, by the local participant or another member of the room.
+        /// </summary>
+        event EventHandler AttributesChanged;
+
+        /// <summary>
+        /// Makes the room visible or not according to the passed value.
+        /// </summary>
+        Task SetVisibility(RoomVisibility val);
+
+        /// <summary>
         /// Leave this room.
         /// Calling this method invalidates this `IRoom` instance - no methods should be called after this.
         /// </summary>
@@ -54,6 +82,6 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// <summary>
         /// Session corresponding to this room.
         /// </summary>
-        ISession Session { get; }
+        Network.ISession Session { get; }
     }
 }

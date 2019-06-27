@@ -7,7 +7,7 @@ using System.Text;
 
 namespace Microsoft.MixedReality.Sharing.Network
 {
-    public interface IParticipant
+    public interface INetParticipant
     {
     }
 }
