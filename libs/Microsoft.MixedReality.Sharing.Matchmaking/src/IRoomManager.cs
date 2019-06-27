@@ -32,13 +32,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         /// <summary>
         /// Get the list of all rooms containing all of these attributes with the specified value.
+        /// Passing an empty dictionary will list all searchable rooms.
         /// </summary>
-        IRoomList FindRoomsByAttributes(Dictionary<string, object> attributes);
-
-        /// <summary>
-        /// Get the list of all rooms.
-        /// </summary>
-        IRoomList FindRooms();
+        IRoomList FindRoomsByAttributes(Dictionary<string, object> attributes = default);
 
         /// <summary>
         /// Create a new room and join it.
@@ -52,7 +48,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// The newly created, joined room.
         /// </returns>
         Task<IRoom> CreateRoomAsync(Dictionary<string, object> attributes = null, 
-            RoomVisibility visibility = RoomVisibility.Public, 
+            RoomVisibility visibility = RoomVisibility.NotVisible,
             CancellationToken token = default);
     }
 

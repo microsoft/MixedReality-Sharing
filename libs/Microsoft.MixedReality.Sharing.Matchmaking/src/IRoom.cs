@@ -12,15 +12,20 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     public enum RoomVisibility
     {
         /// <summary>
-        /// The room is publicly listed and available for searching by attributes.
+        /// The room is not visible through search methods. It can only be joined if its ID is known.
         /// </summary>
-        Public,
+        NotVisible,
 
         /// <summary>
-        /// The room is not publicly listed. It will be visible only when searching for an `IMatchParticipant` that 
-        /// is currently in it.
+        /// The room can only be found by searching for a known participant (if the participant has joined the room or
+        /// is its owner).
         /// </summary>
-        Private
+        ByParticipantOnly,
+
+        /// <summary>
+        /// The room is publicly available for searching by participants or by attributes.
+        /// </summary>
+        Searchable,
     }
 
     /// <summary>
@@ -59,8 +64,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         Task SetAttributesAsync(Dictionary<string, object> attributes);
 
         /// <summary>
-        /// If set to <see cref="RoomVisibility.Public"/>, adds the room to the public list; otherwise, removes it 
-        /// from the public list.
+        /// Makes the room visible or not according to the passed value.
         /// </summary>
         Task SetVisibility(RoomVisibility val);
 
