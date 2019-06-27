@@ -64,6 +64,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         Task SetAttributesAsync(Dictionary<string, object> attributes);
 
         /// <summary>
+        /// Triggered when the room attributes are changed, by the local participant or another member of the room.
+        /// </summary>
+        event EventHandler AttributesChanged;
+
+        /// <summary>
         /// Makes the room visible or not according to the passed value.
         /// </summary>
         Task SetVisibility(RoomVisibility val);
