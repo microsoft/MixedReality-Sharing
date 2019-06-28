@@ -9,16 +9,16 @@ using System.Threading.Tasks;
 
 namespace Microsoft.MixedReality.Sharing.Network
 {
-    public interface INetParticipant
+    public interface IEndpoint
     {
         /// <summary>
-        /// Identifies the participant. Must be unique within a session.
+        /// Identifies the endpoint.
         /// </summary>
         string Id { get; }
 
         /// <summary>
         /// Opens a channel to communicate to the other participant.
         /// </summary>
-        Task<IChannel> CreateChannelAsync(string key, CancellationToken cancellationToken);
+        IChannel CreateChannel(string key);
     }
 }

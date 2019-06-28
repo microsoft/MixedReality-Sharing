@@ -47,12 +47,17 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// Current owner of this room. The owner is initially the participant who created the room.
         /// The implementation can choose a new owner if e.g. the current owner is disconnected.
         /// </summary>
-        IMatchParticipant Owner { get; }
+        RoomParticipant Owner { get; }
 
         /// <summary>
         /// Participants currently in the room.
         /// </summary>
-        IEnumerable<IMatchParticipant> Participants { get; }
+        IEnumerable<RoomParticipant> Participants { get; }
+
+        event EventHandler<RoomParticipant> ParticipantJoined;
+        event EventHandler<RoomParticipant> ParticipantLeft;
+
+        Network.IEndpoint BroadcastEndpoint { get; }
 
         /// <summary>
         /// Set some property values on the room.
@@ -78,10 +83,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// Calling this method invalidates this `IRoom` instance - no methods should be called after this.
         /// </summary>
         Task LeaveAsync();
+    }
 
-        /// <summary>
-        /// Session corresponding to this room.
-        /// </summary>
-        Network.ISession Session { get; }
+    public class RoomParticipant
+    {
+        public IMatchParticipant Participant;
+        public Network.IEndpoint Endpoint;
     }
 }

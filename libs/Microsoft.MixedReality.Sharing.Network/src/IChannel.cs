@@ -8,16 +8,11 @@ using System.Text;
 
 namespace Microsoft.MixedReality.Sharing.Network
 {
-    public enum ChannelState
+    public interface IChannel : IDisposable
     {
-        Connected,
-        ConnectionLost,
-        Disconnected
-    }
+        IEndpoint Endpoint { get; }
 
-    public interface IChannel
-    {
-        ChannelState State { get; }
+        string Name { get; }
 
         void SendMessage(byte[] message);
 
