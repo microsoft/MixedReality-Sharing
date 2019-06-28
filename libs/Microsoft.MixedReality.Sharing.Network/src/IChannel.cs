@@ -17,10 +17,10 @@ namespace Microsoft.MixedReality.Sharing.Network
 
     public interface IChannel
     {
-        event Action<ChannelState> StateChanged;
-
         ChannelState State { get; }
 
-        Stream Stream { get; }
+        void SendMessage(byte[] message);
+
+        event EventHandler<byte[]> MessageReceived;
     }
 }
