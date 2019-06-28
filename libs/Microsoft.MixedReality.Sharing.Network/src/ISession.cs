@@ -41,6 +41,6 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// Create a channel to this session. Data transmitted on this channel will be received by every other
         /// participant that has opened a channel to the same session.
         /// </summary>
-        Task<IChannel> TryCreateChannelAsync(string key, CancellationToken cancellationToken = default);
+        Task<IChannel> CreateChannelAsync(string key, CancellationToken cancellationToken = default);
     }
 }

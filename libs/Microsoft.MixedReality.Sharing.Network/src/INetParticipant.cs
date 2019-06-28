@@ -19,6 +19,6 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// <summary>
         /// Opens a channel to communicate to the other participant.
         /// </summary>
-        Task<IChannel> TryCreateChannelAsync(string key, CancellationToken cancellationToken);
+        Task<IChannel> CreateChannelAsync(string key, CancellationToken cancellationToken);
     }
 }
