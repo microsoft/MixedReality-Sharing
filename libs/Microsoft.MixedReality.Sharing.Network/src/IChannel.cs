@@ -8,11 +8,17 @@ using System.Text;
 
 namespace Microsoft.MixedReality.Sharing.Network
 {
+    public class ChannelConfig
+    {
+        string Name { get; }
+        // TODO
+    }
+
     public interface IChannel : IDisposable
     {
-        IEndpoint Endpoint { get; }
+        ChannelConfig Config { get; }
 
-        string Name { get; }
+        IEndpoint Endpoint { get; }
 
         void SendMessage(byte[] message);
 
