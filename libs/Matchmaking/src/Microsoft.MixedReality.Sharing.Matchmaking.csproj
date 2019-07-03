@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Microsoft.MixedReality.Sharing.Network\src\Microsoft.MixedReality.Sharing.Network.csproj" />
+    <ProjectReference Include="..\..\Network\src\Microsoft.MixedReality.Sharing.Network.csproj" />
   </ItemGroup>
 
 </Project>
