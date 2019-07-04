@@ -39,12 +39,20 @@ namespace Microsoft.MixedReality.Sharing.Session
     public interface ISessionFactory
     {
         /// <summary>
-        /// Join a session over the passed channel.
-        /// May listen/send message on the channel to gather data on the existing session (if any) and notify the
-        /// existing participants that a new one has joined.
-        /// Depending on the implementation, the new session may or may not keep using <paramref name="baseChannel"/>
-        /// after creation.
+        /// Join a session over the passed state.
+        /// The implementation may read/write the passed state in order to gather data on existing sessions (if any)
+        /// and notify the presence of a new participant, subscribe to other state machines, and/or directly send
+        /// messages to the other session participants.
         /// </summary>
-        Task<ISession> JoinSessionAsync(Network.IChannel baseChannel);
+        Task<ISession> JoinSessionAsync(StateSync.IStateSubscription state);
+    }
+}
+
+// TODO move all the interfaces in the same module
+namespace Microsoft.MixedReality.Sharing.StateSync
+{
+    // TODO placeholder
+    public interface IStateSubscription
+    {
     }
 }
