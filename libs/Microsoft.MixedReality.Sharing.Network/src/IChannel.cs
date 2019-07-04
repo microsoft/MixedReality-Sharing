@@ -8,48 +8,13 @@ using System.Text;
 
 namespace Microsoft.MixedReality.Sharing.Network
 {
-    public enum ChannelType
-    {
-        /// <summary>
-        /// Guarantees that every message is either eventually delivered in its entirety, or dropped (no
-        /// fragmented/corrupted messages will be received).
-        /// </summary>
-        Unordered,
-
-        /// <summary>
-        /// In addition to the `Unordered` guarantees, this guarantees that:
-        /// <list type="bullet">
-        /// <item>
-        /// <description>
-        /// each message is retransmitted until its delivery is confirmed, or the connection breaks;
-        /// </description>
-        /// </item>
-        /// <item>
-        /// <description>
-        /// any sequence of messages is eventually delivered in the same order as it was sent, or dropped (no
-        /// out-of-order messages or duplicates will be received).
-        /// </description>
-        /// </item>
-        /// </list>
-        /// </summary>
-        Ordered
-    }
-
-    public class ChannelConfig
-    {
-        public string Name;
-        public ChannelType Type;
-    }
-
     public interface IChannel : IDisposable
     {
-        ChannelConfig Config { get; }
+        IChannelCategory Category { get; }
 
         IEndpoint Endpoint { get; }
 
         void SendMessage(byte[] message);
-
-        event EventHandler<byte[]> MessageReceived;
 
         /// <summary>
         /// Tells whether the channel is working. If this returns false, the channel shouldn't be used to send/receive

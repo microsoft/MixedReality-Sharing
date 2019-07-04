@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using Microsoft.MixedReality.Sharing.Network;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -31,9 +32,10 @@ namespace Microsoft.MixedReality.Sharing.Session
         /// Create a channel to this session. Data transmitted on this channel will be received by every other
         /// participant that has opened a channel to the same session.
         /// </summary>
-        Network.IChannel CreateChannel(string key);
+        Network.IChannel CreateChannel(IChannelCategory category);
 
-        // TODO session state? other?
+        // TODO placeholder for whatever apps will use to access state
+        StateSync.IStateSubscription State { get; }
     }
 
     public interface ISessionFactory

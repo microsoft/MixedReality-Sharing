@@ -19,6 +19,6 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// <summary>
         /// Opens a channel to communicate to the other participant.
         /// </summary>
-        IChannel CreateChannel(string key);
+        IChannel CreateChannel(IChannelCategory category);
     }
 }

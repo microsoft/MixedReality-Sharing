@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using Microsoft.MixedReality.Sharing.Network;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -19,7 +20,7 @@ namespace Microsoft.MixedReality.Sharing.Session
         /// <summary>
         /// Opens a channel to communicate to the other participant.
         /// </summary>
-        Task<ISessionParticipantChannel> CreateChannelAsync(string key, CancellationToken cancellationToken);
+        ISessionParticipantChannel CreateChannel(Network.IChannelCategory category);
     }
 
     public interface ISessionParticipantChannel : Network.IChannel
