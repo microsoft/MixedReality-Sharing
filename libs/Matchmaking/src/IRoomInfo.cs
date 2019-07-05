@@ -33,6 +33,6 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// Try to join this room.
         /// Some implementation might only allow joining only if the local participant is not already in a room.
         /// </summary>
-        Task<IRoom> TryJoinAsync(CancellationToken token = default);
+        Task<IRoom> JoinAsync(CancellationToken token = default);
     }
 }

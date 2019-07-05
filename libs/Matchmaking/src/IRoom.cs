@@ -31,11 +31,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     /// <summary>
     /// Handle to a joined matchmaking room.
     ///
-    /// A room is a container for an <see cref="Network.ISession"/>, that can be created, advertised and/or joined through a
+    /// A room is a container for a Mixed Reality shared session, that can be created, advertised and/or joined through a
     /// matchmaking service. A participant joining/leaving a room will also join/leave the corresponding session.
     ///
-    /// A process can use this interface to interact with a joined room and to access the corresponding
-    /// <see cref="Network.ISession"/>. Instances of this interface are obtained when joining/creating a matchmaking room
+    /// A process can use this interface to interact with a joined room and to access the corresponding session state.
+    /// Instances of this interface are obtained when joining/creating a matchmaking room
     /// through an <see cref="IMatchmakingService"/> or <see cref="IRoomManager"/>. See <see cref="IRoomInfo"/> for the
     /// interface that wraps non-joined rooms.
     ///
@@ -80,8 +80,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         Task LeaveAsync();
 
         /// <summary>
-        /// Session corresponding to this room.
+        /// Subscription to the room state.
+        /// Can be used to join a <see cref="Session.ISession"/> (see <see cref="Session.ISessionFactory"/>), or
+        /// listened to/edited directly.
         /// </summary>
-        Network.ISession Session { get; }
+        StateSync.IStateSubscription State { get; }
     }
 }
