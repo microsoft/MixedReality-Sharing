@@ -21,4 +21,12 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// </summary>
         IChannel CreateChannel(IChannelCategory category);
     }
+
+    public interface IEndpointFactory
+    {
+        /// <summary>
+        /// Inflates a <see cref="IEndpoint"/> from its ID.
+        /// </summary>
+        IEndpoint GetEndpoint(string id);
+    }
 }

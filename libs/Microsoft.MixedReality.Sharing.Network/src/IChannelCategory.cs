@@ -76,7 +76,7 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// handlers do not block the thread for a long time. If messages needs lengthy processing, you should offload
         /// it to a <see cref="Task"/> or use a <see cref="IMessageQueue"/> instead.
         /// </remarks>
-        event Action<Message> MessageReceived;
+        event Action<IMessage> MessageReceived;
     }
 
     public interface IChannelCategoryFactory
