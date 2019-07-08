@@ -79,7 +79,7 @@ namespace Microsoft.MixedReality.Sharing.Network
         event Action<IMessage> MessageReceived;
     }
 
-    public interface IChannelCategoryFactory
+    public interface IChannelCategoryFactory : IDisposable
     {
         /// <summary>
         /// Create a new category.
