@@ -37,5 +37,8 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// </summary>
         /// <returns>`true` if at least one message was available, `false` otherwise.</returns>
         bool TryDequeueAll(out IMessage[] messages);
+
+        // TODO maybe we want to have adding controlled by the network impl and expose a queue factory instead?
+        void Add(IMessage message);
     }
 }
