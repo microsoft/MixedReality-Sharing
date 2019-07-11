@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 
 namespace Microsoft.MixedReality.Sharing.Network
 {
@@ -19,7 +20,7 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// <summary>
         /// Block until a message is available, then remove the message from the queue and return it.
         /// </summary>
-        IMessage Dequeue();
+        IMessage Dequeue(CancellationToken token = default);
 
         /// <summary>
         /// Remove a message from the queue and return it in <paramref name="message"/> if there is one.
@@ -30,7 +31,7 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// <summary>
         /// Block until at least one message is available, then remove the messages from the queue and return them.
         /// </summary>
-        IMessage[] DequeueAll();
+        IMessage[] DequeueAll(CancellationToken token = default);
 
         /// <summary>
         /// Remove all messages from the queue and return them in <paramref name="messages"/> if there are any.
