@@ -30,7 +30,7 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// all the following handlers. If a handler needs to run lengthy processing, consider offloading the
         /// processing to a <see cref="Task"/>, or consuming the queue manually and doing your own scheduling instead.
         /// </remarks>
-        event Action<IMessage> MessageReceived;
+        event Action<Message> MessageReceived;
 
         public MessageQueueConsumer(IMessageQueue queue)
         {

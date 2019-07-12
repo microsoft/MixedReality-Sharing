@@ -3,11 +3,10 @@
 #include <cstdint>
 #include "export.h"
 
-struct mrsEndpoint;
-struct mrsChannelCategory;
-struct mrsChannelQueue;
-struct mrsMessage;
-struct mrsChannel;
+struct mrsEndpoint {};
+struct mrsChannelCategory {};
+struct mrsChannelQueue {};
+struct mrsChannel {};
 
 // 0 = success, otherwise failure
 using Result = int;
@@ -60,27 +59,27 @@ MRS_API Result MRS_CALL mrsCategoryStopListening(mrsChannelCategory* category);
 
 MRS_API Result MRS_CALL mrsDisposeCategory(mrsChannelCategory* category);
 
-// IMessage
-
-MRS_API Result MRS_CALL
-mrsGetMessageCategory(mrsMessage* message, mrsChannelCategory** category_out);
-
-MRS_API Result MRS_CALL mrsGetMessageEndpoint(mrsMessage* message,
-                                              mrsEndpoint* endpoint_out);
-
-MRS_API Result MRS_CALL mrsGetMessagePayload(mrsMessage* message,
-                                             const char** payload_out,
-                                             uint32_t* payload_size_out);
-
-MRS_API Result MRS_CALL mrsReleaseMessage(mrsMessage* message);
+struct mrsMessage {
+  mrsEndpoint* sender;
+  mrsChannelCategory* category;
+  const uint8_t* payload;
+  uint32_t payload_size;
+};
 
 // IMessageQueue
 
-MRS_API Result MRS_CALL mrsQueueTake(mrsChannelQueue* queue,
-                                     mrsMessage** message_out);
+// Destroy with mrsDisposeMessages.
+MRS_API Result MRS_CALL mrsQueueTakeAll(mrsChannelQueue* queue,
+                                        mrsMessage** messages_out,
+                                        uint32_t* messages_count_out);
 
+// Destroy with mrsDisposeMessages.
 MRS_API Result MRS_CALL mrsQueueTryTake(mrsChannelQueue* queue,
-                                      mrsMessage** message_out);
+                                        mrsMessage** messages_out,
+                                        uint32_t* messages_count_out);
+
+MRS_API Result MRS_CALL mrsDisposeMessages(mrsMessage* messages,
+                                           uint32_t messages_count);
 
 // IChannel
 
@@ -97,7 +96,8 @@ MRS_API Result MRS_CALL mrsGetChannelEndpoint(mrsChannel* channel,
 
 MRS_API Result MRS_CALL mrsIsChannelOk(mrsChannel* channel, uint8_t* ok_out);
 
-MRS_API Result MRS_CALL mrsGetChannelSendQueueCount(mrsChannel* channel, uint32_t* count_out);
+MRS_API Result MRS_CALL mrsGetChannelSendQueueCount(mrsChannel* channel,
+                                                    uint32_t* count_out);
 
 MRS_API Result MRS_CALL mrsChannelReconnect(mrsChannel* channel);
 
