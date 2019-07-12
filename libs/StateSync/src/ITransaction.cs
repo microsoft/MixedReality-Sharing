@@ -15,8 +15,5 @@ namespace Microsoft.MixedReality.Sharing.StateSync
 
         bool Delete(IKey key);
         bool Delete(byte[] key);
-
-        bool Commit();
-        bool Abort();
     }
 }
