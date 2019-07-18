@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
 {
 
-    public class LocalMatchParticipant : IMatchParticipant
+    public class MatchParticipant : IMatchParticipant
     {
         public string Id { get; }
 
@@ -19,7 +19,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
         public string Host { get; internal set; }
         public ushort Port { get; internal set; }
 
-        internal LocalMatchParticipant(string id, string displayName, string host = null, ushort port = 0)
+        internal MatchParticipant(string id, string displayName, string host = null, ushort port = 0)
         {
             Id = id;
             DisplayName = displayName;
@@ -28,16 +28,16 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
         }
     }
 
-    public class LocalMatchParticipantFactory : IMatchParticipantFactory
+    public class MatchParticipantFactory : IMatchParticipantFactory
     {
-        private readonly List<LocalMatchParticipant> knownParticipants_ = new List<LocalMatchParticipant>();
+        private readonly List<MatchParticipant> knownParticipants_ = new List<MatchParticipant>();
 
         public string LocalParticipantId => knownParticipants_[0].Id;
-        public LocalMatchParticipant LocalParticipant => knownParticipants_[0];
+        public MatchParticipant LocalParticipant => knownParticipants_[0];
 
-        public LocalMatchParticipantFactory(string localId, string localName, string localAddress, ushort port)
+        public MatchParticipantFactory(string localId, string localName, string localAddress, ushort port)
         {
-            knownParticipants_.Add(new LocalMatchParticipant(localId, localName, localAddress, port));
+            knownParticipants_.Add(new MatchParticipant(localId, localName, localAddress, port));
         }
 
         public Task<IMatchParticipant> GetParticipantAsync(string id, CancellationToken cancellationToken)

@@ -1,15 +1,17 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using Microsoft.MixedReality.Sharing.StateSync;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+
+[assembly: InternalsVisibleTo("Matchmaking.Local.Test")]
 
 namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
 {
@@ -21,14 +23,19 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
     ///
     /// Clients who are looking for a room broadcast a FIND packet. Each owner replies with a ROOM
     /// packet for each room it owns.
+    ///
+    /// On the owner every room corresponds to a TCP port listening for connections. Other participants
+    /// can join a room by making a connection to its port. The connection is then used to synchronize
+    /// the room state and monitor the participants state (TODO).
     /// </summary>
-    public class LocalMatchmakingService : IMatchmakingService, IRoomManager, IDisposable
+    public class MatchmakingService : IMatchmakingService, IRoomManager, IDisposable
     {
         private static readonly byte[] roomHeader_ = new byte[] { (byte)'R', (byte)'O', (byte)'O', (byte)'M' };
         private static readonly byte[] findHeader_ = new byte[] { (byte)'F', (byte)'I', (byte)'N', (byte)'D' };
 
-        private readonly List<LocalRoom> joinedRooms_ = new List<LocalRoom>();
-        private readonly LocalMatchParticipantFactory participantFactory_;
+        private readonly List<OwnedRoom> ownedRooms_ = new List<OwnedRoom>();
+        private readonly List<RoomBase> joinedRooms_ = new List<RoomBase>();
+        private readonly MatchParticipantFactory participantFactory_;
         private readonly SocketerClient server_;
         private readonly SocketerClient broadcastSender_;
         private readonly BinaryFormatter formatter_ = new BinaryFormatter();
@@ -37,7 +44,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
 
         public IRoomManager RoomManager => this;
 
-        public LocalMatchmakingService(LocalMatchParticipantFactory participantFactory, string broadcastAddress)
+        public MatchmakingService(MatchParticipantFactory participantFactory, string broadcastAddress)
         {
             participantFactory_ = participantFactory;
 
@@ -63,8 +70,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                 // TODO should just use one socket to send udp messages
                 SocketerClient replySocket = SocketerClient.CreateSender(SocketerClient.Protocol.UDP, ev.SourceHost, server.Port);
                 replySocket.Start();
-                var localId = participantFactory_.LocalParticipantId;
-                foreach (var room in joinedRooms_.Where(r => r.Owner.Id.Equals(localId) && r.Visibility == RoomVisibility.Searchable))
+                foreach (var room in ownedRooms_.Where(r => r.Visibility == RoomVisibility.Searchable))
                 {
                     var packet = CreateRoomPacket(room);
                     replySocket.SendNetworkMessage(packet);
@@ -75,21 +81,27 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
 
         public Task<IRoom> CreateRoomAsync(Dictionary<string, object> attributes = null, RoomVisibility visibility = RoomVisibility.NotVisible, CancellationToken token = default)
         {
-            // Make a new room.
-            var localParticipant = participantFactory_.LocalParticipant;
-            var newRoom = new LocalRoom(Guid.NewGuid().ToString(), visibility, attributes, localParticipant);
-            joinedRooms_.Add(newRoom);
-
-            // Advertise it.
-            if (visibility == RoomVisibility.Searchable)
+            return Task.Run<IRoom>(() =>
             {
-                broadcastSender_.SendNetworkMessage(CreateRoomPacket(newRoom));
-            }
+                // Make a new room.
+                var localParticipant = participantFactory_.LocalParticipant;
+                SocketerClient roomServer = SocketerClient.CreateListener(SocketerClient.Protocol.TCP, 0, localParticipant.Host);
+                var newRoom = new OwnedRoom(this, roomServer, attributes, visibility, localParticipant);
 
-            return Task.FromResult<IRoom>(newRoom);
+                ownedRooms_.Add(newRoom);
+                joinedRooms_.Add(newRoom);
+
+                // Advertise it.
+                if (visibility == RoomVisibility.Searchable)
+                {
+                    broadcastSender_.SendNetworkMessage(CreateRoomPacket(newRoom));
+                }
+
+                return Task.FromResult<IRoom>(newRoom);
+            }, token);
         }
 
-        private byte[] CreateRoomPacket(LocalRoomInfo roomInfo)
+        private byte[] CreateRoomPacket(OwnedRoom room)
         {
             var str = new MemoryStream();
             using (var writer = new BinaryWriter(str, Encoding.UTF8))
@@ -98,24 +110,26 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                 writer.Write(roomHeader_);
 
                 // GUID
-                writer.Write(Guid.Parse(roomInfo.Id).ToByteArray());
+                writer.Write(room.Guid.ToByteArray());
 
                 // Attributes
                 // Don't use .NET serialization for the whole map, wastes ~1KB per packet.
-                writer.Write(roomInfo.Attributes.Count);
-                foreach (var entry in roomInfo.Attributes)
+                writer.Write(room.Attributes.Count);
+                foreach (var entry in room.Attributes)
                 {
                     writer.Write(entry.Key);
                     var objStr = new MemoryStream();
                     formatter_.Serialize(objStr, entry.Value);
                     writer.Write(objStr.GetBuffer(), 0, (int)objStr.Length);
                 }
-                // TODO owner, connection string to room
+
+                // Port
+                writer.Write(room.Port);
             }
             return str.ToArray();
         }
 
-        private LocalRoomInfo ParseRoomPacket(byte[] packet)
+        private RoomInfo ParseRoomPacket(string sender, byte[] packet)
         {
             var str = new MemoryStream(packet);
             // Skip ROOM header
@@ -124,7 +138,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             {
                 // GUID
                 var guidBytes = reader.ReadBytes(16);
-                var id = new Guid(guidBytes).ToString();
+                var id = new Guid(guidBytes);
 
                 // Attributes
                 var attrCount = reader.ReadInt32();
@@ -138,8 +152,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                     attributes.Add(key, value);
                 }
 
-                // TODO owner, connection string to room
-                return new LocalRoomInfo(id, attributes);
+                // Room port.
+                var port = reader.ReadUInt16();
+                return new RoomInfo(this, id, sender, port, attributes, DateTime.UtcNow);
             }
         }
 
@@ -159,8 +174,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             // Interval between two FIND packets.
             private const int broadcastIntervalMs_ = 2000;
 
-            private LocalMatchmakingService service_;
-            private List<LocalRoomInfo> activeRooms_ = new List<LocalRoomInfo>();
+            private MatchmakingService service_;
+            private List<RoomInfo> activeRooms_ = new List<RoomInfo>();
             private readonly CancellationTokenSource sendCts_ = new CancellationTokenSource();
 
             public event EventHandler<IEnumerable<IRoomInfo>> RoomsRefreshed;
@@ -171,7 +186,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                 return findHeader_;
             }
 
-            public RoomList(LocalMatchmakingService service)
+            public RoomList(MatchmakingService service)
             {
                 service_ = service;
                 service_.server_.Message += OnMessage;
@@ -197,10 +212,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                 if (IsRoomPacket(ev.Message))
                 {
                     // TODO shouldn't delay this thread but offload this to a queue
-                    LocalRoomInfo newRoom = service.ParseRoomPacket(ev.Message);
+                    RoomInfo newRoom = service.ParseRoomPacket(ev.SourceHost, ev.Message);
 
-                    List<LocalRoomInfo> newRoomList = null;
-                    lock(activeRooms_)
+                    List<RoomInfo> newRoomList = null;
+                    lock (activeRooms_)
                     {
                         int index = activeRooms_.FindIndex(r => r.Id.Equals(newRoom.Id));
                         if (index >= 0)
@@ -214,7 +229,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                         {
                             activeRooms_.Add(newRoom);
                         }
-                        newRoomList = new List<LocalRoomInfo>(activeRooms_);
+                        newRoomList = new List<RoomInfo>(activeRooms_);
                     }
                     RoomsRefreshed?.Invoke(this, newRoomList);
                 }
@@ -270,19 +285,19 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
 
         public Task<IRoom> JoinRandomRoomAsync(Dictionary<string, object> expectedAttributes = null, CancellationToken token = default)
         {
-            return Task<IRoom>.Run(async() =>
+            return Task<IRoom>.Run(async () =>
             {
                 // TODO should specify the correct params
                 using (var roomList = new RoomList(this))
                 {
                     var random = new Random();
 
-                    IList<LocalRoomInfo> currentRooms = null;
+                    IList<RoomInfo> currentRooms = null;
                     var roomsUpdated = new AutoResetEvent(false);
 
                     EventHandler<IEnumerable<IRoomInfo>> handler = (object l, IEnumerable<IRoomInfo> rooms) =>
                     {
-                        currentRooms = (IList<LocalRoomInfo>)rooms;
+                        currentRooms = (IList<RoomInfo>)rooms;
                         roomsUpdated.Set();
                     };
                     roomList.RoomsRefreshed += handler;
@@ -313,72 +328,48 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
         {
             throw new NotImplementedException();
         }
-    }
 
-    class LocalRoomInfo : IRoomInfo
-    {
-        public string Id { get; }
-
-        public Dictionary<string, object> Attributes { get; } = new Dictionary<string, object>();
-
-        internal DateTime LastHeard;
-
-        // TODO connection information
-
-        public LocalRoomInfo(string id, Dictionary<string, object> attributes)
+        internal Task<IRoom> JoinAsync(RoomInfo roomInfo, CancellationToken token)
         {
-            LastHeard = DateTime.UtcNow;
-            Id = id;
-
-            if (attributes != null)
+            return Task.Run<IRoom>(() =>
             {
-                foreach(var attr in attributes)
+                lock (joinedRooms_)
                 {
-                    Attributes.Add(attr.Key, attr.Value);
+                    if (joinedRooms_.Find(r => r.Guid == roomInfo.Guid) != null)
+                    {
+                        throw new InvalidOperationException("Room " + roomInfo.Guid + " is already joined");
+                    }
+
+                    // Make a socket.
+                    SocketerClient socket = SocketerClient.CreateSender(SocketerClient.Protocol.TCP, roomInfo.Host, roomInfo.Port);
+
+                    // Make a room.
+                    var res = new ForeignRoom(roomInfo, participantFactory_.LocalParticipant, socket);
+
+                    // Configure handlers and try to connect.
+                    var ev = new ManualResetEventSlim();
+                    Action<SocketerClient, int, string, int> connectHandler =
+                    (SocketerClient server, int id, string clientHost, int clientPort) =>
+                    {
+                        // Connected; add the room to the joined list.
+                        joinedRooms_.Add(res);
+                        // Wake up the original task.
+                        ev.Set();
+                    };
+                    socket.Connected += connectHandler;
+                    socket.Disconnected += (SocketerClient server, int id, string clientHost, int clientPort) =>
+                    {
+                        joinedRooms_.Remove(res);
+                        socket.Stop();
+                    };
+                    socket.Start();
+                    ev.Wait(token);
+
+                    // Now that the connection is established, we can return the room.
+                    socket.Connected -= connectHandler;
+                    return res;
                 }
-            }
-        }
-
-        public Task<IRoom> JoinAsync(CancellationToken token = default)
-        {
-            // TODO
-            return Task.FromResult<IRoom>(new LocalRoom(Id, RoomVisibility.NotVisible, null, null));
-        }
-    }
-
-
-    class LocalRoom : LocalRoomInfo, IRoom
-    {
-        public IMatchParticipant Owner { get; }
-
-        public IEnumerable<IMatchParticipant> Participants { get; } = new List<IMatchParticipant>();
-
-        public IStateSubscription State => throw new NotImplementedException();
-
-        public RoomVisibility Visibility { get; internal set; }
-
-        public event EventHandler AttributesChanged;
-
-        public LocalRoom(string id, RoomVisibility visibility, Dictionary<string, object> attributes, LocalMatchParticipant owner) : base(id, attributes)
-        {
-            Visibility = visibility;
-            Owner = owner;
-        }
-
-        public Task LeaveAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task SetAttributesAsync(Dictionary<string, object> attributes)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task SetVisibility(RoomVisibility val)
-        {
-            Visibility = val;
-            return Task.CompletedTask;
+            }, token);
         }
     }
 }

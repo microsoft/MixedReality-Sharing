@@ -1,9 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -27,7 +25,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// and to store data which can be retrieved by any participant.
         /// </summary>
         /// <seealso cref="IRoom.SetAttributesAsync(Dictionary{string, object})"/>
-        Dictionary<string, object> Attributes { get; }
+        IReadOnlyDictionary<string, object> Attributes { get; }
 
         /// <summary>
         /// Try to join this room.
