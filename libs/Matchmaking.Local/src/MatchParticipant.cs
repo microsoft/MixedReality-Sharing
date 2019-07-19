@@ -16,15 +16,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
 
         public bool IsOnline { get; internal set; } = true;
 
-        public string Host { get; internal set; }
-        public ushort Port { get; internal set; }
-
-        internal MatchParticipant(string id, string displayName, string host = null, ushort port = 0)
+        internal MatchParticipant(string id, string displayName = null)
         {
             Id = id;
             DisplayName = displayName;
-            Host = host;
-            Port = port;
         }
     }
 
@@ -35,9 +30,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
         public string LocalParticipantId => knownParticipants_[0].Id;
         public MatchParticipant LocalParticipant => knownParticipants_[0];
 
-        public MatchParticipantFactory(string localId, string localName, string localAddress, ushort port)
+        public MatchParticipantFactory(string localId, string localName)
         {
-            knownParticipants_.Add(new MatchParticipant(localId, localName, localAddress, port));
+            knownParticipants_.Add(new MatchParticipant(localId, localName));
         }
 
         public Task<IMatchParticipant> GetParticipantAsync(string id, CancellationToken cancellationToken)

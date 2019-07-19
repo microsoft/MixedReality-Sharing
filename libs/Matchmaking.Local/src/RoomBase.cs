@@ -3,7 +3,10 @@
 
 using Microsoft.MixedReality.Sharing.StateSync;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.InteropServices.ComTypes;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -17,9 +20,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
         public string Id => Guid.ToString();
         public Guid Guid { get; }
 
-        public IReadOnlyDictionary<string, object> Attributes => attributes_;
-
-        internal Dictionary<string, object> attributes_ { get; } = new Dictionary<string, object>();
+        public IReadOnlyDictionary<string, object> Attributes { get; protected set; }
 
         // Connection info for the room.
         internal string Host { get; }
@@ -35,7 +36,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             Guid guid,
             string host,
             ushort port,
-            IReadOnlyDictionary<string, object> attributes,
+            IEnumerable<KeyValuePair<string, object>> attributes,
             DateTime lastHeard)
         {
             service_ = service;
@@ -43,14 +44,15 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             Host = host;
             Port = port;
             LastHeard = lastHeard;
-
+            var attrDict = new Dictionary<string, object>();
             if (attributes != null)
             {
                 foreach (var attr in attributes)
                 {
-                    attributes_.Add(attr.Key, attr.Value);
+                    attrDict.Add(attr.Key, attr.Value);
                 }
             }
+            Attributes = attrDict;
         }
 
         public RoomInfo(RoomInfo rhs)
@@ -74,20 +76,29 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
     /// </summary>
     abstract class RoomBase : RoomInfo, IRoom
     {
-        public IMatchParticipant Owner { get; }
+        public  RoomParticipant Owner { get; }
+        IRoomParticipant IRoom.Owner { get => Owner; }
 
-        public IEnumerable<IMatchParticipant> Participants { get; } = new List<IMatchParticipant>();
+        public RoomParticipant[] Participants;
+        IEnumerable<IRoomParticipant> IRoom.Participants { get => Participants; }
 
         public IStateSubscription State => throw new NotImplementedException();
 
         public event EventHandler AttributesChanged;
+
+        public abstract event EventHandler<MessageReceivedArgs> MessageReceived;
+
+        protected void RaiseAttributesChanged()
+        {
+            AttributesChanged?.Invoke(this, new EventArgs());
+        }
 
         public RoomBase(
             MatchmakingService service,
             Guid guid,
             string host,
             ushort port,
-            IReadOnlyDictionary<string, object> attributes,
+            IEnumerable<KeyValuePair<string, object>> attributes,
             DateTime lastHeard,
             MatchParticipant owner)
             : base(service,
@@ -97,20 +108,71 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                   attributes,
                   lastHeard)
         {
-            Owner = owner;
+            Owner = new RoomParticipant(0, owner);
+            Participants = new RoomParticipant[] { Owner };
         }
 
         public RoomBase(RoomInfo rhs, MatchParticipant owner)
             : base(rhs)
         {
-            Owner = owner;
+            Owner = new RoomParticipant(0, owner);
+            Participants = new RoomParticipant[] { Owner };
         }
-
 
         public abstract Task LeaveAsync();
 
         public abstract Task SetAttributesAsync(Dictionary<string, object> attributes);
 
         public abstract Task SetVisibility(RoomVisibility val);
+
+        // TODO figure out what to do with this, e.g. move to public API or change to something else.
+        public abstract void SendMessage(RoomParticipant participant, byte[] message);
+
+        protected void AddParticipant(RoomParticipant participant)
+        {
+            var oldParticipants = Participants;
+            if (oldParticipants.Any(p => p.IdInRoom == participant.IdInRoom))
+            {
+                throw new ArgumentException("Room " + Guid +" already contains participant " + participant.IdInRoom);
+            }
+            var newParticipants = new RoomParticipant[oldParticipants.Length + 1];
+            Array.Copy(oldParticipants, newParticipants, oldParticipants.Length);
+            newParticipants[oldParticipants.Length] = participant;
+            Participants = newParticipants;
+        }
+        protected void RemoveParticipant(int idInRoom)
+        {
+            var oldParticipants = Participants;
+            var newParticipants = oldParticipants.Where(p => p.IdInRoom != idInRoom).ToArray();
+            if (newParticipants.Length != oldParticipants.Length - 1)
+            {
+                throw new ArgumentException("Room " + Guid +" does not contain participant " + idInRoom);
+            }
+            Participants = newParticipants;
+        }
+    }
+
+    class RoomParticipant : IRoomParticipant
+    {
+        public int IdInRoom { get; }
+        public IMatchParticipant MatchParticipant { get; }
+
+        public RoomParticipant(int id, MatchParticipant matchParticipant)
+        {
+            IdInRoom = id;
+            MatchParticipant = matchParticipant;
+        }
+    }
+
+    public class MessageReceivedArgs
+    {
+        public readonly IRoomParticipant Sender;
+        public readonly byte[] Payload;
+
+        internal MessageReceivedArgs(IRoomParticipant sender, byte[] payload)
+        {
+            Sender = sender;
+            Payload = payload;
+        }
     }
 }

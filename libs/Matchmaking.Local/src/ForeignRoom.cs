@@ -2,7 +2,10 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
@@ -14,10 +17,74 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
     {
         public SocketerClient Socket;
 
+        private event EventHandler<int> AttributesChangeReceived;
+        public override event EventHandler<MessageReceivedArgs> MessageReceived;
+
+        // TODO see SetAttributesAsync
+        private static int Combine(int hash1, int hash2)
+        {
+            int hash = 17;
+            hash = hash * 31 + hash1;
+            hash = hash * 31 + hash2;
+            return hash;
+        }
+        // TODO see SetAttributesAsync
+        private static int GetHash(IEnumerable<KeyValuePair<string, object>> attributes)
+        {
+            int hash = 0;
+            foreach (var attr in attributes)
+            {
+                hash = Combine(hash, attr.Key.GetHashCode());
+                hash = Combine(hash, attr.Value.GetHashCode());
+            }
+            return hash;
+        }
+
+        // Assumes that `socket` is configured and will be connected by the caller.
         public ForeignRoom(RoomInfo roomInfo, MatchParticipant owner, SocketerClient socket)
             : base(roomInfo, owner)
         {
             Socket = socket;
+            socket.Message += (SocketerClient server, SocketerClient.MessageEvent ev) =>
+            {
+                if (Utils.IsAttrPacket(ev.Message))
+                {
+                    // Apply the changes locally.
+                    var recvAttributes = Utils.ParseAttrPacket(ev.Message);
+                    IReadOnlyDictionary<string, object> oldAttributes = Attributes;
+                    Dictionary<string, object> newAttributes = new Dictionary<string, object>(oldAttributes.Count);
+                    foreach (var attr in oldAttributes)
+                    {
+                        newAttributes.Add(attr.Key, attr.Value);
+                    }
+                    foreach (var attr in recvAttributes)
+                    {
+                        newAttributes[attr.Key] = attr.Value;
+                    }
+                    Attributes = newAttributes;
+
+                    // TODO see SetAttributesAsync
+                    AttributesChangeReceived?.Invoke(this, GetHash(recvAttributes));
+
+                    // Raise the event.
+                    RaiseAttributesChanged();
+                }
+                else if (Utils.IsMessagePacket(ev.Message))
+                {
+                    // Raise the event.
+                    int senderId = Utils.ParseMessageParticipant(ev.Message);
+                    var sender = Participants.First(p => p.IdInRoom == senderId);
+                    MessageReceived?.Invoke(this, new MessageReceivedArgs(sender, Utils.ParseMessagePayload(ev.Message)));
+                }
+                else if (Utils.IsParticipantJoinedPacket(ev.Message))
+                {
+                    AddParticipant(Utils.ParseParticipantJoinedPacket(ev.Message));
+                }
+                else if (Utils.IsParticipantLeftPacket(ev.Message))
+                {
+                    RemoveParticipant(Utils.ParseParticipantLeftPacket(ev.Message));
+                }
+            };
         }
 
         public override Task LeaveAsync()
@@ -27,12 +94,43 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
 
         public override Task SetAttributesAsync(Dictionary<string, object> attributes)
         {
-            throw new NotImplementedException();
+            // TODO match set-attribute request and response by the attributes hash.
+            // This is naive and should be replaced by state sync
+            int attrCode = GetHash(attributes);
+            var ev = new ManualResetEventSlim();
+            EventHandler<int> handler = (object o, int code) =>
+            {
+                if(code == attrCode)
+                {
+                    ev.Set();
+                }
+            };
+            AttributesChangeReceived += handler;
+
+            // Send the set-attribute request to the server.
+            // TODO shouldn't send inside the lock but only enqueue packets
+            lock (this)
+            {
+                Socket.SendNetworkMessage(Utils.CreateAttrPacket(attributes));
+            }
+
+            // Wait for the corresponding response.
+            return Task.Run(() =>
+            {
+                ev.Wait();
+                AttributesChangeReceived -= handler;
+            });
         }
 
         public override Task SetVisibility(RoomVisibility val)
         {
             throw new NotImplementedException();
+        }
+
+        public override void SendMessage(RoomParticipant participant, byte[] message)
+        {
+            var packet = Utils.CreateMessagePacket(participant.IdInRoom, message);
+            Socket.SendNetworkMessage(packet);
         }
     }
 }

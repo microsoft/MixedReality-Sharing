@@ -17,7 +17,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
 {
     /// <summary>
     /// Simple matchmaking service for local networks.
+    /// </summary>
     ///
+    /// <remarks>
     /// Rooms are created and stored by the clients themselves. A room is open as long as its owner
     /// is connected and in the room. On room creation, the owner broadcasts a ROOM packet containing the room details.
     ///
@@ -25,9 +27,24 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
     /// packet for each room it owns.
     ///
     /// On the owner every room corresponds to a TCP port listening for connections. Other participants
-    /// can join a room by making a connection to its port. The connection is then used to synchronize
-    /// the room state and monitor the participants state (TODO).
-    /// </summary>
+    /// can join a room by making a connection to its port.
+    ///
+    /// * TODO this should arguably all be replaced by state sync *
+    /// On connection, a participant sends a JOIN packet to the server containing the participant details,
+    /// and receives the current list of participants and room attributes. After this, the connection is
+    /// used to:
+    /// <list type="bullet">
+    /// <item><description>
+    /// Receive announcements of participants joining or leaving (PARJ and PARL packets)
+    /// </description></item>
+    /// <item><description>
+    /// Send and receive changes to the room attributes (ATTR packets)
+    /// </description></item>
+    /// <item><description>
+    /// Send and receive arbitrary messages (MSSG packets).
+    /// </description></item>
+    /// </list>
+    /// </remarks>
     public class MatchmakingService : IMatchmakingService, IRoomManager, IDisposable
     {
         private static readonly byte[] roomHeader_ = new byte[] { (byte)'R', (byte)'O', (byte)'O', (byte)'M' };
@@ -38,21 +55,19 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
         private readonly MatchParticipantFactory participantFactory_;
         private readonly SocketerClient server_;
         private readonly SocketerClient broadcastSender_;
-        private readonly BinaryFormatter formatter_ = new BinaryFormatter();
 
         public IEnumerable<IRoom> JoinedRooms => joinedRooms_;
 
         public IRoomManager RoomManager => this;
 
-        public MatchmakingService(MatchParticipantFactory participantFactory, string broadcastAddress)
+        public MatchmakingService(MatchParticipantFactory participantFactory, string broadcastAddress, ushort localPort, string localAddress = null)
         {
             participantFactory_ = participantFactory;
 
-            var localParticipant = participantFactory_.LocalParticipant;
-            server_ = SocketerClient.CreateListener(SocketerClient.Protocol.UDP, localParticipant.Port, localParticipant.Host);
+            server_ = SocketerClient.CreateListener(SocketerClient.Protocol.UDP, localPort, localAddress);
             server_.Message += OnMessage;
             server_.Start();
-            broadcastSender_ = SocketerClient.CreateSender(SocketerClient.Protocol.UDP, broadcastAddress, localParticipant.Port, localParticipant.Host);
+            broadcastSender_ = SocketerClient.CreateSender(SocketerClient.Protocol.UDP, broadcastAddress, localPort, localAddress);
             broadcastSender_.Start();
         }
 
@@ -84,8 +99,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             return Task.Run<IRoom>(() =>
             {
                 // Make a new room.
+                SocketerClient roomServer = SocketerClient.CreateListener(SocketerClient.Protocol.TCP, 0, server_.Host);
                 var localParticipant = participantFactory_.LocalParticipant;
-                SocketerClient roomServer = SocketerClient.CreateListener(SocketerClient.Protocol.TCP, 0, localParticipant.Host);
                 var newRoom = new OwnedRoom(this, roomServer, attributes, visibility, localParticipant);
 
                 ownedRooms_.Add(newRoom);
@@ -97,35 +112,24 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                     broadcastSender_.SendNetworkMessage(CreateRoomPacket(newRoom));
                 }
 
-                return Task.FromResult<IRoom>(newRoom);
+                return newRoom;
             }, token);
         }
 
         private byte[] CreateRoomPacket(OwnedRoom room)
         {
             var str = new MemoryStream();
-            using (var writer = new BinaryWriter(str, Encoding.UTF8))
+            using (var writer = new BinaryWriter(str, Encoding.UTF8, true))
             {
                 // ROOM header
                 writer.Write(roomHeader_);
-
                 // GUID
                 writer.Write(room.Guid.ToByteArray());
-
-                // Attributes
-                // Don't use .NET serialization for the whole map, wastes ~1KB per packet.
-                writer.Write(room.Attributes.Count);
-                foreach (var entry in room.Attributes)
-                {
-                    writer.Write(entry.Key);
-                    var objStr = new MemoryStream();
-                    formatter_.Serialize(objStr, entry.Value);
-                    writer.Write(objStr.GetBuffer(), 0, (int)objStr.Length);
-                }
-
                 // Port
                 writer.Write(room.Port);
             }
+            // Attributes
+            Utils.WriteAttributes(room.Attributes, str);
             return str.ToArray();
         }
 
@@ -134,28 +138,21 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             var str = new MemoryStream(packet);
             // Skip ROOM header
             str.Seek(roomHeader_.Length, SeekOrigin.Begin);
-            using (var reader = new BinaryReader(str))
+            Guid id;
+            ushort port;
+            using (var reader = new BinaryReader(str, Encoding.UTF8, true))
             {
                 // GUID
                 var guidBytes = reader.ReadBytes(16);
-                var id = new Guid(guidBytes);
-
-                // Attributes
-                var attrCount = reader.ReadInt32();
-                var attributes = new Dictionary<string, object>(attrCount);
-                for (int i = 0; i < attrCount; ++i)
-                {
-                    var key = reader.ReadString();
-                    var objStr = new MemoryStream(packet, (int)str.Position, packet.Length - (int)str.Position);
-                    object value = formatter_.Deserialize(objStr);
-                    str.Seek(objStr.Position, SeekOrigin.Current);
-                    attributes.Add(key, value);
-                }
+                id = new Guid(guidBytes);
 
                 // Room port.
-                var port = reader.ReadUInt16();
-                return new RoomInfo(this, id, sender, port, attributes, DateTime.UtcNow);
+                port = reader.ReadUInt16();
             }
+
+            // Attributes
+            var attributes = Utils.ParseAttributes(str);
+            return new RoomInfo(this, id, sender, port, attributes, DateTime.UtcNow);
         }
 
         private static bool IsRoomPacket(byte[] packet)
@@ -340,11 +337,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                         throw new InvalidOperationException("Room " + roomInfo.Guid + " is already joined");
                     }
 
+                    // todo logic is split between here and ForeignRoom ctor, cleanup
                     // Make a socket.
                     SocketerClient socket = SocketerClient.CreateSender(SocketerClient.Protocol.TCP, roomInfo.Host, roomInfo.Port);
 
                     // Make a room.
-                    var res = new ForeignRoom(roomInfo, participantFactory_.LocalParticipant, socket);
+                    var res = new ForeignRoom(roomInfo, null /* TODO */, socket);
 
                     // Configure handlers and try to connect.
                     var ev = new ManualResetEventSlim();
@@ -364,9 +362,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                     };
                     socket.Start();
                     ev.Wait(token);
+                    socket.Connected -= connectHandler;
+
+                    // Send participant info to the server.
+                    socket.SendNetworkMessage(Utils.CreateJoinRequestPacket(participantFactory_.LocalParticipant));
 
                     // Now that the connection is established, we can return the room.
-                    socket.Connected -= connectHandler;
                     return res;
                 }
             }, token);

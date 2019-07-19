@@ -203,6 +203,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
         /// <param name="localAddress">The local address to bind the socket to. If null, the system default will be used.</param>
         public SocketerClient(Protocol protocol, int port, string localAddress)
         {
+            // todo using Host and Port for two different things is confusing, should distinguish
+            Host = localAddress;
+
             this.SocketProtocol = protocol;
             this.SocketDirection = ProtocolDirection.Listener;
             if (protocol == Protocol.TCP)
