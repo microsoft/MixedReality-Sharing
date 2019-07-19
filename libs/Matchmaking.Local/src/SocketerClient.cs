@@ -8,6 +8,7 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Xml.Schema;
 #if NETFX_CORE
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -137,8 +138,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
         /// <param name="protocol">Underlying protocol to use.  Each has advantages and disadvantages.</param>
         /// <param name="host">The IP address to connect or send packets to.</param>
         /// <param name="port">The port to use.  Suggested values are between 10000 and 40000, and must agree.
-        /// <param name="localAddress">The local address to bind the socket to. If null, the system default will be used.
         /// with the Socketer on the other end.</param>
+        /// <param name="localAddress">The local address to bind the socket to. If null, the system default will be used.</param>
         /// <returns></returns>
         public static SocketerClient CreateSender(Protocol protocol, string host, int port, string localAddress = null)
         {
@@ -154,7 +155,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
         /// <param name="protocol">Underlying protocol to use.  Each has advantages and disadvantages.</param>
         /// <param name="port">The port to use.  Suggested values are between 10000 and 40000, and must agree
         /// with the Socketer on the other end.</param>
-        /// <param name="localAddress">The local address to bind the socket to. If null, the system default will be used.
+        /// <param name="localAddress">The local address to bind the socket to. If null, the system default will be used.</param>
         /// <returns></returns>
         public static SocketerClient CreateListener(Protocol protocol, int port, string localAddress = null)
         {
@@ -169,8 +170,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
         /// <param name="protocol">Underlying protocol to use.  Each has advantages and disadvantages.</param>
         /// <param name="host">The IP address to connect or send packets to.</param>
         /// <param name="port">The port to use.  Suggested values are between 10000 and 40000, and must agree
-        /// <param name="localAddress">The local address to bind the socket to. If null, the system default will be used.
         /// with the Socketer on the other end.</param>
+        /// <param name="localAddress">The local address to bind the socket to. If null, the system default will be used.</param>
         public SocketerClient(Protocol protocol, string host, int port, string localAddress)
         {
             this.Host = host;
@@ -179,8 +180,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             this.SocketDirection = ProtocolDirection.Sender;
             if (protocol == Protocol.TCP)
             {
-                // TODO bind to local address
-                tcpClient = new SocketClient(host, port);
+                tcpClient = new SocketClient(host, port, localAddress);
                 tcpClient.Message += TcpClient_Message;
                 tcpClient.Connected += TcpClient_Connected;
                 tcpClient.Disconnected += TcpClient_Disconnected;
@@ -200,23 +200,24 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
         /// <param name="protocol">Underlying protocol to use.  Each has advantages and disadvantages.</param>
         /// <param name="port">The port to use.  Suggested values are between 10000 and 40000, and must agree
         /// with the Socketer on the other end.</param>
+        /// <param name="localAddress">The local address to bind the socket to. If null, the system default will be used.</param>
         public SocketerClient(Protocol protocol, int port, string localAddress)
         {
-            this.Port = port;
             this.SocketProtocol = protocol;
             this.SocketDirection = ProtocolDirection.Listener;
             if (protocol == Protocol.TCP)
             {
-                // TODO bind to local address
-                tcpServer = new SocketServer(port);
+                tcpServer = new SocketServer(port, localAddress);
                 tcpServer.Message += TcpServer_Message;
                 tcpServer.Connect += TcpServer_Connect;
                 tcpServer.Disconnect += TcpServer_Disconnect;
+                Port = tcpServer.Port;
             }
             else
             {
                 udpListener = new CrossPlatformUDPClient(port, localAddress);
                 udpListener.Message += UdpListener_Message;
+                Port = udpListener.LocalPort;
             }
         }
 
@@ -443,8 +444,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
 #if !NETFX_CORE
             UdpClient client;
             bool threadShouldRun = true;
+
+            public int LocalPort => ((IPEndPoint)client.Client.LocalEndPoint).Port;
 #else
             private Windows.Networking.Sockets.DatagramSocket client;
+            public int LocalPort => client.Information.LocalPort;
 #endif
 
             public event Action<byte[], string, int> Message;
@@ -594,6 +598,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
         {
             private string host;
             private Int32 port;
+            private string localAddress;
             private TcpClient tcpClient;
             private BinaryWriter writer;
             private BinaryReader reader;
@@ -652,10 +657,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                 public byte[] data;
             }
 
-            public SocketClient(string host, Int32 port)
+            public SocketClient(string host, Int32 port, string localAddress)
             {
                 this.host = host;
                 this.port = port;
+                this.localAddress = localAddress;
             }
 
             public bool IsConnected
@@ -746,11 +752,16 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             {
                 try
                 {
+                    if (tcpClient == null)
+                    {
+                        tcpClient = (localAddress != null) ?
+                            new TcpClient(new IPEndPoint(IPAddress.Parse(localAddress), port)) :
+                            new TcpClient();
+                    }
 #if NETCOREAPP1_1
-                    tcpClient = new TcpClient();
                     tcpClient.ConnectAsync(host, port).Wait();
 #else
-                    tcpClient = new TcpClient(host, port);
+                    tcpClient.Connect(host, port);
 #endif
                     tcpClient.NoDelay = true;
                     writer = new BinaryWriter(tcpClient.GetStream());
@@ -862,6 +873,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             private DataWriter writer;
             private string host;
             private int port;
+            private string localAddress;
             private bool isConnected = false;
             private bool shouldConnect = false;
 
@@ -902,10 +914,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                 }
             }
 
-            public SocketClient(string host, Int32 port)
+            public SocketClient(string host, Int32 port, string localAddress)
             {
                 this.host = host;
                 this.port = port;
+                this.localAddress = localAddress;
             }
 
             public bool IsConnected
@@ -939,7 +952,14 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                         {
                             client = new Windows.Networking.Sockets.StreamSocket();
                         }
-                        await client.ConnectAsync(hostName, port.ToString());
+                        if (localAddress != null)
+                        {
+                            await client.ConnectAsync(new EndpointPair(localAddress, 0, hostName, port.ToString()));
+                        }
+                        else
+                        {
+                            await client.ConnectAsync(hostName, port.ToString());
+                        }
                         writer = new DataWriter(client.OutputStream);
                         writer.ByteOrder = ByteOrder.LittleEndian;
                         isConnected = true;
@@ -1077,6 +1097,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             public Socket serverSocket;
             private Dictionary<Socket, EndPoint> clients = new Dictionary<Socket, EndPoint>();
 
+            public int Port => ((IPEndPoint)serverSocket.LocalEndPoint).Port;
+
             private static int outputQueueLength;
             public static int OutputQueueLength => outputQueueLength;
 
@@ -1131,14 +1153,14 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                 }
             }
 
-            public SocketServer(int port)
+            public SocketServer(int port, string localAddress)
             {
                 outputQueueLength = 0;
                 serverSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 #if !NETFX_CORE
                 serverSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
 #endif
-                serverSocket.Bind(new IPEndPoint(0, port));
+                serverSocket.Bind(new IPEndPoint(localAddress != null ? IPAddress.Parse(localAddress) : new IPAddress(0), port));
             }
 
             private void AddClient(Socket socket)
