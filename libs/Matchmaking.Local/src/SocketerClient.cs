@@ -451,7 +451,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             public int LocalPort => ((IPEndPoint)client.Client.LocalEndPoint).Port;
 #else
             private Windows.Networking.Sockets.DatagramSocket client;
-            public int LocalPort => client.Information.LocalPort;
+            public int LocalPort => int.Parse(client.Information.LocalPort);
 #endif
 
             public event Action<byte[], string, int> Message;
@@ -466,7 +466,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                 client.EnableBroadcast = true;
 #else
                 client = new Windows.Networking.Sockets.DatagramSocket();
-                client.BindEndpointAsync(localAddress ? new HostName(localAddress) : null, port.ToString()).GetResults();
+                client.BindEndpointAsync(localAddress != null ? new HostName(localAddress) : null, port.ToString()).GetResults();
                 client.MessageReceived += OnMessageRecieved;
 #endif
             }
@@ -480,10 +480,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                 client.EnableBroadcast = true;
 #else
                 client = new Windows.Networking.Sockets.DatagramSocket();
-                client.BindEndpointAsync(localAddress ? new HostName(localAddress) : null, "").GetResults();
                 client.Control.DontFragment = true;
                 client.Control.QualityOfService = Windows.Networking.Sockets.SocketQualityOfService.LowLatency;
                 client.Control.OutboundUnicastHopLimit = 255;
+                client.BindEndpointAsync(localAddress != null ? new HostName(localAddress) : null, "").GetResults();
 #endif
             }
 
@@ -574,7 +574,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
 
                 if (Message != null)
                 {
-                    Message.Invoke(buffer, host);
+                    Message?.Invoke(buffer, host, int.Parse(args.RemotePort));
                 }
             }
 
@@ -957,7 +957,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                         }
                         if (localAddress != null)
                         {
-                            await client.ConnectAsync(new EndpointPair(localAddress, 0, hostName, port.ToString()));
+                            await client.ConnectAsync(new EndpointPair(new HostName(localAddress), "0", hostName, port.ToString()));
                         }
                         else
                         {
