@@ -44,6 +44,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
         public ForeignRoom(RoomInfo roomInfo, MatchParticipant owner, SocketerClient socket)
             : base(roomInfo, owner)
         {
+            // Clear the participants array, will be filled by the server.
+            // TODO cleanup
+            Participants = new RoomParticipant[0];
+
             Socket = socket;
             socket.Message += (SocketerClient server, SocketerClient.MessageEvent ev) =>
             {
