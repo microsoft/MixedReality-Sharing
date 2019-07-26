@@ -176,7 +176,7 @@ namespace Microsoft.MixedReality.Sharing.Network.Socketer
                         // Send queues have been updated. Restart from the beginning.
                         // The event handler above will update `token` to a new one (note that this might take a few
                         // iterations to happen).
-                        continue;
+                        break;
                     }
 
                     // Send the message.
