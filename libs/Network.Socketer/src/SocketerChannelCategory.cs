@@ -20,7 +20,9 @@ namespace Microsoft.MixedReality.Sharing.Network.Socketer
 
         // 16-bit length + category name as UTF-8 sequence.
         // Prepended to all messages sent using this channel.
-        internal byte[] Header;
+        internal readonly byte[] Header;
+
+        internal volatile bool IsListening = false;
 
         private SocketerChannelCategoryFactory factory_;
         private MessageQueue queue_ = new MessageQueue();
@@ -59,12 +61,12 @@ namespace Microsoft.MixedReality.Sharing.Network.Socketer
 
         public void StartListening()
         {
-            throw new NotImplementedException();
+            IsListening = true;
         }
 
         public void StopListening()
         {
-            throw new NotImplementedException();
+            IsListening = false;
         }
     }
 
@@ -271,7 +273,7 @@ namespace Microsoft.MixedReality.Sharing.Network.Socketer
                 Utils.ExtractCategory(ev.Message, out categoryName, out payload);
 
                 SocketerChannelCategory category;
-                if (categoryFromName_.TryGetValue(categoryName, out category))
+                if (categoryFromName_.TryGetValue(categoryName, out category) && category.IsListening)
                 {
                     // TODO check if the category has the same type
                     category.Dispatch(new SocketerEndpoint(ev.SourceHost, ev.SourcePort), payload);
