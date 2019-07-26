@@ -452,6 +452,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
 #else
             private Windows.Networking.Sockets.DatagramSocket client;
             public int LocalPort => int.Parse(client.Information.LocalPort);
+            private volatile int pendingSendOps = 0;
 #endif
 
             public event Action<byte[], string, int> Message;
@@ -505,6 +506,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                 client.Send(data, length, host, port);
 #endif
 #else
+                // Increment so that any later call to Dispose() will wait for the send operation to be completed
+                // before shutting down the socket.
+                Interlocked.Increment(ref pendingSendOps);
 
                 var hostname = new HostName(host);
 
@@ -518,6 +522,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                            outputStream.FlushAsync().Completed += new AsyncOperationCompletedHandler<bool>((info2, status2) =>
                            {
                                outputStream.Dispose();
+
+                               // Wake up dispose thread if there is one.
+                               Interlocked.Decrement(ref pendingSendOps);
                            });
                        });
                 });
@@ -587,6 +594,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
 #endif
 
 #if NETCOREAPP1_1 || NETFX_CORE
+#if NETFX_CORE
+                //
+                while (pendingSendOps != 0) { }
+#endif
                 client.Dispose();
 #else
                 client.Close();
