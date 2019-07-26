@@ -288,6 +288,8 @@ namespace Microsoft.MixedReality.Sharing.Network.Socketer
                     // TODO check if the category has the same type
                     category.Dispatch(new SocketerEndpoint(ev.SourceHost, ev.SourcePort), payload);
                 }
+                // TODO if the message is reliable and this process is not listening to its category, we
+                // should notify the error/break the channel
             }
             catch(Exception e)
             {
