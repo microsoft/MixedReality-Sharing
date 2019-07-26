@@ -3,31 +3,32 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace Microsoft.MixedReality.Sharing.Network
 {
     /// <summary>
-    /// Simple implementation of <see cref="IMessageQueue"/>.
+    /// Simple implementation of <see cref="MessageQueue"/>.
     /// </summary>
     public class MessageQueue : IMessageQueue
     {
-        private BlockingCollection<IMessage> queue_ = new BlockingCollection<IMessage>();
+        private BlockingCollection<Message> queue_ = new BlockingCollection<Message>();
 
-        public IMessage Dequeue()
+        public Message Dequeue(CancellationToken token)
         {
-            return queue_.Take();
+            return queue_.Take(token);
         }
 
-        public IMessage[] DequeueAll()
+        public Message[] DequeueAll(CancellationToken token)
         {
             // Emulate the expected behavior.
 
             // Block until at least one message is in the queue.
-            var res = new List<IMessage>();
-            res.Add(queue_.Take());
+            var res = new List<Message>();
+            res.Add(queue_.Take(token));
 
             // Take more messages if available.
-            IMessage[] more;
+            Message[] more;
             if (TryDequeueAll(out more))
             {
                 res.AddRange(more);
@@ -35,17 +36,17 @@ namespace Microsoft.MixedReality.Sharing.Network
             return res.ToArray();
         }
 
-        public bool TryDequeue(out IMessage message)
+        public bool TryDequeue(out Message message)
         {
             return queue_.TryTake(out message);
         }
 
-        public bool TryDequeueAll(out IMessage[] messages)
+        public bool TryDequeueAll(out Message[] messages)
         {
             // Emulate the expected behavior.
             // Take a bunch of messages from the queue one by one.
-            var res = new List<IMessage>();
-            IMessage msg;
+            var res = new List<Message>();
+            Message msg;
             while(queue_.TryTake(out msg) && res.Count < 256)
             {
                 res.Add(msg);
@@ -59,7 +60,7 @@ namespace Microsoft.MixedReality.Sharing.Network
             return true;
         }
 
-        public void Add(IMessage message)
+        public void Add(Message message)
         {
             queue_.Add(message);
         }

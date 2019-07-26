@@ -4,9 +4,9 @@
 namespace Microsoft.MixedReality.Sharing.Network
 {
     /// <summary>
-    /// Simple <see cref="IMessage"/> implementation.
+    /// Simple message class.
     /// </summary>
-    public class Message : IMessage
+    public class Message
     {
         public IEndpoint Sender { get; }
 

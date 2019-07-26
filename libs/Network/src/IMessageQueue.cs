@@ -4,20 +4,6 @@ using System.Threading;
 
 namespace Microsoft.MixedReality.Sharing.Network
 {
-    public class Message
-    {
-        public IEndpoint Sender { get; }
-        public IChannelCategory Category { get; }
-        public byte[] Payload { get; }
-
-        public Message(IEndpoint sender, IChannelCategory category, byte[] payload)
-        {
-            Sender = sender;
-            Category = category;
-            Payload = payload;
-        }
-    }
-
     /// <summary>
     /// Blocking queue used to store received messages waiting to be processed.
     /// </summary>
@@ -50,8 +36,5 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// <returns>`true` if at least one message was available, `false` otherwise.</returns>
         /// <exception cref="ObjectDisposedException">The <see cref="IChannelCategory"/> which owns this queue has been disposed.</exception>
         bool TryDequeueAll(out Message[] messages);
-
-        // TODO maybe we want to have adding controlled by the network impl and expose a queue factory instead?
-        void Add(IMessage message);
     }
 }

@@ -15,30 +15,15 @@ namespace Microsoft.MixedReality.Sharing.Network.Socketer
     internal class SocketerChannelCategory : IChannelCategory
     {
         public string Name { get; }
-
         public ChannelType Type { get; }
-
-        public IMessageQueue Queue
-        {
-            get => queue_;
-            set
-            {
-                // TODO check if not disposed
-                // TODO check if no subscribers
-                queue_ = value;
-            }
-        }
+        public IMessageQueue Queue { get => queue_; }
 
         // 16-bit length + category name as UTF-8 sequence.
         // Prepended to all messages sent using this channel.
         internal byte[] Header;
 
         private SocketerChannelCategoryFactory factory_;
-        private IMessageQueue queue_;
-
-        // TODO check if not disposed
-        // TODO check if no queue
-        public event Action<IMessage> MessageReceived;
+        private MessageQueue queue_ = new MessageQueue();
 
         internal SocketerChannelCategory(string name, ChannelType type, SocketerChannelCategoryFactory factory)
         {
@@ -63,20 +48,23 @@ namespace Microsoft.MixedReality.Sharing.Network.Socketer
         internal void Dispatch(SocketerEndpoint sender, byte[] payload)
         {
             var msg = new Message(sender, this, payload);
-            if (queue_ != null)
-            {
-                queue_.Add(msg);
-            }
-            else
-            {
-                MessageReceived(msg);
-            }
+            queue_.Add(msg);
         }
 
         internal SocketerChannel Create(SocketerEndpoint endpoint)
         {
             // TODO check if a channel with same name and endpoint exists already
             return new SocketerChannel(this, endpoint, factory_);
+        }
+
+        public void StartListening()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void StopListening()
+        {
+            throw new NotImplementedException();
         }
     }
 
