@@ -71,10 +71,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                     var newParticipant = new RoomParticipant(ev.SourceId, Utils.ParseJoinRequestPacket(ev.Message));
                     var oldClients = Participants.Skip(1);
                     AddParticipant(newParticipant);
-                    var newClients = Participants.Skip(1);
 
                     // Send list of participants as a series of PARJ packets.
-                    foreach (var participant in newClients)
+                    foreach (var participant in Participants)
                     {
                         server.SendNetworkMessage(Utils.CreateParticipantJoinedPacket(participant), ev.SourceId);
                     }
