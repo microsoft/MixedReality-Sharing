@@ -39,17 +39,14 @@ namespace Microsoft.MixedReality.Sharing.Network
             {
                 try
                 {
-                    while (!token.IsCancellationRequested)
+                    while (true)
                     {
                         var messages = queue.DequeueAll(token);
 
                         foreach (var message in messages)
                         {
-                            if (token.IsCancellationRequested)
-                            {
-                                return;
-                            }
                             MessageReceived(message);
+                            token.ThrowIfCancellationRequested();
                         }
                     }
                 }
@@ -58,6 +55,7 @@ namespace Microsoft.MixedReality.Sharing.Network
                 }
                 catch (ObjectDisposedException)
                 {
+                    // THe queue has been disposed.
                 }
             });
         }
@@ -70,8 +68,8 @@ namespace Microsoft.MixedReality.Sharing.Network
         public void Dispose()
         {
             cts_.Cancel();
-            cts_.Dispose();
             consumeTask_.Wait();
+            cts_.Dispose();
         }
     }
 }
