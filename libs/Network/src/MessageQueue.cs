@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
@@ -44,16 +46,24 @@ namespace Microsoft.MixedReality.Sharing.Network
         public bool TryDequeueAll(out Message[] messages)
         {
             // Emulate the expected behavior.
-            // Take a bunch of messages from the queue one by one.
-            var res = new List<Message>();
+            messages = null;
+
+            int currentCount = queue_.Count;
+            if (currentCount == 0)
+            {
+                return false;
+            }
+
+            // Take the current messages in the queue one by one.
+            var res = new List<Message>(currentCount);
             Message msg;
-            while(queue_.TryTake(out msg) && res.Count < 256)
+            // Also check if there are still messages in case some other thread is taking from the same queue.
+            while(res.Count < currentCount && queue_.TryTake(out msg))
             {
                 res.Add(msg);
             }
             if (res.Count == 0)
             {
-                messages = null;
                 return false;
             }
             messages = res.ToArray();
