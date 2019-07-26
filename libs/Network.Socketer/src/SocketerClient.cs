@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using Microsoft.MixedReality.Sharing.Network;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -19,7 +18,7 @@ using Windows.Networking.Connectivity;
 using Windows.Storage.Streams;
 #endif
 
-namespace Microsoft.MixedReality.Toolkit.Extensions.Experimental.Socketer
+namespace Microsoft.MixedReality.Sharing.Network.Socketer
 {
     /// <summary>
     /// Simple socket client which uses a generic length-type-data protocol.
@@ -28,7 +27,7 @@ namespace Microsoft.MixedReality.Toolkit.Extensions.Experimental.Socketer
     /// uint8_t data[data_length];
     /// NOTE! The code assumes you are running on a little-endian system!  So it'll be weird on an xbox 360.
     /// </summary>
-    public class SocketerClient
+    internal class SocketerClient
     {
         internal const UInt32 HandshakeCode = 9999;
         /// <summary>
@@ -37,11 +36,11 @@ namespace Microsoft.MixedReality.Toolkit.Extensions.Experimental.Socketer
         public enum Protocol
         {
             /// <summary>
-            /// Fast, simple, connectionless, unidirectional, no guaranteed ordering, no error checking, no way to know if your packets are arriving.
+            /// Connectionless, unidirectional, no guaranteed ordering or retries: https://en.wikipedia.org/wiki/User_Datagram_Protocol
             /// </summary>
             UDP,
             /// <summary>
-            /// Still pretty fast, connections (so you know if you're talking), bidirectional, guaranteed order of arrival and error checking.
+            /// Connection-based, guaranteed order of arrival and retries: https://en.wikipedia.org/wiki/Transmission_Control_Protocol
             /// </summary>
             TCP,
         }
@@ -77,10 +76,14 @@ namespace Microsoft.MixedReality.Toolkit.Extensions.Experimental.Socketer
         public event Action<SocketerClient, MessageEvent> Message;
         /// <summary>
         /// Called when a TCP connection is made.  Not called for UDP Socketers.  Will typically NOT be on the same thread as your UI/Update thread.
+        /// The delegate argument are, in order: the server socket that has received the connection, the ID of the client in the server (to be used
+        /// when calling `SendNetworkMessage`), the hostname and port of the client socket.
         /// </summary>
         public event Action<SocketerClient, int, string, int> Connected;
         /// <summary>
         /// Called when a TCP connection is lost.  Not called for UDP Socketers.  Will typically NOT be on the same thread as your UI/Update thread.
+        /// The delegate argument are, in order: the server socket that has received the disconnection, the ID of the client in the server, the
+        /// hostname and port of the client socket.
         /// </summary>
         public event Action<SocketerClient, int, string, int> Disconnected;
 

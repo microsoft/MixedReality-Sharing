@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using Microsoft.MixedReality.Toolkit.Extensions.Experimental.Socketer;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -70,6 +69,17 @@ namespace Microsoft.MixedReality.Sharing.Network.Socketer
         }
     }
 
+    /// <summary>
+    /// Simple socket-based implementation of categories and channels.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="SocketerChannelCategoryFactory"/> will listen on the port provided on creation for TCP/UDP traffic.
+    /// <see cref="ChannelType.Ordered"/> channels/categories are mapped to TCP client/server sockets;
+    /// <see cref="ChannelType.Unordered"/> is similarly mapped to UDP sockets.
+    ///
+    /// Note that this library does not implement packet fragmentation when using UDP - which means that UDP datagrams
+    /// over a certain size will not be delivered if the underlying IP network doesn't handle fragmentation itself.
+    /// </remarks>
     public class SocketerChannelCategoryFactory : IChannelCategoryFactory
     {
         // Continuously listen for new connections/datagrams.
