@@ -50,8 +50,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
         private static readonly byte[] roomHeader_ = new byte[] { (byte)'R', (byte)'O', (byte)'O', (byte)'M' };
         private static readonly byte[] findHeader_ = new byte[] { (byte)'F', (byte)'I', (byte)'N', (byte)'D' };
 
-        private readonly List<OwnedRoom> ownedRooms_ = new List<OwnedRoom>();
-        private readonly List<RoomBase> joinedRooms_ = new List<RoomBase>();
+        private volatile OwnedRoom[] ownedRooms_ = new OwnedRoom[0];
+        private volatile RoomBase[] joinedRooms_ = new RoomBase[0];
         private readonly MatchParticipantFactory participantFactory_;
         private readonly SocketerClient server_;
         private readonly SocketerClient broadcastSender_;
@@ -94,6 +94,14 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             }
         }
 
+        //private static T[] Append<T>(T[] oldArray, T elem)
+        //{
+        //    var newArray = new T[oldArray.Length + 1];
+        //    Array.Copy(oldArray, newArray, oldArray.Length);
+        //    newArray[oldArray.Length] = elem;
+        //    return newArray;
+        //}
+
         public Task<IRoom> CreateRoomAsync(Dictionary<string, object> attributes = null, RoomVisibility visibility = RoomVisibility.NotVisible, CancellationToken token = default)
         {
             return Task.Run<IRoom>(() =>
@@ -103,8 +111,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                 var localParticipant = participantFactory_.LocalParticipant;
                 var newRoom = new OwnedRoom(this, roomServer, attributes, visibility, localParticipant);
 
-                ownedRooms_.Add(newRoom);
-                joinedRooms_.Add(newRoom);
+                lock(this)
+                {
+                    ownedRooms_ = ownedRooms_.Append(newRoom).ToArray();
+                    joinedRooms_ = joinedRooms_.Append(newRoom).ToArray();
+                }
 
                 // Advertise it.
                 if (visibility == RoomVisibility.Searchable)
@@ -172,7 +183,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             private const int broadcastIntervalMs_ = 2000;
 
             private MatchmakingService service_;
-            private List<RoomInfo> activeRooms_ = new List<RoomInfo>();
+            private volatile RoomInfo[] activeRooms_ = new RoomInfo[0];
             private readonly CancellationTokenSource sendCts_ = new CancellationTokenSource();
 
             public event EventHandler<IEnumerable<IRoomInfo>> RoomsRefreshed;
@@ -211,24 +222,23 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                     // TODO shouldn't delay this thread but offload this to a queue
                     RoomInfo newRoom = service.ParseRoomPacket(ev.SourceHost, ev.Message);
 
-                    List<RoomInfo> newRoomList = null;
-                    lock (activeRooms_)
+                    var oldRooms = activeRooms_;
+                    RoomInfo[] newRooms = null;
+                    int index = oldRooms.ToList().FindIndex(r => r.Id.Equals(newRoom.Id));
+                    if (index >= 0)
                     {
-                        int index = activeRooms_.FindIndex(r => r.Id.Equals(newRoom.Id));
-                        if (index >= 0)
-                        {
-                            // TODO check if equal
-                            // TODO check timestamp
-                            var oldRoom = activeRooms_[index];
-                            activeRooms_[index] = newRoom;
-                        }
-                        else
-                        {
-                            activeRooms_.Add(newRoom);
-                        }
-                        newRoomList = new List<RoomInfo>(activeRooms_);
+                        // TODO check if equal
+                        // TODO check timestamp
+                        var oldRoom = activeRooms_[index];
+                        newRooms = (RoomInfo[])oldRooms.Clone();
+                        newRooms[index] = newRoom;
                     }
-                    RoomsRefreshed?.Invoke(this, newRoomList);
+                    else
+                    {
+                        newRooms = oldRooms.Append(newRoom).ToArray();
+                    }
+                    activeRooms_ = newRooms;
+                    RoomsRefreshed?.Invoke(this, newRooms);
                 }
             }
 
@@ -330,46 +340,48 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
         {
             return Task.Run<IRoom>(() =>
             {
-                lock (joinedRooms_)
+                // todo logic is split between here and ForeignRoom ctor, cleanup
+                // Make a socket.
+                SocketerClient socket = SocketerClient.CreateSender(SocketerClient.Protocol.TCP, roomInfo.Host, roomInfo.Port);
+
+                // Make a room.
+                var res = new ForeignRoom(roomInfo, null /* TODO */, socket);
+
+                // Configure handlers and try to connect.
+                var ev = new ManualResetEventSlim();
+                Action<SocketerClient, int, string, int> connectHandler =
+                (SocketerClient server, int id, string clientHost, int clientPort) =>
                 {
-                    if (joinedRooms_.Find(r => r.Guid == roomInfo.Guid) != null)
+                    // Connected; add the room to the joined list.
+                    lock (this)
                     {
-                        throw new InvalidOperationException("Room " + roomInfo.Guid + " is already joined");
+                        if (joinedRooms_.Any(r => r.Guid == roomInfo.Guid))
+                        {
+                            throw new InvalidOperationException("Room " + roomInfo.Guid + " is already joined");
+                        }
+                        joinedRooms_ = joinedRooms_.Append(res).ToArray();
                     }
-
-                    // todo logic is split between here and ForeignRoom ctor, cleanup
-                    // Make a socket.
-                    SocketerClient socket = SocketerClient.CreateSender(SocketerClient.Protocol.TCP, roomInfo.Host, roomInfo.Port);
-
-                    // Make a room.
-                    var res = new ForeignRoom(roomInfo, null /* TODO */, socket);
-
-                    // Configure handlers and try to connect.
-                    var ev = new ManualResetEventSlim();
-                    Action<SocketerClient, int, string, int> connectHandler =
-                    (SocketerClient server, int id, string clientHost, int clientPort) =>
+                    // Wake up the original task.
+                    ev.Set();
+                };
+                socket.Connected += connectHandler;
+                socket.Disconnected += (SocketerClient server, int id, string clientHost, int clientPort) =>
+                {
+                    lock(this)
                     {
-                        // Connected; add the room to the joined list.
-                        joinedRooms_.Add(res);
-                        // Wake up the original task.
-                        ev.Set();
-                    };
-                    socket.Connected += connectHandler;
-                    socket.Disconnected += (SocketerClient server, int id, string clientHost, int clientPort) =>
-                    {
-                        joinedRooms_.Remove(res);
-                        socket.Stop();
-                    };
-                    socket.Start();
-                    ev.Wait(token);
-                    socket.Connected -= connectHandler;
+                        joinedRooms_ = joinedRooms_.Where(r => r != res).ToArray();
+                    }
+                    socket.Stop();
+                };
+                socket.Start();
+                ev.Wait(token);
+                socket.Connected -= connectHandler;
 
-                    // Send participant info to the server.
-                    socket.SendNetworkMessage(Utils.CreateJoinRequestPacket(participantFactory_.LocalParticipant));
+                // Send participant info to the server.
+                socket.SendNetworkMessage(Utils.CreateJoinRequestPacket(participantFactory_.LocalParticipant));
 
-                    // Now that the connection is established, we can return the room.
-                    return res;
-                }
+                // Now that the connection is established, we can return the room.
+                return res;
             }, token);
         }
     }

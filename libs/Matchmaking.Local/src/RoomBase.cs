@@ -20,7 +20,13 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
         public string Id => Guid.ToString();
         public Guid Guid { get; }
 
-        public IReadOnlyDictionary<string, object> Attributes { get; protected set; }
+        public IReadOnlyDictionary<string, object> Attributes
+        {
+            get => attributes_;
+            protected set => attributes_ = value;
+        }
+
+        public volatile IReadOnlyDictionary<string, object> attributes_;
 
         // Connection info for the room.
         internal string Host { get; }
@@ -79,7 +85,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
         public  RoomParticipant Owner { get; }
         IRoomParticipant IRoom.Owner { get => Owner; }
 
-        public RoomParticipant[] Participants;
+        public volatile RoomParticipant[] Participants;
         IEnumerable<IRoomParticipant> IRoom.Participants { get => Participants; }
 
         public IStateSubscription State => throw new NotImplementedException();
