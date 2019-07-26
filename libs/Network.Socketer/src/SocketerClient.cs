@@ -515,13 +515,30 @@ namespace Microsoft.MixedReality.Sharing.Network.Socketer
                 while (threadShouldRun)
                 {
                     IPEndPoint endpoint = null;
+                    byte[] data;
 #if NETCOREAPP1_1
                     var t = client.ReceiveAsync();
                     t.Wait();
                     endpoint = t.Result.RemoteEndPoint;
-                    byte[] data = t.Result.Buffer;
+                    data = t.Result.Buffer;
 #else
-                    byte[] data = client.Receive(ref endpoint);
+                    try
+                    {
+                        data = client.Receive(ref endpoint);
+                    }
+                    catch(SocketException e)
+                    {
+                        if (e.ErrorCode == 10004)
+                        {
+                            // A blocking operation was interrupted by a call to WSACancelBlockingCall
+                            // Socket has been closed
+                            return;
+                        }
+                        else
+                        {
+                            throw e;
+                        }
+                    }
 #endif
                     string host = endpoint.Address.ToString();
                     if (Message != null)
