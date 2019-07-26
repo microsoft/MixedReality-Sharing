@@ -73,9 +73,8 @@ namespace Network.Socketer.Test
 
             var categoryA = ctxA.UnorderedCategory;
             var categoryB = ctxB.UnorderedCategory;
-
-            var queueA = new MessageQueue();
-            categoryA.Queue = queueA;
+            categoryA.StartListening();
+            categoryB.StartListening();
 
             string endpointAId = "localhost;45678";
             string endpointBId = "localhost;45679";
@@ -89,13 +88,8 @@ namespace Network.Socketer.Test
 
             aTob.SendMessage(testMessage);
 
-            var queueB = new MessageQueue();
-            categoryB.Queue = queueB;
-
-            aTob.SendMessage(testMessage);
-
             {
-                IMessage received = queueB.Dequeue();
+                var received = categoryB.Queue.Dequeue();
                 Assert.Same(categoryB, received.Category);
                 Assert.Equal(testMessage, received.Payload);
             }
@@ -104,7 +98,7 @@ namespace Network.Socketer.Test
             using (IChannel bToA = endpointA.CreateChannel(categoryB))
             {
                 bToA.SendMessage(testMessage);
-                IMessage received = queueA.Dequeue();
+                var received = categoryA.Queue.Dequeue();
                 Assert.Same(categoryA, received.Category);
                 Assert.Equal(testMessage, received.Payload);
             }
@@ -123,9 +117,8 @@ namespace Network.Socketer.Test
 
             var categoryA = ctxA.OrderedCategory;
             var categoryB = ctxB.OrderedCategory;
-
-            var queueA = new MessageQueue();
-            categoryA.Queue = queueA;
+            categoryA.StartListening();
+            categoryB.StartListening();
 
             string endpointAId = "localhost;45678";
             string endpointBId = "localhost;45679";
@@ -139,14 +132,9 @@ namespace Network.Socketer.Test
 
             aTob.SendMessage(testMessage);
 
-            var queueB = new MessageQueue();
-            categoryB.Queue = queueB;
-
-            aTob.SendMessage(testMessage);
-
             IEndpoint sendEndpointA;
             {
-                IMessage received = queueB.Dequeue();
+                var received = categoryB.Queue.Dequeue();
                 Assert.Same(categoryB, received.Category);
                 Assert.Equal(testMessage, received.Payload);
                 sendEndpointA = received.Sender;
@@ -155,7 +143,7 @@ namespace Network.Socketer.Test
             using (IChannel bToA = endpointA.CreateChannel(categoryB))
             {
                 bToA.SendMessage(testMessage);
-                IMessage received = queueA.Dequeue();
+                var received = categoryA.Queue.Dequeue();
                 Assert.Same(categoryA, received.Category);
                 Assert.Equal(testMessage, received.Payload);
             }
@@ -163,7 +151,7 @@ namespace Network.Socketer.Test
             using (IChannel bToAReply = sendEndpointA.CreateChannel(categoryB))
             {
                 bToAReply.SendMessage(testMessage);
-                IMessage received = queueA.Dequeue();
+                var received = categoryA.Queue.Dequeue();
                 Assert.Same(categoryA, received.Category);
                 Assert.Equal(testMessage, received.Payload);
             }
