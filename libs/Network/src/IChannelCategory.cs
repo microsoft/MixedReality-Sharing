@@ -36,11 +36,11 @@ namespace Microsoft.MixedReality.Sharing.Network
     /// Category of channels/messages. Groups channels and messages relative to the same application area/system.
     /// </summary>
     /// <remarks>
-    /// A `IChannelCategory` can be used by the process to listen for messages, directed to any <see cref="IEndpoint"/>
-    /// of which this process is part, that belong to said category. There are two - mutually exclusive - ways to do
-    /// this. One is by setting the <see cref="Queue"/> property to a <see cref="IMessageQueue"/>; the passed queue
-    /// will then be populated by the messages of this category as they are received. The other is to directly
-    /// subscribe to the <see cref="MessageReceived"/> event.
+    /// A `IChannelCategory` can be used by the process to listen for messages, directed to any
+	/// <see cref="IEndpoint"/> of which this process is part, that belong to said category. This
+	/// is done by calling <see cref="StartListening"/> and polling <see cref="Queue"/> for messages.
+	/// Alternatively, you can create a <see cref="MessageQueueConsumer"/> if you want an event to
+	/// be raised every time a message arrives.
     ///
     /// A `IChannelCategory` can also be used to create a <see cref="IChannel"/> and send messages to another process.
     ///
@@ -63,21 +63,20 @@ namespace Microsoft.MixedReality.Sharing.Network
         ChannelType Type { get; }
 
         /// <summary>
-        /// If not null, messages received by the process are added to this queue. Cannot be set if
-        /// <see cref="MessageReceived"/> has subscribers.
+        /// Queue for incoming messages. Only populated between a call to <see cref="StartListening"/>
+        /// and one to <see cref="StopListening"/>.
         /// </summary>
-        IMessageQueue Queue { get; set; }
+        IMessageQueue Queue { get; }
 
         /// <summary>
-        /// Fires when a message belonging to this category is received. Cannot be subscribed if
-        /// <see cref="Queue"/> is set.
+        /// Start listening for incoming messages of this category. Messages will be added to <see cref="Queue"/>.
         /// </summary>
-        /// <remarks>
-        /// Event handlers may be called on the same thread that handles network events, so it is fundamental that
-        /// handlers do not block the thread for a long time. If messages needs lengthy processing, you should offload
-        /// it to a <see cref="Task"/> or use a <see cref="IMessageQueue"/> instead.
-        /// </remarks>
-        event Action<IMessage> MessageReceived;
+        void StartListening();
+
+        /// <summary>
+        /// Stop listening for incoming messages of this category.
+        /// </summary>
+        void StopListening();
     }
 
     public interface IChannelCategoryFactory : IDisposable

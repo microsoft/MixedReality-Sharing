@@ -1,13 +1,21 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
+using System.Threading;
 
 namespace Microsoft.MixedReality.Sharing.Network
 {
-    public interface IMessage
+    public class Message
     {
-        IEndpoint Sender { get; }
-        IChannelCategory Category { get; }
-        byte[] Payload { get; }
+        public IEndpoint Sender { get; }
+        public IChannelCategory Category { get; }
+        public byte[] Payload { get; }
+
+        public Message(IEndpoint sender, IChannelCategory category, byte[] payload)
+        {
+            Sender = sender;
+            Category = category;
+            Payload = payload;
+        }
     }
 
     /// <summary>
@@ -18,24 +26,30 @@ namespace Microsoft.MixedReality.Sharing.Network
         /// <summary>
         /// Block until a message is available, then remove the message from the queue and return it.
         /// </summary>
-        IMessage Dequeue();
+        /// <exception cref="OperationCanceledException">The <see cref="CancellationToken"/> has been canceled.</exception>
+        /// <exception cref="ObjectDisposedException">The <see cref="IChannelCategory"/> which owns this queue has been disposed.</exception>
+        Message Dequeue(CancellationToken token = default);
 
         /// <summary>
         /// Remove a message from the queue and return it in <paramref name="message"/> if there is one.
         /// </summary>
         /// <returns>`true` if a message was available, `false` otherwise.</returns>
-        bool TryDequeue(out IMessage message);
+        /// <exception cref="ObjectDisposedException">The <see cref="IChannelCategory"/> which owns this queue has been disposed.</exception>
+        bool TryDequeue(out Message message);
 
         /// <summary>
         /// Block until at least one message is available, then remove the messages from the queue and return them.
         /// </summary>
-        IMessage[] DequeueAll();
+        /// <exception cref="OperationCanceledException">The <see cref="CancellationToken"/> has been canceled.</exception>
+        /// <exception cref="ObjectDisposedException">The <see cref="IChannelCategory"/> which owns this queue has been disposed.</exception>
+        Message[] DequeueAll(CancellationToken token = default);
 
         /// <summary>
         /// Remove all messages from the queue and return them in <paramref name="messages"/> if there are any.
         /// </summary>
         /// <returns>`true` if at least one message was available, `false` otherwise.</returns>
-        bool TryDequeueAll(out IMessage[] messages);
+        /// <exception cref="ObjectDisposedException">The <see cref="IChannelCategory"/> which owns this queue has been disposed.</exception>
+        bool TryDequeueAll(out Message[] messages);
 
         // TODO maybe we want to have adding controlled by the network impl and expose a queue factory instead?
         void Add(IMessage message);
