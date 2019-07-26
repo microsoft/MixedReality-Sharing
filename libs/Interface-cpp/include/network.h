@@ -85,7 +85,7 @@ MRS_API Result MRS_CALL mrsDisposeMessages(mrsMessage* messages,
 
 // Destroy with mrsDisposeChannel.
 MRS_API Result MRS_CALL mrsCreateChannel(mrsChannelCategory category,
-                                         mrsEndpoint endpoint,
+                                         mrsEndpoint* endpoint,
                                          mrsChannel** channel_out);
 
 MRS_API Result MRS_CALL
@@ -105,7 +105,7 @@ MRS_API Result MRS_CALL mrsChannelSendMessage(mrsChannel* channel,
                                               const char* payload,
                                               uint32_t payload_size);
 
-MRS_API Result MRS_CALL mrsDisposeChannel(mrsChannel channel);
+MRS_API Result MRS_CALL mrsDisposeChannel(mrsChannel* channel);
 
 // Dispose strings returned by methods above.
 MRS_API Result MRS_CALL mrsDisposeString(uint32_t size, const char* ptr);
