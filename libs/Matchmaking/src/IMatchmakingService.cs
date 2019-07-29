@@ -1,9 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -12,20 +10,30 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     public interface IMatchmakingService
     {
         /// <summary>
+        /// Join a room by its unique ID.
+        /// </summary>
+        /// <returns>
+        /// a <see cref="Task"/> containing the joined room if the provided ID is found, otherwise a null room.
+        /// </returns>
+        Task<IRoom> TryGetRoomByIdAsync(string roomId, CancellationToken token);
+
+        /// <summary>
         /// Join a random available existing room.
         /// </summary>
         /// <param name="expectedAttributes">Only consider the rooms that have these attributes.</param>
-        Task<IRoom> JoinRandomRoomAsync(Dictionary<string, object> expectedAttributes = null,
-            CancellationToken token = default);
+        Task<IRoom> JoinRandomRoomAsync(IDictionary<string, object> expectedAttributes, CancellationToken token);
 
         /// <summary>
-        /// Rooms currently joined by the local participants.
+        /// Create a new room and join it.
         /// </summary>
-        IEnumerable<IRoom> JoinedRooms { get; }
-
-        /// <summary>
-        /// Room manager. Can be null if the implementation does not provide room managing services.
-        /// </summary>
-        IRoomManager RoomManager { get; }
+        /// <param name="attributes">Attributes to set on the new room.</param>
+        /// <param name="token">
+        /// If cancellation is requested, the method should either complete the operation and return a valid
+        /// room, or roll back any changes to the system state and return a canceled Task.
+        /// </param>
+        /// <returns>
+        /// The newly created, joined room.
+        /// </returns>
+        Task<IRoom> TryCreateRoomAsync(Dictionary<string, object> attributes, CancellationToken token);
     }
 }

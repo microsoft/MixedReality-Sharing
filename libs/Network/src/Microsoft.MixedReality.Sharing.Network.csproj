@@ -11,4 +11,12 @@
     <LangVersion>7.3</LangVersion>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="MorseCode.ITask" Version="2.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Microsoft.MixedReality.Sharing.Utilities\Microsoft.MixedReality.Sharing.Utilities.csproj" />
+  </ItemGroup>
+
 </Project>

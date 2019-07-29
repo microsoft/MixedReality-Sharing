@@ -12,8 +12,9 @@ namespace Microsoft.MixedReality.Sharing.Utilities
     /// <remarks>Follows https://docs.microsoft.com/en-us/dotnet/standard/garbage-collection/implementing-dispose </remarks>
     public class DisposableBase : IDisposable
     {
-        private string objectName;
+        private readonly CancellationTokenSource disposeCTS = new CancellationTokenSource();
         private ThreadLocal<bool> insideDisposeFunction = new ThreadLocal<bool>(() => false);
+        private string objectName;
 
         /// <summary>
         /// Is the current object disposed.
@@ -21,9 +22,28 @@ namespace Microsoft.MixedReality.Sharing.Utilities
         public bool IsDisposed { get; private set; }
 
         /// <summary>
+        /// The synchronization object to lock on.
+        /// </summary>
+        protected object LockObject { get; } = new object();
+
+        /// <summary>
+        /// A helper token that can be used to listen for Dispose to happen.
+        /// </summary>
+        protected CancellationToken DisposeCancellationToken { get; }
+
+        /// <summary>
         /// The name of the current object.
         /// </summary>
-        protected virtual string ObjectName => objectName ?? (objectName = GetType().Name);
+        protected virtual string ObjectName
+        {
+            get
+            {
+                lock (LockObject)
+                {
+                    return objectName ?? (objectName = GetType().Name);
+                }
+            }
+        }
 
         ~DisposableBase()
         {
@@ -41,32 +61,49 @@ namespace Microsoft.MixedReality.Sharing.Utilities
 
         private void Dispose(bool isDisposing)
         {
-            if (IsDisposed)
+            lock (LockObject)
             {
-                return;
-            }
+                if (IsDisposed)
+                {
+                    return;
+                }
 
-            IsDisposed = true;
+                IsDisposed = true;
 
-            // If the finalizer is running, don't access the insideDisposeFunction, as it will
-            // also be finalizing.
-            if (isDisposing)
-            {
-                insideDisposeFunction = null;
-            }
-            else
-            {
-                insideDisposeFunction.Value = true;
+                // If the finalizer is running, don't access the insideDisposeFunction, as it will
+                // also be finalizing.
+                if (!isDisposing)
+                {
+                    insideDisposeFunction = null;
+                }
+                else
+                {
+                    insideDisposeFunction.Value = true;
+                }
             }
 
             try
             {
                 if (isDisposing)
                 {
+                    disposeCTS.Cancel();
+                    disposeCTS.Dispose();
                     OnManagedDispose();
                 }
 
                 OnUnmanagedDispose();
+            }
+            catch (Exception ex)
+            {
+                // Inside finalizer don't rethrow the exception
+                if (!isDisposing)
+                {
+                    LoggingUtility.LogError($"Unhandled exception inside Dispose function of {GetType().Name}.", ex);
+                }
+                else
+                {
+                    throw;
+                }
             }
             finally
             {
@@ -92,9 +129,12 @@ namespace Microsoft.MixedReality.Sharing.Utilities
         /// </summary>
         protected void ThrowIfDisposed()
         {
-            if (insideDisposeFunction == null || (!insideDisposeFunction.Value && IsDisposed))
+            lock (LockObject)
             {
-                throw new ObjectDisposedException(ObjectName);
+                if (insideDisposeFunction == null || (!insideDisposeFunction.Value && IsDisposed))
+                {
+                    throw new ObjectDisposedException(ObjectName);
+                }
             }
         }
     }

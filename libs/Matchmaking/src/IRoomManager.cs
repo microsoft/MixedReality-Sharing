@@ -1,7 +1,7 @@
-﻿using System;
+﻿using Microsoft.MixedReality.Sharing.Network;
+using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -10,46 +10,23 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     /// <summary>
     /// Exposes methods to create and list rooms.
     /// </summary>
-    public interface IRoomManager
+    public interface IMatchmakingExtendedService
     {
-        /// <summary>
-        /// Join a room by its unique ID.
-        /// </summary>
-        /// <returns>
-        /// a <see cref="Task"/> containing the joined room if the provided ID is found, otherwise a null room.
-        /// </returns>
-        Task<IRoom> JoinRoomByIdAsync(string roomId, CancellationToken token = default);
-
         /// <summary>
         /// Get the list of all rooms with the specified owner.
         /// </summary>
-        IRoomList FindRoomsByOwner(IMatchParticipant owner);
+        IRoomList FindRoomsByOwner(IParticipant owner);
 
         /// <summary>
         /// Get the list of all rooms containing any of the specified participants.
         /// </summary>
-        IRoomList FindRoomsByParticipants(IEnumerable<IMatchParticipant> participants);
+        IRoomList FindRoomsByParticipants(IEnumerable<IParticipant> participants);
 
         /// <summary>
         /// Get the list of all rooms containing all of these attributes with the specified value.
         /// Passing an empty dictionary will list all searchable rooms.
         /// </summary>
-        IRoomList FindRoomsByAttributes(Dictionary<string, object> attributes = default);
-
-        /// <summary>
-        /// Create a new room and join it.
-        /// </summary>
-        /// <param name="attributes">Attributes to set on the new room.</param>
-        /// <param name="token">
-        /// If cancellation is requested, the method should either complete the operation and return a valid
-        /// room, or roll back any changes to the system state and return a canceled Task.
-        /// </param>
-        /// <returns>
-        /// The newly created, joined room.
-        /// </returns>
-        Task<IRoom> CreateRoomAsync(Dictionary<string, object> attributes = null, 
-            RoomVisibility visibility = RoomVisibility.NotVisible,
-            CancellationToken token = default);
+        IRoomList FindRoomsByAttributes(IDictionary<string, object> attributes);
     }
 
     /// <summary>
@@ -70,13 +47,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     /// Note that the implementation might prevent callers from subscribing to more than one room list
     /// at the same time.
     /// </summary>
-    public interface IRoomList : IEnumerable<IRoomInfo>, INotifyCollectionChanged, IDisposable
+    public interface IRoomList : IEnumerable<IRoom>, INotifyCollectionChanged, IDisposable
     {
-        /// <summary>
-        /// Get the rooms that are active now.
-        /// The implementation might return only a subset of the currently active rooms
-        /// if the full set is too large.
-        /// </summary>
-        Task<IEnumerable<IRoomInfo>> GetRoomsAsync(CancellationToken token = default);
+        Task RefreshAsync(CancellationToken cancellationToken);
     }
 }

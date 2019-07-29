@@ -2,39 +2,32 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Microsoft.MixedReality.Sharing.Network
 {
-    public interface IChannel : IDisposable
+    public enum ChannelStatus
     {
-        IChannelCategory Category { get; }
+        Connected,
+        Disconnected,
+        Disposed
+    }
 
-        IEndpoint Endpoint { get; }
+    public interface IChannel<TSessionType, out TMessageType> : IDisposable 
+        where TSessionType : class, ISession<TSessionType>
+        where TMessageType : IMessage
+    {
+        event Action<IEndpoint<TSessionType>, TMessageType> MessageReceived;
 
-        void SendMessage(byte[] message);
+        ChannelStatus Status { get; }
 
-        /// <summary>
-        /// Tells whether the channel is working. If this returns false, the channel shouldn't be used to send/receive
-        /// messages.
-        /// Unordered channels will typically return false only when some issue is sure to prevent any
-        /// communication with the endpoint (e.g. no network adapter). Ordered channels will return false when there is
-        /// some possibility that messages have been lost.
-        /// If this returns false, <see cref="Reconnect"/> can be called to try to restore the channel.
-        /// </summary>
-        bool IsOk { get; }
+        Task SendMessageAsync(IMessage message, CancellationToken cancellationToken);
 
         /// <summary>
         /// Try to re-establish the channel. If <see cref="IsOk"/> returns false, this might restore the channel
         /// status and make it available for sending/receiving again.
         /// </summary>
-        void Reconnect();
-
-        /// <summary>
-        /// Number of messages currently queued to be sent. Can be used for throttling.
-        /// </summary>
-        int SendQueueCount { get; }
+        Task<bool> TryReconnectAsync(CancellationToken cancellationToken);
     }
 }

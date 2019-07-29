@@ -6,11 +6,13 @@ namespace Microsoft.MixedReality.Sharing.Utilities
     /// <summary>
     /// Helper utility to standardize logging through Trace and categories.
     /// </summary>
-    public static class LoggingUtility
+    public class LoggingUtility : ILogger
     {
         public const string VerboseCategory = "Verbose";
         public const string WarningCategory = "Warning";
         public const string ErrorCategory = "Error";
+
+        public static ILogger Logger { get; } = new LoggingUtility();
 
         /// <summary>
         /// Logs a verbose message.
@@ -42,6 +44,23 @@ namespace Microsoft.MixedReality.Sharing.Utilities
             {
                 Trace.WriteLine(exception, ErrorCategory);
             }
+        }
+
+        private LoggingUtility() { }
+
+        void ILogger.Log(string message)
+        {
+            Log(message);
+        }
+
+        void ILogger.LogWarning(string message)
+        {
+            LogWarning(message);
+        }
+
+        void ILogger.LogError(string message, Exception exception)
+        {
+            LogError(message, exception);
         }
     }
 }

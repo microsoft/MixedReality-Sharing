@@ -2,12 +2,14 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections.Generic;
-using System.Text;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Microsoft.MixedReality.Sharing.Network
 {
-    public interface INetParticipant
+    public interface IMessage
     {
+        Task<Stream> OpenReadAsync(CancellationToken cancellationToken);
     }
 }
