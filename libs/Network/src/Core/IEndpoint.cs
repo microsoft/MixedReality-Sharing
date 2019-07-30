@@ -5,16 +5,15 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Microsoft.MixedReality.Sharing.Network
+namespace Microsoft.MixedReality.Sharing
 {
-    public interface IEndpoint<TSessionType>
-        where TSessionType : class, ISession<TSessionType>
+    public interface IEndpoint
     {
-        TSessionType Session { get; }
+        ISession Session { get; }
 
         /// <summary>
         /// Opens a channel to communicate to the other participant.
         /// </summary>
-        Task<IChannel<TSessionType, TMessageType>> GetChannelAsync<TMessageType>(CancellationToken cancellationToken) where TMessageType : IMessage;
+        Task<TChannel> GetChannelAsync<TChannel>(string channelId, CancellationToken cancellationToken) where TChannel : IChannel;
     }
 }

@@ -127,7 +127,7 @@ namespace Microsoft.MixedReality.Sharing.Utilities
         /// <summary>
         /// A helper method to throw if the current object is disposed.
         /// </summary>
-        protected void ThrowIfDisposed()
+        public void ThrowIfDisposed()
         {
             lock (LockObject)
             {

@@ -6,18 +6,17 @@ namespace Microsoft.MixedReality.Sharing.Network.Channels
 {
     public class ChannelsUtility
     {
-        public static void ProcessChannelFactories<TSessionType>(Dictionary<Type, IChannelFactory<TSessionType, IMessage>> mapToFill, IEnumerable<IChannelFactory<TSessionType, IMessage>> factories, ILogger logger)
-            where TSessionType : class, ISession<TSessionType>
+        public static void ProcessChannelFactories(Dictionary<Type, IChannelFactory<IChannel>> mapToFill, IEnumerable<IChannelFactory<IChannel>> factories, ILogger logger)
         {
-            foreach (IChannelFactory<TSessionType, IMessage> factory in factories)
+            foreach (IChannelFactory<IChannel> factory in factories)
             {
                 // Check for all interface implementations of the factory object
                 Type factoryType = factory.GetType();
                 foreach (Type interfaceType in factoryType.GetInterfaces())
                 {
-                    if (interfaceType.IsGenericType && interfaceType.GetGenericTypeDefinition() == typeof(IChannelFactory<,>))
+                    if (interfaceType.IsGenericType && interfaceType.GetGenericTypeDefinition() == typeof(IChannelFactory<>))
                     {
-                        Type messageType = interfaceType.GetGenericArguments()[1];
+                        Type messageType = interfaceType.GetGenericArguments()[0];
 
                         if (mapToFill.ContainsKey(messageType))
                         {
@@ -32,16 +31,14 @@ namespace Microsoft.MixedReality.Sharing.Network.Channels
             }
         }
 
-        public static IChannelFactory<TSessionType, TMessageType> GetChannelFactory<TSessionType, TMessageType>(IReadOnlyDictionary<Type, IChannelFactory<TSessionType, IMessage>> channelFactoryMap)
-            where TSessionType : class, ISession<TSessionType>
-            where TMessageType : IMessage
+        public static IChannelFactory<IChannel> GetChannelFactory(IReadOnlyDictionary<Type, IChannelFactory<IChannel>> channelFactoryMap, Type type)
         {
-            if (channelFactoryMap.TryGetValue(typeof(TMessageType), out IChannelFactory<TSessionType, IMessage> factory))
+            if (channelFactoryMap.TryGetValue(type, out IChannelFactory<IChannel> factory))
             {
-                return (IChannelFactory<TSessionType, TMessageType>)factory;
+                return factory;
             }
 
-            throw new InvalidOperationException($"Can't find a channel factory for message type '{typeof(TMessageType).FullName}', and no default available.");
+            throw new InvalidOperationException($"Can't find a channel factory for message type '{type.FullName}', and no default available.");
         }
     }
 }

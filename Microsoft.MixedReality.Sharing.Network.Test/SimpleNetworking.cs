@@ -1,4 +1,5 @@
 using Autofac;
+using Microsoft.MixedReality.Sharing.Channels;
 using Microsoft.MixedReality.Sharing.Network.Test.Mocks;
 using Microsoft.MixedReality.Sharing.Utilities;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -18,15 +19,19 @@ namespace Microsoft.MixedReality.Sharing.Network.Test
         public void Initialize()
         {
             ContainerBuilder containerBuilder = new ContainerBuilder();
+
             containerBuilder.RegisterInstance(LoggingUtility.Logger).SingleInstance();
-            containerBuilder.RegisterType<MockSimpleChannelFactory>()
-                .As<IChannelFactory<MockSession, IMessage>>()
-                .As<IChannelFactory<MockSession, ReliableMessage>>()
-                .As<IChannelFactory<MockSession, UnreliableMessage>>()
-                .As<IChannelFactory<MockSession, ReliableOrderedMessage>>()
-                .As<IChannelFactory<MockSession, UnreliableOrderedMessage>>()
+
+            containerBuilder.RegisterType<MockBasicChannelFactory>()
+                .As<IChannelFactory<IChannel>>()
+                .As<IChannelFactory<ReliableChannel>>()
+                .As<IChannelFactory<UnreliableChannel>>()
+                .As<IChannelFactory<ReliableOrderedChannel>>()
+                .As<IChannelFactory<UnreliableOrderedChannel>>()
                 .SingleInstance();
-            containerBuilder.RegisterType<MockSession>();
+
+            containerBuilder.RegisterType<MockSession>().As<ISession>();
+
             rootLifetimeScope = containerBuilder.Build();
         }
 
@@ -40,38 +45,37 @@ namespace Microsoft.MixedReality.Sharing.Network.Test
         [TestMethod]
         public async Task SendMessage()
         {
-            using (ILifetimeScope scope = rootLifetimeScope.BeginLifetimeScope())
-            using (MockSession host = scope.Resolve<MockSession>())
-            {
-                // HOST
-                IChannel<MockSession, ReliableMessage> hostSessionChannel = await host.GetChannelAsync<ReliableMessage>(CancellationToken.None);
+            string messageText = "This is a simple test.";
 
+            using (ILifetimeScope scope = rootLifetimeScope.BeginLifetimeScope())
+            using (ISession host = scope.Resolve<ISession>())
+            using (ISession client = ((MockSession)host).CreateConection())
+            using (ReliableChannel hostChannel = await host.GetChannelAsync<ReliableChannel>(CancellationToken.None))
+            using (ReliableChannel clientChannel = await client.GetChannelAsync<ReliableChannel>(CancellationToken.None))
+            {
                 // Listen to messages
-                TaskCompletionSource<ReliableMessage> messageReceived = new TaskCompletionSource<ReliableMessage>();
-                void MessageReceived(IEndpoint<MockSession> endpoint, ReliableMessage obj)
+                TaskCompletionSource<byte[]> messageReceived = new TaskCompletionSource<byte[]>();
+                void MessageReceived(IEndpoint endpoint, byte[] obj)
                 {
                     messageReceived.SetResult(obj);
                 }
-                hostSessionChannel.MessageReceived += MessageReceived;
+                hostChannel.MessageReceived += MessageReceived;
 
-                string messageText = "This is a simple test.";
-
-                // CLIENT
-                using (MockSession client = host.CreateConection())
+                try
                 {
-                    IChannel<MockSession, ReliableMessage> clientSessionChannel = await client.GetChannelAsync<ReliableMessage>(CancellationToken.None);
-                    await clientSessionChannel.SendMessageAsync(new ReliableMessage(Encoding.ASCII.GetBytes(messageText)), CancellationToken.None);
+                    await clientChannel.SendMessageAsync(Encoding.ASCII.GetBytes(messageText), CancellationToken.None);
+
+
+                    // HOST process
+                    byte[] message = await messageReceived.Task;
+
+                    Assert.AreEqual(messageText, Encoding.ASCII.GetString(message));
+
                 }
-
-                // HOST process
-                ReliableMessage message = await messageReceived.Task;
-
-                using (StreamReader reader = new StreamReader(await message.OpenReadAsync(CancellationToken.None)))
+                finally
                 {
-                    Assert.AreEqual(messageText, await reader.ReadToEndAsync());
+                    hostChannel.MessageReceived -= MessageReceived;
                 }
-
-                hostSessionChannel.MessageReceived -= MessageReceived;
             }
         }
 
@@ -80,25 +84,37 @@ namespace Microsoft.MixedReality.Sharing.Network.Test
         {
             void AdditionalDependencies(ContainerBuilder containerBuilder)
             {
-                //containerBuilder.RegisterType<AudioChannelFactory<MockSession>>()
-                //    .WithParameter(new NamedParameter("reliableAndOrdered", true))
-                //    .As<IChannelFactory<MockSession, IMessage>>()
-                //    .SingleInstance();
+                containerBuilder.RegisterType<DefaultAudioChannelFactory<ReliableChannel>>()
+                    .As<IChannelFactory<IChannel>>()
+                    .As<IChannelFactory<AudioChannel>>()
+                    .SingleInstance();
 
                 // Alternate
-                containerBuilder.RegisterType<MockAudioChannelReplacementFactory>()
-                    .As<IChannelFactory<MockSession, IMessage>>()
-                    .SingleInstance();
+                //containerBuilder.RegisterType<MockAudioChannelReplacementFactory>()
+                //    .As<IChannelFactory<MockSession, IMessage>>()
+                //    .SingleInstance();
             }
 
             using (ILifetimeScope scope = rootLifetimeScope.BeginLifetimeScope(AdditionalDependencies))
-            using (MockSession session = scope.Resolve<MockSession>())
-            using (IChannel<MockSession, AudioMessage> channel = await session.GetChannelAsync<AudioMessage>(CancellationToken.None))
+            using (ISession host = scope.Resolve<ISession>())
+            using (ISession client = ((MockSession)host).CreateConection())
+            using (AudioChannel hostChannel = await host.GetChannelAsync<AudioChannel>(CancellationToken.None))
+            using (AudioChannel clientChannel = await client.GetChannelAsync<AudioChannel>(CancellationToken.None))
             {
-                string messageText = "Pretend this is an audio message.";
+                // CLIENT Start streaming audio
+                using (Stream stream = new MemoryStream())
+                {
+                    clientChannel.BeginStreamingAudio(stream);
 
-                // CLIENT Send message
-                await channel.SendMessageAsync(new AudioMessage(Encoding.ASCII.GetBytes(messageText)), CancellationToken.None);
+                    try
+                    {
+
+                    }
+                    finally
+                    {
+                        clientChannel.StopStreamingAudio();
+                    }
+                }
             }
         }
     }

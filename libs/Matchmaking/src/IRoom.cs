@@ -38,7 +38,6 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         IReadOnlyDictionary<string, object> Attributes { get; }
 
-        Task<TSessionType> JoinAsync<TSessionType>(CancellationToken cancellationToken) 
-            where TSessionType : class, ISession<TSessionType>;
+        Task<ISession> JoinAsync<TSessionType>(CancellationToken cancellationToken);
     }
 }
