@@ -1610,7 +1610,6 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                 {
                     KillSocket(entry.Key);
                     RemoveClient(entry.Key);
-                    OnDisconnect(entry.Key, entry.Value);
                 }
             }
 
