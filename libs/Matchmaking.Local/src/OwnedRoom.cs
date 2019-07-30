@@ -12,7 +12,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
     /// <summary>
     /// Room belonging to this host.
     /// </summary>
-    class OwnedRoom : RoomBase, IDisposable
+    class OwnedRoom : RoomBase
     {
         public readonly SocketerClient Server;
         public RoomVisibility Visibility;
@@ -92,7 +92,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             Server.Start();
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
             Server.Stop();
         }

@@ -52,6 +52,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
 
         private volatile OwnedRoom[] ownedRooms_ = new OwnedRoom[0];
         private volatile RoomBase[] joinedRooms_ = new RoomBase[0];
+        private List<RoomList> roomLists_ = new List<RoomList>();
         private readonly MatchParticipantFactory participantFactory_;
         private readonly SocketerClient server_;
         private readonly SocketerClient broadcastSender_;
@@ -73,6 +74,20 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
 
         public void Dispose()
         {
+            // TODO mark as disposed so that other methods fail
+            lock(roomLists_)
+            {
+                foreach (var list in roomLists_)
+                {
+                    list.Dispose();
+                }
+            }
+
+            foreach (var room in joinedRooms_)
+            {
+                room.Dispose();
+            }
+
             server_.Stop();
             broadcastSender_.Stop();
         }
@@ -210,12 +225,20 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                         token.WaitHandle.WaitOne(broadcastIntervalMs_);
                     }
                 }, token);
+
+                lock(service_.roomLists_)
+                {
+                    service_.roomLists_.Add(this);
+                }
             }
 
             private void OnMessage(SocketerClient server, SocketerClient.MessageEvent ev)
             {
-                //
                 var service = service_;
+                if (service == null)
+                {
+                    // The list has beed disposed.
+                }
 
                 if (IsRoomPacket(ev.Message))
                 {
@@ -244,6 +267,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
 
             public void Dispose()
             {
+                lock (service_.roomLists_)
+                {
+                    service_.roomLists_.Remove(this);
+                }
+
                 sendCts_.Cancel();
                 service_.server_.Message -= OnMessage;
                 service_ = null;

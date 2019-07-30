@@ -15,7 +15,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
     /// </summary>
     class ForeignRoom : RoomBase
     {
-        public SocketerClient Socket;
+        public readonly SocketerClient Socket;
 
         private event EventHandler<int> AttributesChangeReceived;
         public override event EventHandler<MessageReceivedArgs> MessageReceived;
@@ -93,7 +93,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
 
         public override Task LeaveAsync()
         {
-            throw new NotImplementedException();
+            return Task.Run(() => Socket.Stop());
         }
 
         public override Task SetAttributesAsync(Dictionary<string, object> attributes)
@@ -135,6 +135,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
         {
             var packet = Utils.CreateMessagePacket(participant.IdInRoom, message);
             Socket.SendNetworkMessage(packet);
+        }
+
+        public override void Dispose()
+        {
+            LeaveAsync().Wait();
         }
     }
 }

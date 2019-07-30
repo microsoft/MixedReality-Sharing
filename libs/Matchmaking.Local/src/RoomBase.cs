@@ -80,7 +80,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
     /// <summary>
     /// Base class for joined rooms.
     /// </summary>
-    abstract class RoomBase : RoomInfo, IRoom
+    abstract class RoomBase : RoomInfo, IRoom, IDisposable
     {
         public  RoomParticipant Owner { get; }
         IRoomParticipant IRoom.Owner { get => Owner; }
@@ -156,6 +156,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             }
             Participants = newParticipants;
         }
+
+        public abstract void Dispose();
     }
 
     class RoomParticipant : IRoomParticipant
