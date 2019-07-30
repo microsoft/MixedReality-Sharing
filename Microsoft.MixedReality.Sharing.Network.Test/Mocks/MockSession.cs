@@ -9,20 +9,16 @@ namespace Microsoft.MixedReality.Sharing.Network.Test.Mocks
 {
     public class MockSession : SessionBase<MockSession, MockEndpoint>
     {
-        private SessionState state;
-
         internal new Dictionary<MockEndpoint, MockSession> ConnectedEndpointsMap => base.ConnectedEndpointsMap;
 
         public MockSession(ILogger logger, IEnumerable<IChannelFactory<IChannel>> channelFactories)
             : base(logger, channelFactories)
         {
-            state = SessionState.Joined;
         }
 
         private MockSession(MockSession otherSession)
             : base(otherSession.channelFactoriesMap)
         {
-            state = SessionState.Joined;
         }
 
         /// <summary>
@@ -36,19 +32,6 @@ namespace Microsoft.MixedReality.Sharing.Network.Test.Mocks
             ConnectedEndpointsMap.Add(new MockEndpoint(this), toReturn);
             toReturn.ConnectedEndpointsMap.Add(new MockEndpoint(toReturn), this);
             return toReturn;
-        }
-
-        protected override async Task<bool> OnTryReconnectAsync(CancellationToken cancellationToken)
-        {
-            await Task.Delay(TimeSpan.FromSeconds(1));
-
-            state = SessionState.Joined;
-            return true;
-        }
-
-        protected override SessionState OnGetState()
-        {
-            return state;
         }
     }
 }

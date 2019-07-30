@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.MixedReality.Sharing.Network.Test.Mocks
 {
-    internal class MockBasicChannelFactory : BasicChannelFactoryBase
+    internal class MockBasicChannelFactory : BasicDataChannelFactoryBase
     {
         public override string Name => "Mock Implementation of Basic Channels";
 
@@ -60,7 +60,7 @@ namespace Microsoft.MixedReality.Sharing.Network.Test.Mocks
         }
 
         private static async Task SendMessageAsync<TChannel>(Stream stream, MockSession ownerSession, MockEndpoint targetLocalEndpoint, Action<TChannel, IEndpoint, byte[]> raiseMessageReceived, CancellationToken cancellationToken)
-            where TChannel : BasicChannelBase
+            where TChannel : BasicDataChannel
         {
             byte[] bytes = new byte[stream.Length];
             stream.Read(bytes, 0, bytes.Length);
@@ -104,7 +104,6 @@ namespace Microsoft.MixedReality.Sharing.Network.Test.Mocks
         {
             private readonly MockSession ownerSession;
             private readonly MockEndpoint targetLocalEndpoint;
-            public override ChannelStatus Status => ChannelStatus.Connected;
 
             public MockReliableChannel(string id, MockSession ownerSession, MockEndpoint targetLocalEndpoint)
                 : base(id)
@@ -123,7 +122,6 @@ namespace Microsoft.MixedReality.Sharing.Network.Test.Mocks
         {
             private readonly MockSession ownerSession;
             private readonly MockEndpoint targetLocalEndpoint;
-            public override ChannelStatus Status => ChannelStatus.Connected;
 
             public MockUnreliableChannel(string id, MockSession ownerSession, MockEndpoint targetLocalEndpoint)
                 : base(id)
@@ -142,7 +140,6 @@ namespace Microsoft.MixedReality.Sharing.Network.Test.Mocks
         {
             private readonly MockSession ownerSession;
             private readonly MockEndpoint targetLocalEndpoint;
-            public override ChannelStatus Status => ChannelStatus.Connected;
 
             public MockReliableOrderedChannel(string id, MockSession ownerSession, MockEndpoint targetLocalEndpoint)
                 : base(id)
@@ -161,7 +158,6 @@ namespace Microsoft.MixedReality.Sharing.Network.Test.Mocks
         {
             private readonly MockSession ownerSession;
             private readonly MockEndpoint targetLocalEndpoint;
-            public override ChannelStatus Status => ChannelStatus.Connected;
 
             public MockUnreliableOrderedChannel(string id, MockSession ownerSession, MockEndpoint targetLocalEndpoint)
                 : base(id)

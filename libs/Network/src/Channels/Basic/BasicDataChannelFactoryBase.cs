@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.MixedReality.Sharing.Channels
 {
-    public abstract class BasicChannelFactoryBase : IChannelFactory<ReliableChannel>, IChannelFactory<UnreliableChannel>, IChannelFactory<ReliableOrderedChannel>, IChannelFactory<UnreliableOrderedChannel>
+    public abstract class BasicDataChannelFactoryBase : IChannelFactory<ReliableChannel>, IChannelFactory<UnreliableChannel>, IChannelFactory<ReliableOrderedChannel>, IChannelFactory<UnreliableOrderedChannel>
     {
         public abstract string Name { get; }
 

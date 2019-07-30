@@ -22,22 +22,9 @@ namespace Microsoft.MixedReality.Sharing.Core
 
         protected Dictionary<TEndpoint, TSession> ConnectedEndpointsMap { get; } = new Dictionary<TEndpoint, TSession>();
 
-        public SessionState State
-        {
-            get
-            {
-                if (IsDisposed)
-                {
-                    return SessionState.Disposed;
-                }
-
-                return OnGetState();
-            }
-        }
-
         internal IReadOnlyDictionary<Type, IChannelFactory<IChannel>> ChannelFactoriesMap { get; }
 
-        public IEnumerable<IEndpoint> ConnectedEndpoints
+        public IReadOnlyCollection<IEndpoint> ConnectedEndpoints
         {
             get
             {
@@ -69,22 +56,6 @@ namespace Microsoft.MixedReality.Sharing.Core
             IChannel channel = await openedChannels.GetOrAdd(new ChannelMapKey(typeof(TChannel), sessionId), key => CreateChannelFor(key, cancellationToken));
             return (TChannel)channel;
         }
-
-        public async Task<bool> TryReconnectAsync(CancellationToken cancellationToken)
-        {
-            ThrowIfDisposed();
-
-            if (State == SessionState.Joined)
-            {
-                return true;
-            }
-
-            return await OnTryReconnectAsync(cancellationToken);
-        }
-
-        protected abstract Task<bool> OnTryReconnectAsync(CancellationToken cancellationToken);
-
-        protected abstract SessionState OnGetState();
 
         private async ITask<IChannel> CreateChannelFor(ChannelMapKey key, CancellationToken cancellationToken)
         {

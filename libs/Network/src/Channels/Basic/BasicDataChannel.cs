@@ -6,45 +6,43 @@ using System.Threading.Tasks;
 
 namespace Microsoft.MixedReality.Sharing.Channels
 {
-    public abstract class ReliableChannel : BasicChannelBase
+    public abstract class ReliableChannel : BasicDataChannel
     {
         protected ReliableChannel(string id)
             : base(id)
         { }
     }
 
-    public abstract class UnreliableChannel : BasicChannelBase
+    public abstract class UnreliableChannel : BasicDataChannel
     {
         protected UnreliableChannel(string id)
             : base(id)
         { }
     }
 
-    public abstract class ReliableOrderedChannel : BasicChannelBase
+    public abstract class ReliableOrderedChannel : BasicDataChannel
     {
         protected ReliableOrderedChannel(string id)
             : base(id)
         { }
     }
 
-    public abstract class UnreliableOrderedChannel : BasicChannelBase
+    public abstract class UnreliableOrderedChannel : BasicDataChannel
     {
         protected UnreliableOrderedChannel(string id)
             : base(id)
         { }
     }
 
-    public abstract class BasicChannelBase : DisposableBase, IChannel
+    public abstract class BasicDataChannel : DisposableBase, IChannel
     {
         public event Action<IEndpoint, byte[]> MessageReceived;
 
         public string Id { get; }
 
-        public abstract ChannelStatus Status { get; }
-
         public virtual int RecommendMessageSize { get; } = 512;
 
-        protected internal BasicChannelBase(string id)
+        protected internal BasicDataChannel(string id)
         {
             Id = id;
         }

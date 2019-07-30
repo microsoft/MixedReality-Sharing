@@ -9,15 +9,13 @@ namespace Microsoft.MixedReality.Sharing.Channels
 {
     public class AudioChannel : DisposableBase, IChannel
     {
-        private readonly BasicChannelBase basicChannel;
+        private readonly BasicDataChannel basicChannel;
 
         private CancellationTokenSource streamingCts;
 
         public string Id { get; }
 
-        public ChannelStatus Status { get; } = ChannelStatus.Connected;
-
-        public AudioChannel(string id, BasicChannelBase basicChannel)
+        public AudioChannel(string id, BasicDataChannel basicChannel)
         {
             Id = id;
             this.basicChannel = basicChannel;
@@ -72,7 +70,7 @@ namespace Microsoft.MixedReality.Sharing.Channels
     }
 
     public class DefaultAudioChannelFactory<TChannel> : IChannelFactory<AudioChannel>
-        where TChannel : BasicChannelBase
+        where TChannel : BasicDataChannel
     {
         private readonly IChannelFactory<TChannel> basicChannelFactory;
 

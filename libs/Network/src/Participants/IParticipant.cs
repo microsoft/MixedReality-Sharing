@@ -2,10 +2,13 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 
+
 namespace Microsoft.MixedReality.Sharing
 {
     public interface IParticipant
     {
         string Id { get; }
+
+        string DisplayName { get; }
     }
 }

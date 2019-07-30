@@ -5,5 +5,6 @@ namespace Microsoft.MixedReality.Sharing.StateSync
 {
     public struct Snapshot
     {
+        //object Get(IKey)
     }
 }
