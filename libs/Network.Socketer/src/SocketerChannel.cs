@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System;
 using System.Collections;
 using System.Collections.Concurrent;
 
@@ -49,6 +50,10 @@ namespace Microsoft.MixedReality.Sharing.Network.Socketer
         public void SendMessage(byte[] message)
         {
             var toSend = Utils.PrependCategory(message, Category.Header);
+            if (toSend.Length > 65507 && Category.Type == ChannelType.Unordered)
+            {
+                throw new ArgumentException("Message does not fit in UDP datagram (size: " + toSend.Length + ")");
+            }
             queue_.Add(toSend);
         }
     }

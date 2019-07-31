@@ -77,8 +77,10 @@ namespace Microsoft.MixedReality.Sharing.Network.Socketer
     /// <see cref="ChannelType.Ordered"/> channels/categories are mapped to TCP client/server sockets;
     /// <see cref="ChannelType.Unordered"/> is similarly mapped to UDP sockets.
     ///
-    /// Note that this library does not implement packet fragmentation when using UDP - which means that UDP datagrams
-    /// over a certain size will not be delivered if the underlying IP network doesn't handle fragmentation itself.
+    /// Note that this library does not implement message fragmentation when using UDP. Trying to send a
+    /// datagram larger than the maximum size will throw an exception. The maximum payload size is
+    /// `(65507 - category_name_utf8_size - 2)`. Also, UDP datagrams
+    /// larger than network MTU will not be delivered if the underlying IP network doesn't handle packet fragmentation.
     /// </remarks>
     public class SocketerChannelCategoryFactory : IChannelCategoryFactory
     {
