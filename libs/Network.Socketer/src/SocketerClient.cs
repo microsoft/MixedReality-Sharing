@@ -127,6 +127,9 @@ namespace Microsoft.MixedReality.Sharing.Network.Socketer
         /// <summary>
         /// Gets the IP of this machine.  Suitable for use as a Host on another Socketer.
         /// </summary>
+        /// <remarks>
+        /// Only returns IPv4 addresses. If the host has multiple addresses, the one this method returns is undefined.
+        /// </remarks>
         /// <returns>The host of the local Socketer.</returns>
         public static string GetLocalIPAddress()
         {
