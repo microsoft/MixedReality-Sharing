@@ -1,11 +1,23 @@
-﻿using Microsoft.MixedReality.Sharing.Utilities;
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
+using Microsoft.MixedReality.Sharing.Utilities;
 using System;
 using System.Collections.Generic;
 
 namespace Microsoft.MixedReality.Sharing.Network.Channels
 {
+    /// <summary>
+    /// Helper utility to process and reigster the factories.
+    /// </summary>
     public class ChannelsUtility
     {
+        /// <summary>
+        /// Popupate a map with <see cref="IChannelFactory{TChannel}"/> and the types they support.
+        /// </summary>
+        /// <param name="mapToFill">The map to populate.</param>
+        /// <param name="factories">The list of fatories.</param>
+        /// <param name="logger">The logger for any logging.</param>
         public static void ProcessChannelFactories(Dictionary<Type, IChannelFactory<IChannel>> mapToFill, IEnumerable<IChannelFactory<IChannel>> factories, ILogger logger)
         {
             foreach (IChannelFactory<IChannel> factory in factories)
@@ -31,6 +43,12 @@ namespace Microsoft.MixedReality.Sharing.Network.Channels
             }
         }
 
+        /// <summary>
+        /// Resolve <see cref="IChannelFactory{TChannel}"/> for the given type.
+        /// </summary>
+        /// <param name="channelFactoryMap">The factory map.</param>
+        /// <param name="type">The <see cref="Type"/> to use.</param>
+        /// <returns>The factory for the given type.</returns>
         public static IChannelFactory<IChannel> GetChannelFactory(IReadOnlyDictionary<Type, IChannelFactory<IChannel>> channelFactoryMap, Type type)
         {
             if (channelFactoryMap.TryGetValue(type, out IChannelFactory<IChannel> factory))

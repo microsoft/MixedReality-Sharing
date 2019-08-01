@@ -1,38 +1,51 @@
 ﻿using Microsoft.MixedReality.Sharing.Network.Channels;
-using MorseCode.ITask;
 using System.Collections.Concurrent;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Microsoft.MixedReality.Sharing.Core
 {
+    /// <summary>
+    /// Helper base class implementing the <see cref="IEndpoint"/>.
+    /// </summary>
+    /// <typeparam name="TSession">The type of session this endpoint belongs to.</typeparam>
+    /// <typeparam name="TEndpoint">The type of this endpoint, to establish a strongly typed link.</typeparam>
     public class EndpointBase<TSession, TEndpoint> : IEndpoint
         where TSession : SessionBase<TSession, TEndpoint>
         where TEndpoint : EndpointBase<TSession, TEndpoint>
     {
-        private readonly ConcurrentDictionary<ChannelMapKey, ITask<IChannel>> openedChannels = new ConcurrentDictionary<ChannelMapKey, ITask<IChannel>>();
+        private readonly ConcurrentDictionary<ChannelMapKey, IChannel> openedChannels = new ConcurrentDictionary<ChannelMapKey, IChannel>();
 
+        /// <summary>
+        /// The session this endpoint belongs to.
+        /// </summary>
         public TSession Session { get; }
 
+        /// <summary>
+        /// The session this endpoint belongs to.
+        /// </summary>
         ISession IEndpoint.Session => Session;
 
+        /// <summary>
+        /// Creates a new instance.
+        /// </summary>
+        /// <param name="session">The <see cref="TSession"/> this endpoint is part of.</param>
         protected EndpointBase(TSession session)
         {
             Session = session;
         }
 
-        public async Task<TChannel> GetChannelAsync<TChannel>(string channelId, CancellationToken cancellationToken) where TChannel : IChannel
+        /// <summary>
+        /// Gets a channel to communicate directly to the client on the other side of this endpoint.
+        /// </summary>
+        public TChannel GetChannel<TChannel>(string channelId) where TChannel : IChannel
         {
             Session.ThrowIfDisposed();
 
-            IChannel channel = await openedChannels.GetOrAdd(new ChannelMapKey(typeof(ChannelMapKey), channelId), key => CreateChannelFor(key, cancellationToken));
-
-            return (TChannel)channel;
+            return (TChannel)openedChannels.GetOrAdd(new ChannelMapKey(typeof(ChannelMapKey), channelId), CreateChannelFor);
         }
 
-        private async ITask<IChannel> CreateChannelFor(ChannelMapKey key, CancellationToken cancellationToken)
+        private IChannel CreateChannelFor(ChannelMapKey key)
         {
-            return await ChannelsUtility.GetChannelFactory(Session.ChannelFactoriesMap, key.Type).OpenChannelAsync(this, key.ChannelId, cancellationToken);
+            return ChannelsUtility.GetChannelFactory(Session.ChannelFactoriesMap, key.Type).GetChannel(this, key.ChannelId);
         }
     }
 }

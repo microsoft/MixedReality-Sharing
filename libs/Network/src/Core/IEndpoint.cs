@@ -1,19 +1,21 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace Microsoft.MixedReality.Sharing
 {
+    /// <summary>
+    /// Represents a connected peer/endpoint/device to the session.
+    /// </summary>
     public interface IEndpoint
     {
+        /// <summary>
+        /// The session this endpoint belongs to.
+        /// </summary>
         ISession Session { get; }
 
         /// <summary>
-        /// Opens a channel to communicate to the other participant.
+        /// Gets a channel to communicate directly to the client on the other side of this endpoint.
         /// </summary>
-        Task<TChannel> GetChannelAsync<TChannel>(string channelId, CancellationToken cancellationToken) where TChannel : IChannel;
+        TChannel GetChannel<TChannel>(string channelId) where TChannel : IChannel;
     }
 }

@@ -12,6 +12,9 @@ namespace Microsoft.MixedReality.Sharing.Utilities
         public const string WarningCategory = "Warning";
         public const string ErrorCategory = "Error";
 
+        /// <summary>
+        /// A simple <see cref="ILogger"/> implementation.
+        /// </summary>
         public static ILogger Logger { get; } = new LoggingUtility();
 
         /// <summary>

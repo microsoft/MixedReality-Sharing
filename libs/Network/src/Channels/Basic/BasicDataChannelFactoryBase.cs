@@ -1,60 +1,37 @@
-﻿using MorseCode.ITask;
-using System.Threading;
-using System.Threading.Tasks;
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 namespace Microsoft.MixedReality.Sharing.Channels
 {
-    public abstract class BasicDataChannelFactoryBase : IChannelFactory<ReliableChannel>, IChannelFactory<UnreliableChannel>, IChannelFactory<ReliableOrderedChannel>, IChannelFactory<UnreliableOrderedChannel>
+    /// <summary>
+    /// Helper basic class to be used for inheriting from by various implementations.
+    /// </summary>
+    public abstract class BasicDataChannelFactoryBase : IChannelFactory<BasicDataChannel>
     {
-        public abstract string Name { get; }
+        /// <summary>
+        /// Gets the name of this channel factory.
+        /// </summary>
+        public virtual string Name { get; } = $"Factory for {nameof(BasicDataChannel)}";
 
-        async ITask<UnreliableChannel> IChannelFactory<UnreliableChannel>.OpenChannelAsync(ISession session, string channelId, CancellationToken cancellationToken)
+
+        BasicDataChannel IChannelFactory<BasicDataChannel>.GetChannel(ISession session, string channelId)
         {
-            return await OpenUnreliableChannelAsync(session, channelId, cancellationToken);
+            return GetChannel(session, channelId);
         }
 
-        async ITask<UnreliableChannel> IChannelFactory<UnreliableChannel>.OpenChannelAsync(IEndpoint endpoint, string channelId, CancellationToken cancellationToken)
+        BasicDataChannel IChannelFactory<BasicDataChannel>.GetChannel(IEndpoint endpoint, string channelId)
         {
-            return await OpenUnreliableChannelAsync(endpoint, channelId, cancellationToken);
+            return GetChannel(endpoint, channelId);
         }
 
-        async ITask<ReliableOrderedChannel> IChannelFactory<ReliableOrderedChannel>.OpenChannelAsync(ISession session, string channelId, CancellationToken cancellationToken)
-        {
-            return await OpenReliableOrderedChannelAsync(session, channelId, cancellationToken);
-        }
+        /// <summary>
+        /// Implemented in the inheriting class to get a <see cref="BasicDataChannel"/> for the session.
+        /// </summary>
+        protected abstract BasicDataChannel GetChannel(ISession session, string channelId);
 
-        async ITask<ReliableOrderedChannel> IChannelFactory<ReliableOrderedChannel>.OpenChannelAsync(IEndpoint endpoint, string channelId, CancellationToken cancellationToken)
-        {
-            return await OpenReliableOrderedChannelAsync(endpoint, channelId, cancellationToken);
-        }
-
-        async ITask<UnreliableOrderedChannel> IChannelFactory<UnreliableOrderedChannel>.OpenChannelAsync(ISession session, string channelId, CancellationToken cancellationToken)
-        {
-            return await OpenUnreliableOrderedChannelAsync(session, channelId, cancellationToken);
-        }
-
-        async ITask<UnreliableOrderedChannel> IChannelFactory<UnreliableOrderedChannel>.OpenChannelAsync(IEndpoint endpoint, string channelId, CancellationToken cancellationToken)
-        {
-            return await OpenUnreliableOrderedChannelAsync(endpoint, channelId, cancellationToken);
-        }
-
-        async ITask<ReliableChannel> IChannelFactory<ReliableChannel>.OpenChannelAsync(ISession session, string channelId, CancellationToken cancellationToken)
-        {
-            return await OpenReliableChannelAsync(session, channelId, cancellationToken);
-        }
-
-        async ITask<ReliableChannel> IChannelFactory<ReliableChannel>.OpenChannelAsync(IEndpoint endpoint, string channelId, CancellationToken cancellationToken)
-        {
-            return await OpenReliableChannelAsync(endpoint, channelId, cancellationToken);
-        }
-
-        protected abstract Task<UnreliableChannel> OpenUnreliableChannelAsync(ISession session, string channelId, CancellationToken cancellationToken);
-        protected abstract Task<UnreliableChannel> OpenUnreliableChannelAsync(IEndpoint endpoint, string channelId, CancellationToken cancellationToken);
-        protected abstract Task<ReliableOrderedChannel> OpenReliableOrderedChannelAsync(ISession session, string channelId, CancellationToken cancellationToken);
-        protected abstract Task<ReliableOrderedChannel> OpenReliableOrderedChannelAsync(IEndpoint endpoint, string channelId, CancellationToken cancellationToken);
-        protected abstract Task<UnreliableOrderedChannel> OpenUnreliableOrderedChannelAsync(ISession session, string channelId, CancellationToken cancellationToken);
-        protected abstract Task<UnreliableOrderedChannel> OpenUnreliableOrderedChannelAsync(IEndpoint endpoint, string channelId, CancellationToken cancellationToken);
-        protected abstract Task<ReliableChannel> OpenReliableChannelAsync(ISession session, string channelId, CancellationToken cancellationToken);
-        protected abstract Task<ReliableChannel> OpenReliableChannelAsync(IEndpoint endpoint, string channelId, CancellationToken cancellationToken);
+        /// <summary>
+        /// Implemented in the inheriting class to get a <see cref="BasicDataChannel"/> for the endpoint.
+        /// </summary>
+        protected abstract BasicDataChannel GetChannel(IEndpoint endpoint, string channelId);
     }
 }

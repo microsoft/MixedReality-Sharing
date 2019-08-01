@@ -3,6 +3,7 @@ using Microsoft.MixedReality.Sharing.Channels;
 using Microsoft.MixedReality.Sharing.Network.Test.Mocks;
 using Microsoft.MixedReality.Sharing.Utilities;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -24,10 +25,7 @@ namespace Microsoft.MixedReality.Sharing.Network.Test
 
             containerBuilder.RegisterType<MockBasicChannelFactory>()
                 .As<IChannelFactory<IChannel>>()
-                .As<IChannelFactory<ReliableChannel>>()
-                .As<IChannelFactory<UnreliableChannel>>()
-                .As<IChannelFactory<ReliableOrderedChannel>>()
-                .As<IChannelFactory<UnreliableOrderedChannel>>()
+                .As<IChannelFactory<BasicDataChannel>>()
                 .SingleInstance();
 
             containerBuilder.RegisterType<MockSession>().As<ISession>();
@@ -42,6 +40,9 @@ namespace Microsoft.MixedReality.Sharing.Network.Test
             rootLifetimeScope = null;
         }
 
+        /// <summary>
+        /// Simple test to send receive a message.
+        /// </summary>
         [TestMethod]
         public async Task SendMessage()
         {
@@ -49,15 +50,15 @@ namespace Microsoft.MixedReality.Sharing.Network.Test
 
             using (ILifetimeScope scope = rootLifetimeScope.BeginLifetimeScope())
             using (ISession host = scope.Resolve<ISession>())
-            using (ISession client = ((MockSession)host).CreateConection())
-            using (ReliableChannel hostChannel = await host.GetChannelAsync<ReliableChannel>(CancellationToken.None))
-            using (ReliableChannel clientChannel = await client.GetChannelAsync<ReliableChannel>(CancellationToken.None))
+            using (ISession client = ((MockSession)host).CreateConnection())
+            using (BasicDataChannel hostChannel = host.GetChannel<BasicDataChannel>())
+            using (BasicDataChannel clientChannel = client.GetChannel<BasicDataChannel>())
             {
                 // Listen to messages
                 TaskCompletionSource<byte[]> messageReceived = new TaskCompletionSource<byte[]>();
-                void MessageReceived(IEndpoint endpoint, byte[] obj)
+                void MessageReceived(IEndpoint endpoint, ReadOnlySpan<byte> obj)
                 {
-                    messageReceived.SetResult(obj);
+                    messageReceived.SetResult(obj.ToArray());
                 }
                 hostChannel.MessageReceived += MessageReceived;
 
@@ -79,12 +80,15 @@ namespace Microsoft.MixedReality.Sharing.Network.Test
             }
         }
 
+        /// <summary>
+        /// Simple method to test the streaming aspect of audio.
+        /// </summary>
         [TestMethod]
         public async Task BroadcastAudioMessage()
         {
             void AdditionalDependencies(ContainerBuilder containerBuilder)
             {
-                containerBuilder.RegisterType<DefaultAudioChannelFactory<ReliableChannel>>()
+                containerBuilder.RegisterType<DefaultAudioChannelFactory>()
                     .As<IChannelFactory<IChannel>>()
                     .As<IChannelFactory<AudioChannel>>()
                     .SingleInstance();
@@ -97,23 +101,41 @@ namespace Microsoft.MixedReality.Sharing.Network.Test
 
             using (ILifetimeScope scope = rootLifetimeScope.BeginLifetimeScope(AdditionalDependencies))
             using (ISession host = scope.Resolve<ISession>())
-            using (ISession client = ((MockSession)host).CreateConection())
-            using (AudioChannel hostChannel = await host.GetChannelAsync<AudioChannel>(CancellationToken.None))
-            using (AudioChannel clientChannel = await client.GetChannelAsync<AudioChannel>(CancellationToken.None))
+            using (ISession client = ((MockSession)host).CreateConnection())
+            using (AudioChannel hostChannel = host.GetChannel<AudioChannel>())
+            using (AudioChannel clientChannel = client.GetChannel<AudioChannel>())
             {
-                // CLIENT Start streaming audio
-                using (Stream stream = new MemoryStream())
+                byte[] randomBuffer = new byte[37907];
+                new Random().NextBytes(randomBuffer);
+
+                await Task.WhenAll(ReceiveDataAsync(hostChannel, randomBuffer), SendDataAsync(clientChannel, randomBuffer, 138, TimeSpan.FromMilliseconds(1)));
+            }
+        }
+
+        private async Task ReceiveDataAsync(AudioChannel hostChannel, byte[] bufferToCompareWith)
+        {
+            //TODO finish the AudioChannel
+            await Task.Delay(1);
+        }
+
+        private async Task SendDataAsync(AudioChannel clientChannel, byte[] buffer, int sendPerLoopSize, TimeSpan loopSleepTime)
+        {
+            // CLIENT Start streaming audio
+            using (Stream stream = new MemoryStream())
+            {
+                clientChannel.BeginStreamingAudio(stream);
+
+                try
                 {
-                    clientChannel.BeginStreamingAudio(stream);
-
-                    try
+                    for (int i = 0; i < buffer.Length; i += sendPerLoopSize)
                     {
-
+                        await Task.Delay(loopSleepTime);
+                        await stream.WriteAsync(buffer, i, Math.Min(buffer.Length - i, sendPerLoopSize));
                     }
-                    finally
-                    {
-                        clientChannel.StopStreamingAudio();
-                    }
+                }
+                finally
+                {
+                    clientChannel.StopStreamingAudio();
                 }
             }
         }

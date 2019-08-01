@@ -2,6 +2,9 @@
 
 namespace Microsoft.MixedReality.Sharing
 {
+    /// <summary>
+    /// Helper class acting as a key for opened channels.
+    /// </summary>
     internal struct ChannelMapKey : IEquatable<ChannelMapKey>
     {
         public Type Type { get; }

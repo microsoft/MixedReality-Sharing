@@ -1,15 +1,12 @@
 ﻿using Microsoft.MixedReality.Sharing.Core;
 using Microsoft.MixedReality.Sharing.Utilities;
-using System;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Microsoft.MixedReality.Sharing.Network.Test.Mocks
 {
     public class MockSession : SessionBase<MockSession, MockEndpoint>
     {
-        internal new Dictionary<MockEndpoint, MockSession> ConnectedEndpointsMap => base.ConnectedEndpointsMap;
+        internal Dictionary<MockEndpoint, MockSession> ConnectedEndpointsMap { get; } = new Dictionary<MockEndpoint, MockSession>();
 
         public MockSession(ILogger logger, IEnumerable<IChannelFactory<IChannel>> channelFactories)
             : base(logger, channelFactories)
@@ -17,7 +14,7 @@ namespace Microsoft.MixedReality.Sharing.Network.Test.Mocks
         }
 
         private MockSession(MockSession otherSession)
-            : base(otherSession.channelFactoriesMap)
+            : base(otherSession.logger, otherSession.channelFactoriesMap)
         {
         }
 
@@ -26,12 +23,19 @@ namespace Microsoft.MixedReality.Sharing.Network.Test.Mocks
         /// All factories are duplicated.
         /// </summary>
         /// <returns></returns>
-        public MockSession CreateConection()
+        public MockSession CreateConnection()
         {
-            MockSession toReturn = new MockSession(this);
-            ConnectedEndpointsMap.Add(new MockEndpoint(this), toReturn);
-            toReturn.ConnectedEndpointsMap.Add(new MockEndpoint(toReturn), this);
-            return toReturn;
+            MockSession remoteSession = new MockSession(this);
+            MockEndpoint localEndpoint = new MockEndpoint(this);
+
+            ConnectedEndpointsMap.Add(localEndpoint, remoteSession);
+            OnEndpointConnected(localEndpoint);
+
+            MockEndpoint remoteEndpoint = new MockEndpoint(remoteSession);
+            remoteSession.ConnectedEndpointsMap.Add(remoteEndpoint, this);
+            remoteSession.OnEndpointConnected(remoteEndpoint);
+
+            return remoteSession;
         }
     }
 }
