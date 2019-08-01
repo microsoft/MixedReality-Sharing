@@ -1,4 +1,5 @@
 ﻿using Microsoft.MixedReality.Sharing.Network.Channels;
+using Microsoft.MixedReality.Sharing.StateSync;
 using Microsoft.MixedReality.Sharing.Utilities;
 using MorseCode.ITask;
 using System;
@@ -23,6 +24,8 @@ namespace Microsoft.MixedReality.Sharing.Core
         protected Dictionary<TEndpoint, TSession> ConnectedEndpointsMap { get; } = new Dictionary<TEndpoint, TSession>();
 
         internal IReadOnlyDictionary<Type, IChannelFactory<IChannel>> ChannelFactoriesMap { get; }
+
+        public SynchronizationStore SynchronizationStore { get; }
 
         public IReadOnlyCollection<IEndpoint> ConnectedEndpoints
         {

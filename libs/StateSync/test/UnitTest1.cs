@@ -8,8 +8,8 @@ namespace Microsoft.MixedReality.Sharing.StateSync.Test
         [Fact]
         public void Test1()
         {
-            var snap = new Snapshot();
-            Assert.NotNull(snap.GetType());
+            var snap = new LightweightSnapshot();
+            //Assert.NotNull();
         }
 
         [Theory]

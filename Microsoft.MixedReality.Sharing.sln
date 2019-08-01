@@ -25,11 +25,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SpatialAlignment", "Spatial
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{2E35D74E-E58D-4C0B-985C-B628F19E0500}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.MixedReality.Sharing.Utilities", "libs\Microsoft.MixedReality.Sharing.Utilities\Microsoft.MixedReality.Sharing.Utilities.csproj", "{2BCB3FDF-5797-422E-84A3-D73215B27303}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.MixedReality.Sharing.Utilities", "libs\Microsoft.MixedReality.Sharing.Utilities\Microsoft.MixedReality.Sharing.Utilities.csproj", "{2BCB3FDF-5797-422E-84A3-D73215B27303}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.MixedReality.SpatialAlignment", "libs\Microsoft.MixedReality.SpatialAlignment\Microsoft.MixedReality.SpatialAlignment.csproj", "{70C01C2C-A402-406A-A0C3-DFD27F76AE6C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.MixedReality.SpatialAlignment", "libs\Microsoft.MixedReality.SpatialAlignment\Microsoft.MixedReality.SpatialAlignment.csproj", "{70C01C2C-A402-406A-A0C3-DFD27F76AE6C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.MixedReality.Sharing.Network.Test", "Microsoft.MixedReality.Sharing.Network.Test\Microsoft.MixedReality.Sharing.Network.Test.csproj", "{83AFC300-F168-4485-8C6B-1BAC2FEC7918}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.MixedReality.Sharing.Test", "Microsoft.MixedReality.Sharing.Network.Test\Microsoft.MixedReality.Sharing.Test.csproj", "{83AFC300-F168-4485-8C6B-1BAC2FEC7918}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

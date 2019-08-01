@@ -17,7 +17,7 @@ namespace Microsoft.MixedReality.Sharing
     {
         IReadOnlyCollection<IEndpoint> ConnectedEndpoints { get; }
 
-        //ISynchronizationStore SynchronizationStore { get; }
+        SynchronizationStore SynchronizationStore { get; }
 
         Task<TChannel> GetChannelAsync<TChannel>(string channelId, CancellationToken cancellationToken) where TChannel : IChannel;
     }
