@@ -25,9 +25,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SpatialAlignment", "Spatial
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{2E35D74E-E58D-4C0B-985C-B628F19E0500}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.MixedReality.Sharing.Utilities", "libs\Microsoft.MixedReality.Sharing.Utilities\Microsoft.MixedReality.Sharing.Utilities.csproj", "{2BCB3FDF-5797-422E-84A3-D73215B27303}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.MixedReality.Sharing.Utilities", "libs\Microsoft.MixedReality.Sharing.Utilities\Microsoft.MixedReality.Sharing.Utilities.csproj", "{2BCB3FDF-5797-422E-84A3-D73215B27303}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.MixedReality.SpatialAlignment", "libs\Microsoft.MixedReality.SpatialAlignment\Microsoft.MixedReality.SpatialAlignment.csproj", "{70C01C2C-A402-406A-A0C3-DFD27F76AE6C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.MixedReality.SpatialAlignment", "libs\Microsoft.MixedReality.SpatialAlignment\Microsoft.MixedReality.SpatialAlignment.csproj", "{70C01C2C-A402-406A-A0C3-DFD27F76AE6C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.MixedReality.Sharing.Test", "Microsoft.MixedReality.Sharing.Network.Test\Microsoft.MixedReality.Sharing.Test.csproj", "{83AFC300-F168-4485-8C6B-1BAC2FEC7918}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -131,6 +133,18 @@ Global
 		{70C01C2C-A402-406A-A0C3-DFD27F76AE6C}.Release|x64.Build.0 = Release|Any CPU
 		{70C01C2C-A402-406A-A0C3-DFD27F76AE6C}.Release|x86.ActiveCfg = Release|Any CPU
 		{70C01C2C-A402-406A-A0C3-DFD27F76AE6C}.Release|x86.Build.0 = Release|Any CPU
+		{83AFC300-F168-4485-8C6B-1BAC2FEC7918}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83AFC300-F168-4485-8C6B-1BAC2FEC7918}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83AFC300-F168-4485-8C6B-1BAC2FEC7918}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{83AFC300-F168-4485-8C6B-1BAC2FEC7918}.Debug|x64.Build.0 = Debug|Any CPU
+		{83AFC300-F168-4485-8C6B-1BAC2FEC7918}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{83AFC300-F168-4485-8C6B-1BAC2FEC7918}.Debug|x86.Build.0 = Debug|Any CPU
+		{83AFC300-F168-4485-8C6B-1BAC2FEC7918}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{83AFC300-F168-4485-8C6B-1BAC2FEC7918}.Release|Any CPU.Build.0 = Release|Any CPU
+		{83AFC300-F168-4485-8C6B-1BAC2FEC7918}.Release|x64.ActiveCfg = Release|Any CPU
+		{83AFC300-F168-4485-8C6B-1BAC2FEC7918}.Release|x64.Build.0 = Release|Any CPU
+		{83AFC300-F168-4485-8C6B-1BAC2FEC7918}.Release|x86.ActiveCfg = Release|Any CPU
+		{83AFC300-F168-4485-8C6B-1BAC2FEC7918}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -144,6 +158,7 @@ Global
 		{F61890A3-4C11-4057-8F25-8878063EEF2C} = {D79ED51D-DCC6-42A7-AF77-5578C2AEBA90}
 		{2BCB3FDF-5797-422E-84A3-D73215B27303} = {2E35D74E-E58D-4C0B-985C-B628F19E0500}
 		{70C01C2C-A402-406A-A0C3-DFD27F76AE6C} = {F52CFF23-46BF-4ED7-A793-D30A9B242208}
+		{83AFC300-F168-4485-8C6B-1BAC2FEC7918} = {624DBD01-5D20-46AA-B436-9AF857411B11}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {1E8B3035-4568-4A6F-9147-A4F57DD5BB0B}

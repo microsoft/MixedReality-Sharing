@@ -84,6 +84,6 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// Can be used to join a <see cref="Session.ISession"/> (see <see cref="Session.ISessionFactory"/>), or
         /// listened to/edited directly.
         /// </summary>
-        StateSync.IStateSubscription State { get; }
+        //StateSync.IStateSubscription State { get; }
     }
 }
