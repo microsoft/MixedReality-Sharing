@@ -108,6 +108,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             return SetAttributesAsync(attributes);
         }
 
+        // TODO there is no way to delete an attribute at the moment
         private Task SetAttributesAsync(IEnumerable<KeyValuePair<string, object>> attributes)
         {
             return Task.Run(() =>

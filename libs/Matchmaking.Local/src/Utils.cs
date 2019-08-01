@@ -54,6 +54,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             }
             for (int i = 0; i < attrCount; ++i)
             {
+                // TODO this is insecure and not meant to be used in production code
                 object value = formatter.Deserialize(str);
                 attributes[i] = new KeyValuePair<string, object>(names[i], value);
             }
