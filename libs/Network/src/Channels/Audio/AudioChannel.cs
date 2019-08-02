@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using Microsoft.MixedReality.Sharing.Utilities;
 using System;
 using System.IO;
 using System.Threading;
@@ -14,8 +13,8 @@ namespace Microsoft.MixedReality.Sharing.Channels
     /// </summary>
     public abstract class AudioChannel : ChannelBase
     {
+        private Stream streamingStream;
         private Stream listeningStream;
-        private CancellationTokenSource streamingCts;
 
         /// <summary>
         /// Gets whether there is audio being streamed on this channel.
@@ -26,7 +25,7 @@ namespace Microsoft.MixedReality.Sharing.Channels
             {
                 lock (LockObject)
                 {
-                    return streamingCts != null && !streamingCts.Token.IsCancellationRequested;
+                    return streamingStream != null && streamingStream.CanWrite;
                 }
             }
         }
@@ -41,19 +40,19 @@ namespace Microsoft.MixedReality.Sharing.Channels
         /// Begin streaming audio data on this channel from the given stream.
         /// </summary>
         /// <param name="streamToReadFrom">Audio data to stream.</param>
-        public void BeginStreamingAudio(Stream streamToReadFrom)
+        public Stream BeginStreaming()
         {
             lock (LockObject)
             {
                 ThrowIfDisposed();
 
-                if (streamingCts != null)
+                if (streamingStream != null && streamingStream.CanWrite)
                 {
                     throw new InvalidOperationException("Single streaming operation allowed on audio channel.");
                 }
 
-                streamingCts = CancellationTokenSource.CreateLinkedTokenSource(DisposeCancellationToken);
-                BeginStreamingAsync(streamToReadFrom, streamingCts.Token).FireAndForget();
+                streamingStream?.Dispose();
+                return streamingStream = OnBeginStreaming();
             }
         }
 
@@ -63,71 +62,27 @@ namespace Microsoft.MixedReality.Sharing.Channels
             {
                 ThrowIfDisposed();
 
-                if (listeningStream != null)
+                if (listeningStream != null && listeningStream.CanRead)
                 {
                     throw new InvalidOperationException("This audio channel already has a listener.");
                 }
 
-                return listeningStream = CreateListeningStream();
+                listeningStream?.Dispose();
+                return listeningStream = OnBeginListening();
             }
         }
 
-        private async Task BeginStreamingAsync(Stream streamToReadFrom, CancellationToken cancellationToken)
-        {
-            try
-            {
-                await Task.Run(() => OnStreamDataAsync(streamToReadFrom, cancellationToken), cancellationToken);
-            }
-            finally
-            {
-                lock (LockObject)
-                {
-                    // Clean up in case we finished due error or stream closing.
-                    streamingCts?.Cancel();
-                    streamingCts?.Dispose();
-                    streamingCts = null;
-                }
-            }
-        }
+        protected abstract Stream OnBeginStreaming();
 
-        /// <summary>
-        /// Stop streaming audio data.
-        /// </summary>
-        public void StopStreamingAudio()
-        {
-            lock (LockObject)
-            {
-                ThrowIfDisposed();
-
-                if (streamingCts == null)
-                {
-                    throw new InvalidOperationException("No streaming operation is present on the audio channel.");
-                }
-
-                streamingCts.Cancel();
-                streamingCts.Dispose();
-                streamingCts = null;
-            }
-        }
-
+        protected abstract Stream OnBeginListening();
+        
         protected override void OnManagedDispose()
         {
+            streamingStream?.Dispose();
+            streamingStream = null;
+
             listeningStream?.Dispose();
             listeningStream = null;
         }
-
-        /// <summary>
-        /// Implemment this in the inheriting class to stream the audio data.
-        /// </summary>
-        /// <param name="streamToReadFrom">The stream to read from.</param>
-        /// <param name="cancellationToken">The cancellation token to interrupt streaming.</param>
-        /// <returns></returns>
-        protected abstract Task OnStreamDataAsync(Stream streamToReadFrom, CancellationToken cancellationToken);
-
-        /// <summary>
-        /// Implement this in the inheritng class to receive streamed audio.
-        /// </summary>
-        /// <returns>The stream that can be read for audio.</returns>
-        protected abstract Stream CreateListeningStream();
     }
 }

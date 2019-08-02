@@ -18,7 +18,7 @@ namespace Microsoft.MixedReality.Sharing.Network.Channels
         /// <param name="mapToFill">The map to populate.</param>
         /// <param name="factories">The list of fatories.</param>
         /// <param name="logger">The logger for any logging.</param>
-        public static void ProcessChannelFactories(Dictionary<Type, IChannelFactory<IChannel>> mapToFill, IEnumerable<IChannelFactory<IChannel>> factories, ILogger logger)
+        public static void PopulateChannelFactories(Dictionary<Type, IChannelFactory<IChannel>> mapToFill, IEnumerable<IChannelFactory<IChannel>> factories, ILogger logger)
         {
             foreach (IChannelFactory<IChannel> factory in factories)
             {
@@ -32,7 +32,7 @@ namespace Microsoft.MixedReality.Sharing.Network.Channels
 
                         if (mapToFill.ContainsKey(messageType))
                         {
-                            logger.LogError($"A channel factory registration type '{messageType.FullName}' already exists, the factory '{factory.Name}' will be ignored.");
+                            logger.LogWarning($"A channel factory registration type '{messageType.FullName}' already exists, the factory '{factory.Name}' will be ignored.");
                         }
                         else
                         {

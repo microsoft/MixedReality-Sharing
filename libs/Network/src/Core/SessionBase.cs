@@ -57,7 +57,7 @@ namespace Microsoft.MixedReality.Sharing.Core
         protected SessionBase(ILogger logger, IEnumerable<IChannelFactory<IChannel>> channelFactories)
             : this(logger, new Dictionary<Type, IChannelFactory<IChannel>>())
         {
-            ChannelsUtility.ProcessChannelFactories(channelFactoriesMap, channelFactories, logger);
+            ChannelsUtility.PopulateChannelFactories(channelFactoriesMap, channelFactories, logger);
         }
 
         protected SessionBase(ILogger logger, Dictionary<Type, IChannelFactory<IChannel>> channelFactoriesMap)

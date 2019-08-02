@@ -6,7 +6,6 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.MixedReality.Sharing.Network.Test
@@ -64,14 +63,13 @@ namespace Microsoft.MixedReality.Sharing.Network.Test
 
                 try
                 {
-                    await clientChannel.SendMessageAsync(Encoding.ASCII.GetBytes(messageText), CancellationToken.None);
+                    clientChannel.SendMessage(Encoding.ASCII.GetBytes(messageText));
 
 
                     // HOST process
                     byte[] message = await messageReceived.Task;
 
                     Assert.AreEqual(messageText, Encoding.ASCII.GetString(message));
-
                 }
                 finally
                 {
@@ -114,28 +112,35 @@ namespace Microsoft.MixedReality.Sharing.Network.Test
 
         private async Task ReceiveDataAsync(AudioChannel hostChannel, byte[] bufferToCompareWith)
         {
-            //TODO finish the AudioChannel
-            await Task.Delay(1);
+            await Task.Run(async () =>
+            {
+                Memory<byte> memory = new Memory<byte>(bufferToCompareWith);
+
+                using (Stream stream = hostChannel.BeginListening())
+                {
+                    byte[] buffer = new byte[150];
+                    Memory<byte> readingBuffer = new Memory<byte>(buffer);
+                    for (int totalRead = 0; totalRead < bufferToCompareWith.Length && stream.CanRead;)
+                    {
+                        int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+                        int compareResult = memory.Slice(totalRead, bytesRead).Span.SequenceCompareTo(readingBuffer.Slice(0, bytesRead).Span);
+                        Assert.AreEqual(compareResult, 0);
+
+                        totalRead += bytesRead;
+                    }
+                }
+            });
         }
 
         private async Task SendDataAsync(AudioChannel clientChannel, byte[] buffer, int sendPerLoopSize, TimeSpan loopSleepTime)
         {
             // CLIENT Start streaming audio
-            using (Stream stream = new MemoryStream())
+            using (Stream stream = clientChannel.BeginStreaming())
             {
-                clientChannel.BeginStreamingAudio(stream);
-
-                try
+                for (int i = 0; i < buffer.Length; i += sendPerLoopSize)
                 {
-                    for (int i = 0; i < buffer.Length; i += sendPerLoopSize)
-                    {
-                        await Task.Delay(loopSleepTime);
-                        await stream.WriteAsync(buffer, i, Math.Min(buffer.Length - i, sendPerLoopSize));
-                    }
-                }
-                finally
-                {
-                    clientChannel.StopStreamingAudio();
+                    await Task.Delay(loopSleepTime);
+                    await stream.WriteAsync(buffer, i, Math.Min(buffer.Length - i, sendPerLoopSize));
                 }
             }
         }

@@ -2,8 +2,6 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Microsoft.MixedReality.Sharing.Network.Test.Mocks
 {
@@ -23,12 +21,10 @@ namespace Microsoft.MixedReality.Sharing.Network.Test.Mocks
             return new MockBasicDataChannel(channelId, mockSession, null);
         }
 
-        private static async Task SendMessageAsyncImplementation(Stream stream, MockSession ownerSession, MockEndpoint targetLocalEndpoint, CancellationToken cancellationToken)
+        private static void SendMessageImplementation(string channelId, Stream stream, MockSession ownerSession, MockEndpoint targetLocalEndpoint)
         {
             byte[] bytes = new byte[stream.Length];
             stream.Read(bytes, 0, bytes.Length);
-
-            await Task.Delay(1, cancellationToken);
 
             if (targetLocalEndpoint != null)
             {
@@ -45,7 +41,7 @@ namespace Microsoft.MixedReality.Sharing.Network.Test.Mocks
                     throw new InvalidOperationException("Something wrong with the mock connection.");
                 }
 
-                MockBasicDataChannel channel = (MockBasicDataChannel)targetRemoteEndpoint.GetChannel<BasicDataChannel>();
+                MockBasicDataChannel channel = (MockBasicDataChannel)targetRemoteEndpoint.GetChannel<BasicDataChannel>(channelId);
                 channel.RaiseMessageReceived(targetRemoteEndpoint, bytes.AsSpan());
             }
             else
@@ -61,7 +57,7 @@ namespace Microsoft.MixedReality.Sharing.Network.Test.Mocks
                         throw new InvalidOperationException("Something wrong with the mock connection.");
                     }
 
-                    MockBasicDataChannel channel = (MockBasicDataChannel)targetRemoteSession.GetChannel<BasicDataChannel>();
+                    MockBasicDataChannel channel = (MockBasicDataChannel)targetRemoteSession.GetChannel<BasicDataChannel>(channelId);
                     channel.RaiseMessageReceived(targetRemoteEndpoint, bytes.AsSpan());
                 }
             }
@@ -84,9 +80,9 @@ namespace Microsoft.MixedReality.Sharing.Network.Test.Mocks
                 base.RaiseMessageReceived(endpoint, message);
             }
 
-            protected override async Task OnSendMessageAsync(Stream stream, CancellationToken cancellationToken)
+            protected override void OnSendMessage(Stream stream)
             {
-                await SendMessageAsyncImplementation(stream, ownerSession, targetLocalEndpoint, cancellationToken);
+                SendMessageImplementation(Id, stream, ownerSession, targetLocalEndpoint);
             }
         }
     }

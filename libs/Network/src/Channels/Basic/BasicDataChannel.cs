@@ -3,8 +3,6 @@
 
 using System;
 using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Microsoft.MixedReality.Sharing.Channels
 {
@@ -41,11 +39,11 @@ namespace Microsoft.MixedReality.Sharing.Channels
         /// </summary>
         /// <param name="data">The bytes to send.</param>
         /// <param name="cancellationToken">The cancellationtoken to interrupt the process early.</param>
-        public Task SendMessageAsync(byte[] data, CancellationToken cancellationToken)
+        public void SendMessage(byte[] data)
         {
             ThrowIfDisposed();
 
-            return OnSendMessageAsync(data, cancellationToken);
+            OnSendMessage(data);
         }
 
         /// <summary>
@@ -53,28 +51,28 @@ namespace Microsoft.MixedReality.Sharing.Channels
         /// </summary>
         /// <param name="stream">The stream to read data from.</param>
         /// <param name="cancellationToken">The cancellationtoken to interrupt the process early.</param>
-        public Task SendMessageAsync(Stream stream, CancellationToken cancellationToken)
+        public void SendMessage(Stream stream)
         {
             ThrowIfDisposed();
 
-            return OnSendMessageAsync(stream, cancellationToken);
+            OnSendMessage(stream);
         }
 
         /// <summary>
         /// Optionally override in the inheriting class to change how a <see cref="byte[]"/> message is sent.
         /// </summary>
-        protected virtual async Task OnSendMessageAsync(byte[] data, CancellationToken cancellationToken)
+        protected virtual void OnSendMessage(byte[] data)
         {
             using (MemoryStream stream = new MemoryStream(data))
             {
-                await SendMessageAsync(stream, cancellationToken);
+                SendMessage(stream);
             }
         }
 
         /// <summary>
         /// Implement in the inheriting class to send a message by reading from a stream.
         /// </summary>
-        protected abstract Task OnSendMessageAsync(Stream stream, CancellationToken cancellationToken);
+        protected abstract void OnSendMessage(Stream stream);
 
         /// <summary>
         /// Raise the message received event.
