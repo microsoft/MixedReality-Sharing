@@ -51,42 +51,49 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             Socket = socket;
             socket.Message += (SocketerClient server, SocketerClient.MessageEvent ev) =>
             {
-                if (Utils.IsAttrPacket(ev.Message))
+                switch(Utils.ParseHeader(ev.Message))
                 {
-                    // Apply the changes locally.
-                    var recvAttributes = Utils.ParseAttrPacket(ev.Message);
-                    IReadOnlyDictionary<string, object> oldAttributes = Attributes;
-                    Dictionary<string, object> newAttributes = new Dictionary<string, object>(oldAttributes.Count);
-                    foreach (var attr in oldAttributes)
+                    case Utils.AttrHeader:
                     {
-                        newAttributes.Add(attr.Key, attr.Value);
+                        // Apply the changes locally.
+                        var recvAttributes = Utils.ParseAttrPacket(ev.Message);
+                        IReadOnlyDictionary<string, object> oldAttributes = Attributes;
+                        Dictionary<string, object> newAttributes = new Dictionary<string, object>(oldAttributes.Count);
+                        foreach (var attr in oldAttributes)
+                        {
+                            newAttributes.Add(attr.Key, attr.Value);
+                        }
+                        foreach (var attr in recvAttributes)
+                        {
+                            newAttributes[attr.Key] = attr.Value;
+                        }
+                        Attributes = newAttributes;
+
+                        // TODO see SetAttributesAsync
+                        AttributesChangeReceived?.Invoke(this, GetHash(recvAttributes));
+
+                        // Raise the event.
+                        RaiseAttributesChanged();
+                        break;
                     }
-                    foreach (var attr in recvAttributes)
+                    case Utils.MsgHeader:
                     {
-                        newAttributes[attr.Key] = attr.Value;
+                        // Raise the event.
+                        int senderId = Utils.ParseMessageParticipant(ev.Message);
+                        var sender = Participants.First(p => p.IdInRoom == senderId);
+                        MessageReceived?.Invoke(this, new MessageReceivedArgs(sender, Utils.ParseMessagePayload(ev.Message)));
+                        break;
                     }
-                    Attributes = newAttributes;
-
-                    // TODO see SetAttributesAsync
-                    AttributesChangeReceived?.Invoke(this, GetHash(recvAttributes));
-
-                    // Raise the event.
-                    RaiseAttributesChanged();
-                }
-                else if (Utils.IsMessagePacket(ev.Message))
-                {
-                    // Raise the event.
-                    int senderId = Utils.ParseMessageParticipant(ev.Message);
-                    var sender = Participants.First(p => p.IdInRoom == senderId);
-                    MessageReceived?.Invoke(this, new MessageReceivedArgs(sender, Utils.ParseMessagePayload(ev.Message)));
-                }
-                else if (Utils.IsParticipantJoinedPacket(ev.Message))
-                {
-                    AddParticipant(Utils.ParseParticipantJoinedPacket(ev.Message));
-                }
-                else if (Utils.IsParticipantLeftPacket(ev.Message))
-                {
-                    RemoveParticipant(Utils.ParseParticipantLeftPacket(ev.Message));
+                    case Utils.PartJoinedHeader:
+                    {
+                        AddParticipant(Utils.ParseParticipantJoinedPacket(ev.Message));
+                        break;
+                    }
+                    case Utils.PartLeftHeader:
+                    {
+                        RemoveParticipant(Utils.ParseParticipantLeftPacket(ev.Message));
+                        break;
+                    }
                 }
             };
         }

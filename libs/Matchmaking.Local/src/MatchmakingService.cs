@@ -47,9 +47,6 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
     /// </remarks>
     public class MatchmakingService : IMatchmakingService, IRoomManager, IDisposable
     {
-        private static readonly byte[] roomHeader_ = new byte[] { (byte)'R', (byte)'O', (byte)'O', (byte)'M' };
-        private static readonly byte[] findHeader_ = new byte[] { (byte)'F', (byte)'I', (byte)'N', (byte)'D' };
-
         private volatile OwnedRoom[] ownedRooms_ = new OwnedRoom[0];
         private volatile RoomBase[] joinedRooms_ = new RoomBase[0];
         private List<RoomList> roomLists_ = new List<RoomList>();
@@ -94,7 +91,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
 
         private void OnMessage(SocketerClient server, SocketerClient.MessageEvent ev)
         {
-            if (IsFindPacket(ev.Message))
+            if (Utils.ParseHeader(ev.Message) == Utils.FindHeader)
             {
                 // Reply with the rooms owned by the local participant.
                 // TODO should just use one socket to send udp messages
@@ -102,7 +99,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                 replySocket.Start();
                 foreach (var room in ownedRooms_.Where(r => r.Visibility == RoomVisibility.Searchable))
                 {
-                    var packet = CreateRoomPacket(room);
+                    var packet = Utils.CreateRoomPacket(room);
                     replySocket.SendNetworkMessage(packet);
                 }
                 replySocket.Stop();
@@ -135,59 +132,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                 // Advertise it.
                 if (visibility == RoomVisibility.Searchable)
                 {
-                    broadcastSender_.SendNetworkMessage(CreateRoomPacket(newRoom));
+                    broadcastSender_.SendNetworkMessage(Utils.CreateRoomPacket(newRoom));
                 }
 
                 return newRoom;
             }, token);
-        }
-
-        private byte[] CreateRoomPacket(OwnedRoom room)
-        {
-            var str = new MemoryStream();
-            using (var writer = new BinaryWriter(str, Encoding.UTF8, true))
-            {
-                // ROOM header
-                writer.Write(roomHeader_);
-                // GUID
-                writer.Write(room.Guid.ToByteArray());
-                // Port
-                writer.Write(room.Port);
-            }
-            // Attributes
-            Utils.WriteAttributes(room.Attributes, str);
-            return str.ToArray();
-        }
-
-        private RoomInfo ParseRoomPacket(string sender, byte[] packet)
-        {
-            var str = new MemoryStream(packet);
-            // Skip ROOM header
-            str.Seek(roomHeader_.Length, SeekOrigin.Begin);
-            Guid id;
-            ushort port;
-            using (var reader = new BinaryReader(str, Encoding.UTF8, true))
-            {
-                // GUID
-                var guidBytes = reader.ReadBytes(16);
-                id = new Guid(guidBytes);
-
-                // Room port.
-                port = reader.ReadUInt16();
-            }
-
-            // Attributes
-            var attributes = Utils.ParseAttributes(str);
-            return new RoomInfo(this, id, sender, port, attributes, DateTime.UtcNow);
-        }
-
-        private static bool IsRoomPacket(byte[] packet)
-        {
-            return packet.Take(roomHeader_.Length).SequenceEqual(roomHeader_);
-        }
-        private static bool IsFindPacket(byte[] packet)
-        {
-            return packet.Take(findHeader_.Length).SequenceEqual(findHeader_);
         }
 
         // Periodically sends FIND packets and collects results until it is disposed.
@@ -203,18 +152,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
 
             public event EventHandler<IEnumerable<IRoomInfo>> RoomsRefreshed;
 
-            private byte[] CreateFindPacket()
-            {
-                // TODO should add find parameters
-                return findHeader_;
-            }
-
             public RoomList(MatchmakingService service)
             {
                 service_ = service;
                 service_.server_.Message += OnMessage;
                 var token = sendCts_.Token;
-                var findPacket = CreateFindPacket();
+                var findPacket = Utils.CreateFindPacket();
 
                 // Start periodically sending FIND requests
                 Task.Run(() =>
@@ -240,10 +183,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                     // The list has beed disposed.
                 }
 
-                if (IsRoomPacket(ev.Message))
+                if (Utils.ParseHeader(ev.Message) == Utils.RoomHeader)
                 {
                     // TODO shouldn't delay this thread but offload this to a queue
-                    RoomInfo newRoom = service.ParseRoomPacket(ev.SourceHost, ev.Message);
+                    RoomInfo newRoom = Utils.ParseRoomPacket(ev.SourceHost, ev.Message, service);
 
                     var oldRooms = activeRooms_;
                     RoomInfo[] newRooms = null;

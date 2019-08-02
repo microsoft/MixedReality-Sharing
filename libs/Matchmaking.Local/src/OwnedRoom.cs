@@ -45,48 +45,54 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             Server.Message += (SocketerClient s, SocketerClient.MessageEvent ev) =>
             {
                 // TODO offload message sending/callbacks to different thread
-                if (Utils.IsAttrPacket(ev.Message))
+                switch (Utils.ParseHeader(ev.Message))
                 {
-                    SetAttributesAsync(Utils.ParseAttrPacket(ev.Message));
-                }
-                else if (Utils.IsMessagePacket(ev.Message))
-                {
-                    int targetId = Utils.ParseMessageParticipant(ev.Message);
-                    if (targetId == 0)
+                    case Utils.AttrHeader:
                     {
-                        // Message to this participant. Raise the event locally.
-                        var sender = Participants.First(p => p.IdInRoom == ev.SourceId);
-                        MessageReceived?.Invoke(this, new MessageReceivedArgs(sender, Utils.ParseMessagePayload(ev.Message)));
+                        SetAttributesAsync(Utils.ParseAttrPacket(ev.Message));
+                        break;
                     }
-                    else
+                    case Utils.MsgHeader:
                     {
-                        // Forward to target participant.
-                        byte[] retargeted = Utils.ChangeMessageParticipant(ev.Message, ev.SourceId);
-                        server.SendNetworkMessage(retargeted, targetId);
+                        int targetId = Utils.ParseMessageParticipant(ev.Message);
+                        if (targetId == 0)
+                        {
+                            // Message to this participant. Raise the event locally.
+                            var sender = Participants.First(p => p.IdInRoom == ev.SourceId);
+                            MessageReceived?.Invoke(this, new MessageReceivedArgs(sender, Utils.ParseMessagePayload(ev.Message)));
+                        }
+                        else
+                        {
+                            // Forward to target participant.
+                            byte[] retargeted = Utils.ChangeMessageParticipant(ev.Message, ev.SourceId);
+                            server.SendNetworkMessage(retargeted, targetId);
+                        }
+                        break;
                     }
-                }
-                else if (Utils.IsJoinRequestPacket(ev.Message))
-                {
-                    // Add the new participant.
-                    var newParticipant = new RoomParticipant(ev.SourceId, Utils.ParseJoinRequestPacket(ev.Message));
-                    var oldClients = Participants.Skip(1);
-                    AddParticipant(newParticipant);
+                    case Utils.JoinReqHeader:
+                    {
+                        // Add the new participant.
+                        var newParticipant = new RoomParticipant(ev.SourceId, Utils.ParseJoinRequestPacket(ev.Message));
+                        var oldClients = Participants.Skip(1);
+                        AddParticipant(newParticipant);
 
-                    // Send list of participants as a series of PARJ packets.
-                    foreach (var participant in Participants)
-                    {
-                        server.SendNetworkMessage(Utils.CreateParticipantJoinedPacket(participant), ev.SourceId);
-                    }
+                        // Send list of participants as a series of PARJ packets.
+                        foreach (var participant in Participants)
+                        {
+                            server.SendNetworkMessage(Utils.CreateParticipantJoinedPacket(participant), ev.SourceId);
+                        }
 
-                    // Announce the new participant to the other participants
-                    var packet = Utils.CreateParticipantJoinedPacket(newParticipant);
-                    foreach (var participant in oldClients)
-                    {
-                        Server.SendNetworkMessage(packet, participant.IdInRoom);
-                    }
+                        // Announce the new participant to the other participants
+                        var packet = Utils.CreateParticipantJoinedPacket(newParticipant);
+                        foreach (var participant in oldClients)
+                        {
+                            Server.SendNetworkMessage(packet, participant.IdInRoom);
+                        }
 
-                    // Send the attributes to the new participant.
-                    server.SendNetworkMessage(Utils.CreateAttrPacket(Attributes), ev.SourceId);
+                        // Send the attributes to the new participant.
+                        server.SendNetworkMessage(Utils.CreateAttrPacket(Attributes), ev.SourceId);
+                        break;
+                    }
                 }
             };
             Server.Start();
