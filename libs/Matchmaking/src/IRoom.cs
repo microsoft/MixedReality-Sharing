@@ -47,12 +47,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// Current owner of this room. The owner is initially the participant who created the room.
         /// The implementation can choose a new owner if e.g. the current owner is disconnected.
         /// </summary>
-        IMatchParticipant Owner { get; }
+        IRoomParticipant Owner { get; }
 
         /// <summary>
         /// Participants currently in the room.
         /// </summary>
-        IEnumerable<IMatchParticipant> Participants { get; }
+        IEnumerable<IRoomParticipant> Participants { get; }
 
         /// <summary>
         /// Set some property values on the room.
@@ -85,5 +85,16 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// listened to/edited directly.
         /// </summary>
         StateSync.IStateSubscription State { get; }
+    }
+
+    /// Participant in a room.
+    public interface IRoomParticipant
+    {
+        /// Matchmaking participant.
+        IMatchParticipant MatchParticipant { get; }
+
+        /// ID of the participant in this room. This is assigned by the matchmaking system, is unique per room,
+        /// and can change if a participant leaves and re-joins the room.
+        int IdInRoom { get; }
     }
 }
