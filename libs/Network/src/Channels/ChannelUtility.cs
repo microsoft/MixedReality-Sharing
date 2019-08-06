@@ -32,7 +32,7 @@ namespace Microsoft.MixedReality.Sharing.Network.Channels
 
                         if (mapToFill.ContainsKey(messageType))
                         {
-                            logger.LogWarning($"A channel factory registration type '{messageType.FullName}' already exists, the factory '{factory.Name}' will be ignored.");
+                            logger.LogWarning($"A channel factory registration type '{messageType.FullName}' already exists, the factory '{factory.GetType().FullName}' will be ignored.");
                         }
                         else
                         {

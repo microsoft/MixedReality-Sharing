@@ -88,7 +88,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
         public volatile RoomParticipant[] Participants;
         IEnumerable<IRoomParticipant> IRoom.Participants { get => Participants; }
 
-        public IStateSubscription State => throw new NotImplementedException();
+        //public IStateSubscription State => throw new NotImplementedException();
 
         public event EventHandler AttributesChanged;
 
