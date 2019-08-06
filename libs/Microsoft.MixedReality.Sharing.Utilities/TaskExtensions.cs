@@ -15,7 +15,7 @@ namespace Microsoft.MixedReality.Sharing.Utilities
     public static class TaskExtensions
     {
         /// <summary>
-        /// Gracefully allows a task to continue running without loosing any exceptions thrown or requireing to await it.
+        /// Gracefully allows a task to continue running without losing any exceptions thrown or requiring to await it.
         /// </summary>
         /// <param name="task">The task that should be wrapped.</param>
         public static async void FireAndForget(this Task task)
@@ -31,7 +31,7 @@ namespace Microsoft.MixedReality.Sharing.Utilities
         }
 
         /// <summary>
-        /// Gracefully allows a task to continue running without loosing any exceptions thrown or requireing to await it.
+        /// Gracefully allows a task to continue running without losing any exceptions thrown or requiring to await it.
         /// </summary>
         /// <param name="task">The task that should be wrapped.</param>
         public static async void FireAndForget<T>(this Task<T> task)
