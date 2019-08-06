@@ -24,7 +24,7 @@ namespace Microsoft.MixedReality.Sharing.Utilities
         /// <summary>
         /// The synchronization object to lock on.
         /// </summary>
-        protected object LockObject { get; } = new object();
+        protected object DisposeLockObject { get; } = new object();
 
         /// <summary>
         /// A helper token that can be used to listen for Dispose to happen.
@@ -38,7 +38,7 @@ namespace Microsoft.MixedReality.Sharing.Utilities
         {
             get
             {
-                lock (LockObject)
+                lock (DisposeLockObject)
                 {
                     return objectName ?? (objectName = GetType().Name);
                 }
@@ -61,7 +61,7 @@ namespace Microsoft.MixedReality.Sharing.Utilities
 
         private void Dispose(bool isDisposing)
         {
-            lock (LockObject)
+            lock (DisposeLockObject)
             {
                 if (IsDisposed)
                 {
@@ -129,7 +129,7 @@ namespace Microsoft.MixedReality.Sharing.Utilities
         /// </summary>
         public void ThrowIfDisposed()
         {
-            lock (LockObject)
+            lock (DisposeLockObject)
             {
                 if (insideDisposeFunction == null || (!insideDisposeFunction.Value && IsDisposed))
                 {

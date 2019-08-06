@@ -61,7 +61,7 @@ namespace Microsoft.MixedReality.Sharing.Utilities.IO
                 .Slice(offset, count)
                 .CopyTo(owner.Memory.Span);
 
-            lock (LockObject)
+            lock (DisposeLockObject)
             {
                 messagesQueue.Enqueue(new Message(owner, count));
                 messageAvailableTCS?.TrySetResult(null);
@@ -75,7 +75,7 @@ namespace Microsoft.MixedReality.Sharing.Utilities.IO
             while ((count - numRead) > 0)
             {
                 Task toAwait = null;
-                lock (LockObject)
+                lock (DisposeLockObject)
                 {
                     if (messagesQueue.Count > 0)
                     {

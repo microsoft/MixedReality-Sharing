@@ -3,8 +3,6 @@
 
 using System;
 using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Microsoft.MixedReality.Sharing.Channels
 {
@@ -13,7 +11,7 @@ namespace Microsoft.MixedReality.Sharing.Channels
     /// </summary>
     public abstract class AudioChannel : ChannelBase
     {
-        private Stream streamingStream;
+        private Stream sendingStream;
         private Stream listeningStream;
 
         /// <summary>
@@ -23,9 +21,9 @@ namespace Microsoft.MixedReality.Sharing.Channels
         {
             get
             {
-                lock (LockObject)
+                lock (DisposeLockObject)
                 {
-                    return streamingStream != null && streamingStream.CanWrite;
+                    return sendingStream != null && sendingStream.CanWrite;
                 }
             }
         }
@@ -42,23 +40,23 @@ namespace Microsoft.MixedReality.Sharing.Channels
         /// <param name="streamToReadFrom">Audio data to stream.</param>
         public Stream BeginStreaming()
         {
-            lock (LockObject)
+            lock (DisposeLockObject)
             {
                 ThrowIfDisposed();
 
-                if (streamingStream != null && streamingStream.CanWrite)
+                if (sendingStream != null && sendingStream.CanWrite)
                 {
                     throw new InvalidOperationException("Single streaming operation allowed on audio channel.");
                 }
 
-                streamingStream?.Dispose();
-                return streamingStream = OnBeginStreaming();
+                sendingStream?.Dispose();
+                return sendingStream = OnBeginStreaming();
             }
         }
 
         public Stream BeginListening()
         {
-            lock (LockObject)
+            lock (DisposeLockObject)
             {
                 ThrowIfDisposed();
 
@@ -75,11 +73,11 @@ namespace Microsoft.MixedReality.Sharing.Channels
         protected abstract Stream OnBeginStreaming();
 
         protected abstract Stream OnBeginListening();
-        
+
         protected override void OnManagedDispose()
         {
-            streamingStream?.Dispose();
-            streamingStream = null;
+            sendingStream?.Dispose();
+            sendingStream = null;
 
             listeningStream?.Dispose();
             listeningStream = null;

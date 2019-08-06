@@ -11,11 +11,6 @@ namespace Microsoft.MixedReality.Sharing
         where TChannel : IChannel
     {
         /// <summary>
-        /// Gets the name of this channel factory.
-        /// </summary>
-        string Name { get; }
-
-        /// <summary>
         /// Opens a new channel for the specified session.
         /// </summary>
         /// <param name="session">The sesson for which the channel should be opened.</param>
