@@ -9,25 +9,6 @@ using System.Threading.Tasks;
 
 namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
-    public enum RoomVisibility
-    {
-        /// <summary>
-        /// The room is not visible through search methods. It can only be joined if its ID is known.
-        /// </summary>
-        NotVisible,
-
-        /// <summary>
-        /// The room can only be found by searching for a known participant (if the participant has joined the room or
-        /// is its owner).
-        /// </summary>
-        ByParticipantOnly,
-
-        /// <summary>
-        /// The room is publicly available for searching by participants or by attributes.
-        /// </summary>
-        Searchable,
-    }
-
     /// <summary>
     /// Handle to a joined matchmaking room.
     ///
@@ -47,54 +28,18 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// Current owner of this room. The owner is initially the participant who created the room.
         /// The implementation can choose a new owner if e.g. the current owner is disconnected.
         /// </summary>
-        IRoomParticipant Owner { get; }
+        IParticipant Owner { get; }
 
         /// <summary>
         /// Participants currently in the room.
         /// </summary>
-        IEnumerable<IRoomParticipant> Participants { get; }
+        IEnumerable<IParticipant> Participants { get; }
 
         /// <summary>
-        /// Set some property values on the room.
-        /// The method will set the keys contained in the passed dictionary to the passed values.
-        /// If the room attributes do not contain some of the keys, those will be added.
-        /// The types supported for the property values are defined by each implementation.
+        /// Gets a read-only attribute map associated with this room.
         /// </summary>
-        /// <param name="attributes"></param>
-        Task SetAttributesAsync(Dictionary<string, object> attributes);
+        IReadOnlyDictionary<string, string> Attributes { get; }
 
-        /// <summary>
-        /// Triggered when the room attributes are changed, by the local participant or another member of the room.
-        /// </summary>
-        event EventHandler AttributesChanged;
-
-        /// <summary>
-        /// Makes the room visible or not according to the passed value.
-        /// </summary>
-        Task SetVisibility(RoomVisibility val);
-
-        /// <summary>
-        /// Leave this room.
-        /// Calling this method invalidates this `IRoom` instance - no methods should be called after this.
-        /// </summary>
-        Task LeaveAsync();
-
-        /// <summary>
-        /// Subscription to the room state.
-        /// Can be used to join a <see cref="Session.ISession"/> (see <see cref="Session.ISessionFactory"/>), or
-        /// listened to/edited directly.
-        /// </summary>
-        //StateSync.IStateSubscription State { get; }
-    }
-
-    /// Participant in a room.
-    public interface IRoomParticipant
-    {
-        /// Matchmaking participant.
-        IMatchParticipant MatchParticipant { get; }
-
-        /// ID of the participant in this room. This is assigned by the matchmaking system, is unique per room,
-        /// and can change if a participant leaves and re-joins the room.
-        int IdInRoom { get; }
+        ISession JoinAsync(CancellationToken cancellationToken);
     }
 }
