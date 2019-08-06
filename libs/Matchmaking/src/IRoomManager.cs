@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Text;
@@ -47,36 +48,34 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// <returns>
         /// The newly created, joined room.
         /// </returns>
-        Task<IRoom> CreateRoomAsync(Dictionary<string, object> attributes = null, 
+        Task<IRoom> CreateRoomAsync(Dictionary<string, object> attributes = null,
             RoomVisibility visibility = RoomVisibility.NotVisible,
             CancellationToken token = default);
     }
 
     /// <summary>
-    /// Handle to the list of active matchmaking rooms that satisfy certain criteria.
-    /// Can be used to:
-    /// <list type="bullet">
-    /// <item>
-    /// <description>
-    /// get the rooms at a specific point in time, asynchronously by calling
-    /// <see cref="GetRoomsAsync(CancellationToken)"/></description>, or synchronously by enumeration this object;
-    /// </item>
-    /// <item>
-    /// <description>
-    /// subscribe and get updates as rooms get added/removed, through the `CollectionChanged` event.
-    /// </description>
-    /// </item>
-    /// </list>
+    /// Subscription to the list of active matchmaking rooms that satisfy certain criteria.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="CurrentRooms"/> is periodically updated as new rooms are discovered, created or closed.
+    /// <see cref="Dispose"/> terminates the subscription.
+    ///
     /// Note that the implementation might prevent callers from subscribing to more than one room list
     /// at the same time.
-    /// </summary>
-    public interface IRoomList : IEnumerable<IRoomInfo>, INotifyCollectionChanged, IDisposable
+    /// </remarks>
+    public interface IRoomList : IDisposable
     {
         /// <summary>
-        /// Get the rooms that are active now.
+        /// Get the currently known active rooms.
         /// The implementation might return only a subset of the currently active rooms
         /// if the full set is too large.
         /// </summary>
-        Task<IEnumerable<IRoomInfo>> GetRoomsAsync(CancellationToken token = default);
+        IEnumerable<IRoomInfo> CurrentRooms { get; }
+
+        /// <summary>
+        /// Raised when an up-to-date list of rooms is received.
+        /// The frequency with which this is fired depends on the implementation.
+        /// </summary>
+        event EventHandler<IEnumerable<IRoomInfo>> RoomsRefreshed;
     }
 }
