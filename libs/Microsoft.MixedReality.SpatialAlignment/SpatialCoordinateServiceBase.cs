@@ -27,7 +27,7 @@ namespace Microsoft.MixedReality.SpatialAlignment
         private readonly object discoveryLockObject = new object();
         protected readonly CancellationTokenSource disposedCTS = new CancellationTokenSource();
 
-        private bool isDiscovering = false;
+        private volatile bool isDiscovering = false;
         private volatile int discoveryOrCreateRequests = 0;
 
         protected readonly ConcurrentDictionary<TKey, ISpatialCoordinate> knownCoordinates = new ConcurrentDictionary<TKey, ISpatialCoordinate>();
@@ -102,8 +102,8 @@ namespace Microsoft.MixedReality.SpatialAlignment
         /// <summary>
         /// Removes a tracked coordinate from this service.
         /// </summary>
-        /// <param name="id">The ide of the coordinate to remove.</param>
-        /// <remarks>Will throw if coordinate was not tracked by this service, checking is possible throuhg <see cref="knownCoordinates"/> field.</remarks>
+        /// <param name="id">The id of the coordinate to remove.</param>
+        /// <remarks>Will throw if coordinate was not tracked by this service, checking is possible through <see cref="knownCoordinates"/> field.</remarks>
         protected void OnRemoveCoordinate(TKey id)
         {
             ThrowIfDisposed();

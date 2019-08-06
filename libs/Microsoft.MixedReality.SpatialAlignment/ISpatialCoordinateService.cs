@@ -26,7 +26,7 @@ namespace Microsoft.MixedReality.SpatialAlignment
         event Action<ISpatialCoordinate> CoordinateRemoved;
 
         /// <summary>
-        /// Gets or sets whether this coordinate service should be discovering/tracking coordinates.
+        /// Gets whether this coordinate service should be discovering/tracking coordinates.
         /// </summary>
         bool IsTracking { get; }
 
@@ -47,8 +47,8 @@ namespace Microsoft.MixedReality.SpatialAlignment
         /// Begins search for coordinates, optionally priortizing a set of ids.
         /// </summary>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to be used for cancellation (stopping) of the discovery task.</param>
-        /// <param name="coordinateIds">The optional set to prioritize discovery of ids to.</param>
-        /// <returns>The set of coordinates discovered during this session.</returns>
+        /// <param name="coordinateIds">The optional set of ids to prioritize discovery.</param>
+        /// <returns>True if the discovery ran to completion succesfully (all ids were discovered).</returns>
         Task<bool> TryDiscoverCoordinatesAsync(CancellationToken cancellationToken, params string[] idsToLocate);
 
         /// <summary>
