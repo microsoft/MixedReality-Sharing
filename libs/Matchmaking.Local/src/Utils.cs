@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -18,7 +19,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
         public const int PartJoinedHeader = ('P' << 24) | ('A' << 16) | ('R' << 8) | 'J';
         public const int PartLeftHeader = ('P' << 24) | ('A' << 16) | ('R' << 8) | 'L';
         public const int RoomHeader = ('R' << 24) | ('O' << 16) | ('O' << 8) | 'M';
-        public const int FindHeader = ('F' << 24) | ('I' << 16) | ('N' << 8) | 'D';
+
+        public const int FindByIdHeader = ('F' << 24) | ('N' << 16) | ('D' << 8) | 'I';
+        public const int FindByAttrHeader = ('F' << 24) | ('N' << 16) | ('D' << 8) | 'A';
+        public const int FindByOwnerHeader = ('F' << 24) | ('N' << 16) | ('D' << 8) | 'O';
+        public const int FindByParticipantsHeader = ('F' << 24) | ('N' << 16) | ('D' << 8) | 'P';
 
         private const int HeaderSize = sizeof(int);
 
@@ -227,10 +232,112 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             var attributes = ParseAttributes(str);
             return new RoomInfo(service, id, sender, port, attributes, DateTime.UtcNow);
         }
-        public static byte[] CreateFindPacket()
+
+        public static byte[] CreateFindByAttributesPacket(IEnumerable<KeyValuePair<string, object>> attributes)
         {
-            // TODO should add find parameters
-            return BitConverter.GetBytes(FindHeader);
+            var str = new MemoryStream();
+            using (var writer = new BinaryWriter(str, Encoding.UTF8, true))
+            {
+                writer.Write(FindByAttrHeader);
+            }
+            if (attributes != null)
+            {
+                WriteAttributes(attributes, str);
+            }
+            return str.ToArray();
+        }
+
+        public static IEnumerable<KeyValuePair<string, object>> ParseFindByAttributesPacket(byte[] packet)
+        {
+            var str = new MemoryStream(packet);
+            // Skip header.
+            str.Seek(HeaderSize, SeekOrigin.Begin);
+            if (str.Position < str.Length)
+            {
+                return ParseAttributes(str);
+            }
+            return Enumerable.Empty<KeyValuePair<string, object>>();
+        }
+
+        public static byte[] CreateFindByIdPacket(Guid id)
+        {
+            var str = new MemoryStream();
+            using (var writer = new BinaryWriter(str))
+            {
+                writer.Write(FindByIdHeader);
+                writer.Write(id.ToByteArray());
+            }
+            return str.ToArray();
+        }
+
+        public static Guid ParseFindByIdPacket(byte[] packet)
+        {
+            var str = new MemoryStream(packet);
+            // Skip header.
+            str.Seek(HeaderSize, SeekOrigin.Begin);
+            // Read GUID.
+            var bytes = new byte[16];
+            str.Read(bytes, 0, 16);
+            return new Guid(bytes);
+        }
+        public static byte[] CreateFindByOwnerPacket(IMatchParticipant owner)
+        {
+            var str = new MemoryStream();
+            using (var writer = new BinaryWriter(str))
+            {
+                writer.Write(FindByOwnerHeader);
+                writer.Write(owner.Id);
+            }
+            return str.ToArray();
+        }
+
+        public static string ParseFindByOwnerPacket(byte[] packet)
+        {
+            var str = new MemoryStream(packet);
+            // Skip header.
+            str.Seek(HeaderSize, SeekOrigin.Begin);
+            using (var reader = new BinaryReader(str))
+            {
+                return reader.ReadString();
+            }
+        }
+
+        public static byte[] CreateFindByParticipantsPacket(IEnumerable<IMatchParticipant> participants)
+        {
+            var str = new MemoryStream();
+            using (var writer = new BinaryWriter(str))
+            {
+                writer.Write(FindByParticipantsHeader);
+                foreach(var p in participants)
+                {
+                    writer.Write(p.Id);
+                }
+            }
+            return str.ToArray();
+        }
+
+        public static IEnumerable<string> ParseFindByParticipantsPacket(byte[] packet)
+        {
+            var res = new List<string>();
+            var str = new MemoryStream(packet);
+            // Skip header.
+            str.Seek(HeaderSize, SeekOrigin.Begin);
+            using (var reader = new BinaryReader(str))
+            {
+                // Read participant IDs until the end of the packet.
+                while (true)
+                {
+                    try
+                    {
+                        res.Add(reader.ReadString());
+                    }
+                    catch (EndOfStreamException)
+                    {
+                        break;
+                    }
+                }
+            }
+            return res;
         }
     }
 }

@@ -75,6 +75,23 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
         {
             return service_.JoinAsync(this, token);
         }
+
+        public bool MatchesAttributes(IEnumerable<KeyValuePair<string, object>> attributes)
+        {
+            foreach (var attr in attributes)
+            {
+                object containedValue;
+                if (!Attributes.TryGetValue(attr.Key, out containedValue))
+                {
+                    return false;
+                }
+                if (!containedValue.Equals(attr.Value))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
     }
 
     /// <summary>

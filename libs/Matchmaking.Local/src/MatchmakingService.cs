@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -89,30 +90,66 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             broadcastSender_.Stop();
         }
 
-        private void OnMessage(SocketerClient server, SocketerClient.MessageEvent ev)
+        // Send the room that match the passed filter to the passed host.
+        private void SendRooms(string host, int port, Func<OwnedRoom, bool> filter)
         {
-            if (Utils.ParseHeader(ev.Message) == Utils.FindHeader)
+            // TODO should just use one socket to send udp messages
+            SocketerClient replySocket = SocketerClient.CreateSender(SocketerClient.Protocol.UDP, host, port);
+            replySocket.Start();
+            foreach (var room in ownedRooms_.Where(filter))
             {
-                // Reply with the rooms owned by the local participant.
-                // TODO should just use one socket to send udp messages
-                SocketerClient replySocket = SocketerClient.CreateSender(SocketerClient.Protocol.UDP, ev.SourceHost, server.Port);
-                replySocket.Start();
-                foreach (var room in ownedRooms_.Where(r => r.Visibility == RoomVisibility.Searchable))
-                {
-                    var packet = Utils.CreateRoomPacket(room);
-                    replySocket.SendNetworkMessage(packet);
-                }
-                replySocket.Stop();
+                var packet = Utils.CreateRoomPacket(room);
+                replySocket.SendNetworkMessage(packet);
             }
+            replySocket.Stop();
         }
 
-        //private static T[] Append<T>(T[] oldArray, T elem)
-        //{
-        //    var newArray = new T[oldArray.Length + 1];
-        //    Array.Copy(oldArray, newArray, oldArray.Length);
-        //    newArray[oldArray.Length] = elem;
-        //    return newArray;
-        //}
+        private void OnMessage(SocketerClient server, SocketerClient.MessageEvent ev)
+        {
+            switch (Utils.ParseHeader(ev.Message))
+            {
+                case Utils.FindByAttrHeader:
+                {
+                    // Reply with the rooms owned by the local participant that match the queried attributes.
+                    var attributes = Utils.ParseFindByAttributesPacket(ev.Message);
+                    SendRooms(ev.SourceHost, server.Port,
+                        r => r.Visibility == RoomVisibility.Searchable && r.MatchesAttributes(attributes));
+                    break;
+                }
+                case Utils.FindByOwnerHeader:
+                {
+                    // Reply with the rooms owned by the local participant if it matches the owner.
+                    string ownerId = Utils.ParseFindByOwnerPacket(ev.Message);
+
+                    if (ownerId.Equals(participantFactory_.LocalParticipantId))
+                    {
+                        SendRooms(ev.SourceHost, server.Port,
+                            r => r.Visibility == RoomVisibility.Searchable ||
+                            r.Visibility == RoomVisibility.ByParticipantOnly);
+                    }
+                    break;
+                }
+                case Utils.FindByParticipantsHeader:
+                {
+                    // Reply with the rooms owned by the local participant that match the queried participants.
+                    IEnumerable<string> participantIds = Utils.ParseFindByParticipantsPacket(ev.Message);
+
+                    SendRooms(ev.SourceHost, server.Port,
+                        r => (r.Visibility == RoomVisibility.Searchable ||
+                        r.Visibility == RoomVisibility.ByParticipantOnly) &&
+                        r.Participants.Select(p => p.MatchParticipant.Id).Intersect(participantIds).Any());
+                    break;
+                }
+                case Utils.FindByIdHeader:
+                {
+                    // Reply with the rooms owned by the local participant that have the queried ID (should be just one).
+                    Guid id = Utils.ParseFindByIdPacket(ev.Message);
+
+                    SendRooms(ev.SourceHost, server.Port, r => r.Guid.Equals(id));
+                    break;
+                }
+            }
+        }
 
         public Task<IRoom> CreateRoomAsync(Dictionary<string, object> attributes = null, RoomVisibility visibility = RoomVisibility.NotVisible, CancellationToken token = default)
         {
@@ -152,19 +189,18 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
 
             public event EventHandler<IEnumerable<IRoomInfo>> RoomsRefreshed;
 
-            public RoomList(MatchmakingService service)
+            public RoomList(MatchmakingService service, byte[] packet)
             {
                 service_ = service;
                 service_.server_.Message += OnMessage;
                 var token = sendCts_.Token;
-                var findPacket = Utils.CreateFindPacket();
 
                 // Start periodically sending FIND requests
                 Task.Run(() =>
                 {
                     while (!token.IsCancellationRequested)
                     {
-                        service_.broadcastSender_.SendNetworkMessage(findPacket);
+                        service_.broadcastSender_.SendNetworkMessage(packet);
                         token.WaitHandle.WaitOne(broadcastIntervalMs_);
                     }
                 }, token);
@@ -232,20 +268,17 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
 
         public IRoomList FindRoomsByAttributes(Dictionary<string, object> attributes = null)
         {
-            // TODO should specify the correct params
-            return new RoomList(this);
+            return new RoomList(this, Utils.CreateFindByAttributesPacket(attributes));
         }
 
         public IRoomList FindRoomsByOwner(IMatchParticipant owner)
         {
-            // TODO should specify the correct params
-            return new RoomList(this);
+            return new RoomList(this, Utils.CreateFindByOwnerPacket(owner));
         }
 
         public IRoomList FindRoomsByParticipants(IEnumerable<IMatchParticipant> participants)
         {
-            // TODO should specify the correct params
-            return new RoomList(this);
+            return new RoomList(this, Utils.CreateFindByParticipantsPacket(participants));
         }
 
         public static void Shuffle<T>(IList<T> list, Random random)
@@ -263,10 +296,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
 
         public Task<IRoom> JoinRandomRoomAsync(Dictionary<string, object> expectedAttributes = null, CancellationToken token = default)
         {
-            return Task<IRoom>.Run(async () =>
+            return Task.Run(async () =>
             {
-                // TODO should specify the correct params
-                using (var roomList = new RoomList(this))
+                using (var roomList = new RoomList(this, Utils.CreateFindByAttributesPacket(expectedAttributes)))
                 {
                     var random = new Random();
 
@@ -302,9 +334,23 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             }, token);
         }
 
-        public Task<IRoom> JoinRoomByIdAsync(string roomId, CancellationToken token = default)
+        public async Task<IRoom> JoinRoomByIdAsync(string roomId, CancellationToken token = default)
         {
-            throw new NotImplementedException();
+            using (var roomList = new RoomList(this, Utils.CreateFindByIdPacket(Guid.Parse(roomId))))
+            {
+                var roomFuture = new TaskCompletionSource<IRoomInfo>();
+                EventHandler<IEnumerable<IRoomInfo>> handler = (object l, IEnumerable<IRoomInfo> rooms) =>
+                {
+                    if (rooms.Any())
+                    {
+                        roomFuture.SetResult(rooms.First());
+                    }
+                };
+                roomList.RoomsRefreshed += handler;
+                token.Register(() => roomFuture.SetCanceled());
+                IRoomInfo roomInfo = await roomFuture.Task;
+                return await roomInfo.JoinAsync(token);
+            }
         }
 
         internal Task<IRoom> JoinAsync(RoomInfo roomInfo, CancellationToken token)
