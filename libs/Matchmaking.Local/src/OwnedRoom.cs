@@ -21,7 +21,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
 
         public OwnedRoom(MatchmakingService service,
             SocketerClient server,
-            IEnumerable<KeyValuePair<string, object>> attributes,
+            IReadOnlyDictionary<string, object> attributes,
             RoomVisibility visibility,
             MatchParticipant owner)
             : base(service, Guid.NewGuid(), server.Host, (ushort)server.Port, attributes, DateTime.UtcNow /* TODO */, owner)
@@ -115,7 +115,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
         }
 
         // TODO there is no way to delete an attribute at the moment
-        private Task SetAttributesAsync(IEnumerable<KeyValuePair<string, object>> attributes)
+        private Task SetAttributesAsync(IReadOnlyDictionary<string, object> attributes)
         {
             return Task.Run(() =>
             {

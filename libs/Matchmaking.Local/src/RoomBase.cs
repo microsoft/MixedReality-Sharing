@@ -42,7 +42,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             Guid guid,
             string host,
             ushort port,
-            IEnumerable<KeyValuePair<string, object>> attributes,
+            IReadOnlyDictionary<string, object> attributes,
             DateTime lastHeard)
         {
             service_ = service;
@@ -76,7 +76,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             return service_.JoinAsync(this, token);
         }
 
-        public bool MatchesAttributes(IEnumerable<KeyValuePair<string, object>> attributes)
+        public bool MatchesAttributes(IReadOnlyDictionary<string, object> attributes)
         {
             foreach (var attr in attributes)
             {
@@ -121,7 +121,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             Guid guid,
             string host,
             ushort port,
-            IEnumerable<KeyValuePair<string, object>> attributes,
+            IReadOnlyDictionary<string, object> attributes,
             DateTime lastHeard,
             MatchParticipant owner)
             : base(service,

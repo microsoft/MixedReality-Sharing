@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -32,7 +31,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             return BitConverter.ToInt32(packet, 0);
         }
 
-        public static void WriteAttributes(IEnumerable<KeyValuePair<string, object>> attributes, MemoryStream str)
+        public static void WriteAttributes(IReadOnlyDictionary<string, object> attributes, MemoryStream str)
         {
             // Don't use .NET serialization for the whole map, wastes ~1KB per packet.
             var formatter = new BinaryFormatter();
@@ -50,32 +49,31 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             }
         }
 
-        public static KeyValuePair<string, object>[] ParseAttributes(MemoryStream str)
+        public static IReadOnlyDictionary<string, object> ParseAttributes(MemoryStream str)
         {
             var formatter = new BinaryFormatter();
             int attrCount;
             string[] names;
-            KeyValuePair<string, object>[] attributes;
             using (var reader = new BinaryReader(str, Encoding.UTF8, true))
             {
                 attrCount = reader.ReadInt32();
                 names = new string[attrCount];
-                attributes = new KeyValuePair<string, object>[attrCount];
                 for (int i = 0; i < attrCount; ++i)
                 {
                     names[i] = reader.ReadString();
                 }
             }
+            var attributes = new Dictionary<string, object>(attrCount);
             for (int i = 0; i < attrCount; ++i)
             {
                 // TODO this is insecure and not meant to be used in production code
                 object value = formatter.Deserialize(str);
-                attributes[i] = new KeyValuePair<string, object>(names[i], value);
+                attributes.Add(names[i], value);
             }
             return attributes;
         }
 
-        public static byte[] CreateAttrPacket(IEnumerable<KeyValuePair<string, object>> attributes)
+        public static byte[] CreateAttrPacket(IReadOnlyDictionary<string, object> attributes)
         {
             var str = new MemoryStream();
             str.Write(BitConverter.GetBytes(AttrHeader), 0, HeaderSize);
@@ -83,7 +81,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             return str.ToArray();
         }
 
-        public static IEnumerable<KeyValuePair<string, object>> ParseAttrPacket(byte[] packet)
+        public static IReadOnlyDictionary<string, object> ParseAttrPacket(byte[] packet)
         {
             var str = new MemoryStream(packet);
             // Skip ATTR header.
@@ -233,7 +231,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             return new RoomInfo(service, id, sender, port, attributes, DateTime.UtcNow);
         }
 
-        public static byte[] CreateFindByAttributesPacket(IEnumerable<KeyValuePair<string, object>> attributes)
+        public static byte[] CreateFindByAttributesPacket(IReadOnlyDictionary<string, object> attributes)
         {
             var str = new MemoryStream();
             using (var writer = new BinaryWriter(str, Encoding.UTF8, true))
@@ -247,7 +245,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             return str.ToArray();
         }
 
-        public static IEnumerable<KeyValuePair<string, object>> ParseFindByAttributesPacket(byte[] packet)
+        public static IReadOnlyDictionary<string, object> ParseFindByAttributesPacket(byte[] packet)
         {
             var str = new MemoryStream(packet);
             // Skip header.
@@ -256,7 +254,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             {
                 return ParseAttributes(str);
             }
-            return Enumerable.Empty<KeyValuePair<string, object>>();
+            return new Dictionary<string, object>();
         }
 
         public static byte[] CreateFindByIdPacket(Guid id)

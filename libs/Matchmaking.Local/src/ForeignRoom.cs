@@ -29,7 +29,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             return hash;
         }
         // TODO see SetAttributesAsync
-        private static int GetHash(IEnumerable<KeyValuePair<string, object>> attributes)
+        private static int GetHash(IReadOnlyDictionary<string, object> attributes)
         {
             int hash = 0;
             foreach (var attr in attributes)
