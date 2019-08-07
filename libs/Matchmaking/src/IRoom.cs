@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -22,8 +21,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     ///
     /// The lifetime of a room and the corresponding session is implementation-dependent.
     /// </summary>
-    public interface IRoom : IRoomInfo
+    public interface IRoom
     {
+        string Id { get; }
+
         /// <summary>
         /// Current owner of this room. The owner is initially the participant who created the room.
         /// The implementation can choose a new owner if e.g. the current owner is disconnected.
@@ -33,13 +34,23 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// <summary>
         /// Participants currently in the room.
         /// </summary>
-        IEnumerable<IParticipant> Participants { get; }
+        IReadOnlyCollection<IParticipant> Participants { get; }
 
         /// <summary>
         /// Gets a read-only attribute map associated with this room.
         /// </summary>
         IReadOnlyDictionary<string, string> Attributes { get; }
 
-        ISession JoinAsync(CancellationToken cancellationToken);
+        /// <summary>
+        /// Joins this room by creating and returning an ISession that is established.
+        /// </summary>
+        /// <param name="cancellationToken">A cancellation token to stop this operation.</param>
+        /// <returns>An established session.</returns>
+        Task<ISession> JoinAsync(CancellationToken cancellationToken);
+    }
+
+    public interface IEditableRoom : IRoom
+    {
+        void Close();
     }
 }

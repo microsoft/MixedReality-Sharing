@@ -14,6 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\libs\Microsoft.MixedReality.Sharing.Sockets\Microsoft.MixedReality.Sharing.Sockets.csproj" />
     <ProjectReference Include="..\libs\Microsoft.MixedReality.Sharing.Utilities\Microsoft.MixedReality.Sharing.Utilities.csproj" />
     <ProjectReference Include="..\libs\Network\src\Microsoft.MixedReality.Sharing.Network.csproj" />
   </ItemGroup>

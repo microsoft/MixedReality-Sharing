@@ -302,7 +302,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             }, token);
         }
 
-        public Task<IRoom> JoinRoomByIdAsync(string roomId, CancellationToken token = default)
+        public Task<IRoom> GetRoomByIdAsync(string roomId, CancellationToken token = default)
         {
             throw new NotImplementedException();
         }

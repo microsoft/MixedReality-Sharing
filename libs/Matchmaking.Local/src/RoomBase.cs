@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using Microsoft.MixedReality.Sharing.StateSync;
+using Microsoft.MixedReality.Sharing.Utilities.Collections;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -82,11 +83,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
     /// </summary>
     abstract class RoomBase : RoomInfo, IRoom, IDisposable
     {
-        public  RoomParticipant Owner { get; }
-        IRoomParticipant IRoom.Owner { get => Owner; }
+        public IParticipant Owner { get; }
 
-        public volatile RoomParticipant[] Participants;
-        IEnumerable<IRoomParticipant> IRoom.Participants { get => Participants; }
+        public IEnumerable<IParticipant> Participants { get; }
 
         //public IStateSubscription State => throw new NotImplementedException();
 
@@ -106,7 +105,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             ushort port,
             IEnumerable<KeyValuePair<string, object>> attributes,
             DateTime lastHeard,
-            MatchParticipant owner)
+            IParticipant owner)
             : base(service,
                   guid,
                   host,
@@ -114,22 +113,20 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                   attributes,
                   lastHeard)
         {
-            Owner = new RoomParticipant(0, owner);
-            Participants = new RoomParticipant[] { Owner };
+            Owner = owner;
+            //Participants = new RoomParticipant[] { Owner };
         }
 
-        public RoomBase(RoomInfo rhs, MatchParticipant owner)
+        public RoomBase(RoomInfo rhs, IParticipant owner)
             : base(rhs)
         {
-            Owner = new RoomParticipant(0, owner);
-            Participants = new RoomParticipant[] { Owner };
+            Owner = owner;
+            //Participants = new RoomParticipant[] { Owner };
         }
 
         public abstract Task LeaveAsync();
 
         public abstract Task SetAttributesAsync(Dictionary<string, object> attributes);
-
-        public abstract Task SetVisibility(RoomVisibility val);
 
         // TODO figure out what to do with this, e.g. move to public API or change to something else.
         public abstract void SendMessage(RoomParticipant participant, byte[] message);

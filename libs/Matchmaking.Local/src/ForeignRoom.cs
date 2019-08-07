@@ -41,7 +41,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
         }
 
         // Assumes that `socket` is configured and will be connected by the caller.
-        public ForeignRoom(RoomInfo roomInfo, MatchParticipant owner, SocketerClient socket)
+        public ForeignRoom(RoomInfo roomInfo, IParticipant owner, SocketerClient socket)
             : base(roomInfo, owner)
         {
             // Clear the participants array, will be filled by the server.
@@ -132,12 +132,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                 AttributesChangeReceived -= handler;
             });
         }
-
-        public override Task SetVisibility(RoomVisibility val)
-        {
-            throw new NotImplementedException();
-        }
-
+        
         public override void SendMessage(RoomParticipant participant, byte[] message)
         {
             var packet = Utils.CreateMessagePacket(participant.IdInRoom, message);
