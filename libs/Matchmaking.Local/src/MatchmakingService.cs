@@ -146,7 +146,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             // Interval between two FIND packets.
             private const int broadcastIntervalMs_ = 2000;
 
-            private MatchmakingService service_;
+            private volatile MatchmakingService service_;
             private volatile RoomInfo[] activeRooms_ = new RoomInfo[0];
             private readonly CancellationTokenSource sendCts_ = new CancellationTokenSource();
 
