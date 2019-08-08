@@ -50,6 +50,13 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
     {
         private volatile OwnedRoom[] ownedRooms_ = new OwnedRoom[0];
         private volatile RoomBase[] joinedRooms_ = new RoomBase[0];
+
+        // Rooms that the user has requested to join but that have not completed the handshake yet.
+        private List<Guid> pendingJoinRoomsIds_ = new List<Guid>();
+
+        // Controls write access to pendingJoinRoomsIds_ and joinedRooms_.
+        private object joinLock_ = new object();
+
         private List<RoomList> roomLists_ = new List<RoomList>();
         private readonly MatchParticipantFactory participantFactory_;
         private readonly SocketerClient server_;
@@ -353,53 +360,43 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             }
         }
 
-        internal Task<IRoom> JoinAsync(RoomInfo roomInfo, CancellationToken token)
+        internal async Task<IRoom> JoinAsync(RoomInfo roomInfo, CancellationToken token)
         {
-            return Task.Run<IRoom>(() =>
+            lock(joinLock_)
             {
-                // todo logic is split between here and ForeignRoom ctor, cleanup
-                // Make a socket.
-                SocketerClient socket = SocketerClient.CreateSender(SocketerClient.Protocol.TCP, roomInfo.Host, roomInfo.Port);
-
-                // Make a room.
-                var res = new ForeignRoom(roomInfo, null /* TODO */, socket);
-
-                // Configure handlers and try to connect.
-                var ev = new ManualResetEventSlim();
-                Action<SocketerClient, int, string, int> connectHandler =
-                (SocketerClient server, int id, string clientHost, int clientPort) =>
+                // Check if this room is already joined or joining.
+                if (joinedRooms_.Any(r => r.Guid == roomInfo.Guid))
                 {
-                    // Connected; add the room to the joined list.
-                    lock (this)
-                    {
-                        if (joinedRooms_.Any(r => r.Guid == roomInfo.Guid))
-                        {
-                            throw new InvalidOperationException("Room " + roomInfo.Guid + " is already joined");
-                        }
-                        joinedRooms_ = joinedRooms_.Append(res).ToArray();
-                    }
-                    // Wake up the original task.
-                    ev.Set();
-                };
-                socket.Connected += connectHandler;
-                socket.Disconnected += (SocketerClient server, int id, string clientHost, int clientPort) =>
+                    throw new InvalidOperationException("Room " + roomInfo.Guid + " is already joined");
+                }
+                if (pendingJoinRoomsIds_.Contains(roomInfo.Guid))
                 {
-                    lock(this)
-                    {
-                        joinedRooms_ = joinedRooms_.Where(r => r != res).ToArray();
-                    }
-                    socket.Stop();
-                };
-                socket.Start();
-                ev.Wait(token);
-                socket.Connected -= connectHandler;
+                    throw new InvalidOperationException("Room " + roomInfo.Guid + " is already joining");
+                }
+                pendingJoinRoomsIds_.Add(roomInfo.Guid);
+            }
 
-                // Send participant info to the server.
-                socket.SendNetworkMessage(Utils.CreateJoinRequestPacket(participantFactory_.LocalParticipant));
+            // Try to join the room.
+            try
+            {
+                var room = await ForeignRoom.Connect(roomInfo, participantFactory_.LocalParticipant, token);
 
-                // Now that the connection is established, we can return the room.
-                return res;
-            }, token);
+                // Connected; add the room to the joined list.
+                lock (joinLock_)
+                {
+                    pendingJoinRoomsIds_.Remove(roomInfo.Guid);
+                    joinedRooms_ = joinedRooms_.Append(room).ToArray();
+                }
+                return room;
+            }
+            catch(Exception)
+            {
+                lock(joinLock_)
+                {
+                    pendingJoinRoomsIds_.Remove(roomInfo.Guid);
+                }
+                throw;
+            }
         }
     }
 }

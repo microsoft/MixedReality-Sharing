@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -40,6 +39,60 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             return hash;
         }
 
+        public static async Task<ForeignRoom> Connect(RoomInfo roomInfo, MatchParticipant localParticipant, CancellationToken token)
+        {
+            SocketerClient socket = SocketerClient.CreateSender(SocketerClient.Protocol.TCP, roomInfo.Host, roomInfo.Port);
+
+            // Make a room.
+            var res = new ForeignRoom(roomInfo, null /* TODO */, socket);
+
+            // Configure handlers.
+            socket.Message += res.OnMessage;
+            socket.Disconnected += (SocketerClient server, int id, string clientHost, int clientPort) =>
+            {
+                // TODO notify service
+                socket.Stop();
+            };
+
+            // Connect.
+            {
+                var ev = new TaskCompletionSource<object>();
+                token.Register(() => ev.SetCanceled());
+                Action<SocketerClient, int, string, int> connectHandler =
+                (SocketerClient server, int id, string clientHost, int clientPort) =>
+                {
+                    // Wake up the original task.
+                    ev.TrySetResult(null);
+                };
+                socket.Connected += connectHandler;
+                socket.Start();
+                await ev.Task;
+                socket.Connected -= connectHandler;
+            }
+
+
+            // Start the handshake and wait until the room attributes have been sent.
+            // This means that we have received a consistent room state.
+            {
+                var ev = new TaskCompletionSource<object>();
+                token.Register(() => ev.SetCanceled());
+
+                EventHandler handler = (object o, EventArgs e) =>
+                {
+                    // Wake up the original task.
+                    ev.TrySetResult(null);
+                };
+                res.AttributesChanged += handler;
+                // Send participant info to the server.
+                socket.SendNetworkMessage(Utils.CreateJoinRequestPacket(localParticipant));
+                await ev.Task;
+                res.AttributesChanged -= handler;
+            }
+
+            // Now that the handshake is done, we can return the room.
+            return res;
+        }
+
         // Assumes that `socket` is configured and will be connected by the caller.
         public ForeignRoom(RoomInfo roomInfo, MatchParticipant owner, SocketerClient socket)
             : base(roomInfo, owner)
@@ -47,55 +100,55 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             // Clear the participants array, will be filled by the server.
             // TODO cleanup
             Participants = new RoomParticipant[0];
-
             Socket = socket;
-            socket.Message += (SocketerClient server, SocketerClient.MessageEvent ev) =>
+        }
+
+        private void OnMessage(SocketerClient server, SocketerClient.MessageEvent ev)
+        {
+            switch (Utils.ParseHeader(ev.Message))
             {
-                switch(Utils.ParseHeader(ev.Message))
+                case Utils.AttrHeader:
                 {
-                    case Utils.AttrHeader:
+                    // Apply the changes locally.
+                    var recvAttributes = Utils.ParseAttrPacket(ev.Message);
+                    IReadOnlyDictionary<string, object> oldAttributes = Attributes;
+                    Dictionary<string, object> newAttributes = new Dictionary<string, object>(oldAttributes.Count);
+                    foreach (var attr in oldAttributes)
                     {
-                        // Apply the changes locally.
-                        var recvAttributes = Utils.ParseAttrPacket(ev.Message);
-                        IReadOnlyDictionary<string, object> oldAttributes = Attributes;
-                        Dictionary<string, object> newAttributes = new Dictionary<string, object>(oldAttributes.Count);
-                        foreach (var attr in oldAttributes)
-                        {
-                            newAttributes.Add(attr.Key, attr.Value);
-                        }
-                        foreach (var attr in recvAttributes)
-                        {
-                            newAttributes[attr.Key] = attr.Value;
-                        }
-                        Attributes = newAttributes;
+                        newAttributes.Add(attr.Key, attr.Value);
+                    }
+                    foreach (var attr in recvAttributes)
+                    {
+                        newAttributes[attr.Key] = attr.Value;
+                    }
+                    Attributes = newAttributes;
 
-                        // TODO see SetAttributesAsync
-                        AttributesChangeReceived?.Invoke(this, GetHash(recvAttributes));
+                    // TODO see SetAttributesAsync
+                    AttributesChangeReceived?.Invoke(this, GetHash(recvAttributes));
 
-                        // Raise the event.
-                        RaiseAttributesChanged();
-                        break;
-                    }
-                    case Utils.MsgHeader:
-                    {
-                        // Raise the event.
-                        int senderId = Utils.ParseMessageParticipant(ev.Message);
-                        var sender = Participants.First(p => p.IdInRoom == senderId);
-                        MessageReceived?.Invoke(this, new MessageReceivedArgs(sender, Utils.ParseMessagePayload(ev.Message)));
-                        break;
-                    }
-                    case Utils.PartJoinedHeader:
-                    {
-                        AddParticipant(Utils.ParseParticipantJoinedPacket(ev.Message));
-                        break;
-                    }
-                    case Utils.PartLeftHeader:
-                    {
-                        RemoveParticipant(Utils.ParseParticipantLeftPacket(ev.Message));
-                        break;
-                    }
+                    // Raise the event.
+                    RaiseAttributesChanged();
+                    break;
                 }
-            };
+                case Utils.MsgHeader:
+                {
+                    // Raise the event.
+                    int senderId = Utils.ParseMessageParticipant(ev.Message);
+                    var sender = Participants.First(p => p.IdInRoom == senderId);
+                    MessageReceived?.Invoke(this, new MessageReceivedArgs(sender, Utils.ParseMessagePayload(ev.Message)));
+                    break;
+                }
+                case Utils.PartJoinedHeader:
+                {
+                    AddParticipant(Utils.ParseParticipantJoinedPacket(ev.Message));
+                    break;
+                }
+                case Utils.PartLeftHeader:
+                {
+                    RemoveParticipant(Utils.ParseParticipantLeftPacket(ev.Message));
+                    break;
+                }
+            }
         }
 
         public override Task LeaveAsync()
