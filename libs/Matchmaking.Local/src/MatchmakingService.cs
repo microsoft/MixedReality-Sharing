@@ -61,6 +61,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
         private readonly MatchParticipantFactory participantFactory_;
         private readonly SocketerClient server_;
         private readonly SocketerClient broadcastSender_;
+        private readonly Random random_ = new Random();
 
         public IEnumerable<IRoom> JoinedRooms => joinedRooms_;
 
@@ -203,12 +204,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                 var token = sendCts_.Token;
 
                 // Start periodically sending FIND requests
-                Task.Run(() =>
+                Task.Run(async () =>
                 {
                     while (!token.IsCancellationRequested)
                     {
                         service_.broadcastSender_.SendNetworkMessage(packet);
-                        token.WaitHandle.WaitOne(broadcastIntervalMs_);
+                        await Task.Delay(broadcastIntervalMs_);
                     }
                 }, token);
 
@@ -301,34 +302,32 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             }
         }
 
-        public Task<IRoom> JoinRandomRoomAsync(Dictionary<string, object> expectedAttributes = null, CancellationToken token = default)
+        public async Task<IRoom> JoinRandomRoomAsync(Dictionary<string, object> expectedAttributes = null, CancellationToken token = default)
         {
-            return Task.Run(async () =>
+            // Subscribe to the rooms matching the queried attributes.
+            using (var roomList = new RoomList(this, Utils.CreateFindByAttributesPacket(expectedAttributes)))
             {
-                using (var roomList = new RoomList(this, Utils.CreateFindByAttributesPacket(expectedAttributes)))
+                var roomsUpdated = new TaskCompletionSource<IList<RoomInfo>>();
+
+                EventHandler<IEnumerable<IRoomInfo>> handler = (object l, IEnumerable<IRoomInfo> rooms) =>
                 {
-                    var random = new Random();
+                    roomsUpdated.TrySetResult((IList<RoomInfo>)rooms);
+                };
+                roomList.RoomsRefreshed += handler;
 
-                    IList<RoomInfo> currentRooms = null;
-                    var roomsUpdated = new AutoResetEvent(false);
-
-                    EventHandler<IEnumerable<IRoomInfo>> handler = (object l, IEnumerable<IRoomInfo> rooms) =>
-                    {
-                        currentRooms = (IList<RoomInfo>)rooms;
-                        roomsUpdated.Set();
-                    };
-                    roomList.RoomsRefreshed += handler;
-
+                using (var reg = token.Register(() => roomsUpdated.SetCanceled()))
+                {
                     while (true)
                     {
-                        WaitHandle.WaitAny(new WaitHandle[] { roomsUpdated, token.WaitHandle });
-                        token.ThrowIfCancellationRequested();
-
+                        // Wait for new rooms.
+                        IList<RoomInfo> currentRooms = await roomsUpdated.Task;
                         if (currentRooms.Any())
                         {
-                            Shuffle(currentRooms, random);
+                            // Try to join a random one.
+                            Shuffle(currentRooms, random_);
                             foreach (var roomInfo in currentRooms)
                             {
+                                // TODO should catch exceptions instead?
                                 var room = await roomInfo.JoinAsync(token);
                                 if (room != null)
                                 {
@@ -336,9 +335,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                                 }
                             }
                         }
+                        roomsUpdated = new TaskCompletionSource<IList<RoomInfo>>();
                     }
                 }
-            }, token);
+            }
         }
 
         public async Task<IRoom> JoinRoomByIdAsync(string roomId, CancellationToken token = default)
@@ -350,13 +350,15 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                 {
                     if (rooms.Any())
                     {
-                        roomFuture.SetResult(rooms.First());
+                        roomFuture.TrySetResult(rooms.First());
                     }
                 };
                 roomList.RoomsRefreshed += handler;
-                token.Register(() => roomFuture.SetCanceled());
-                IRoomInfo roomInfo = await roomFuture.Task;
-                return await roomInfo.JoinAsync(token);
+                using (var reg = token.Register(() => roomFuture.SetCanceled()))
+                {
+                    IRoomInfo roomInfo = await roomFuture.Task;
+                    return await roomInfo.JoinAsync(token);
+                }
             }
         }
 

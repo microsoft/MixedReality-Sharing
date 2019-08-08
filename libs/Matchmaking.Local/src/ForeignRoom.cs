@@ -57,7 +57,6 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             // Connect.
             {
                 var ev = new TaskCompletionSource<object>();
-                token.Register(() => ev.SetCanceled());
                 Action<SocketerClient, int, string, int> connectHandler =
                 (SocketerClient server, int id, string clientHost, int clientPort) =>
                 {
@@ -66,7 +65,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                 };
                 socket.Connected += connectHandler;
                 socket.Start();
-                await ev.Task;
+                using (var reg = token.Register(() => ev.SetCanceled()))
+                {
+                    await ev.Task;
+                }
                 socket.Connected -= connectHandler;
             }
 
@@ -75,7 +77,6 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             // This means that we have received a consistent room state.
             {
                 var ev = new TaskCompletionSource<object>();
-                token.Register(() => ev.SetCanceled());
 
                 EventHandler handler = (object o, EventArgs e) =>
                 {
@@ -85,7 +86,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                 res.AttributesChanged += handler;
                 // Send participant info to the server.
                 socket.SendNetworkMessage(Utils.CreateJoinRequestPacket(localParticipant));
-                await ev.Task;
+                using (var reg = token.Register(() => ev.SetCanceled()))
+                {
+                    await ev.Task;
+                }
                 res.AttributesChanged -= handler;
             }
 
