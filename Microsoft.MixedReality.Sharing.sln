@@ -17,6 +17,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TempLib.Test", "libs\TempLi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.MixedReality.Sharing.Matchmaking.Local", "libs\Matchmaking.Local\src\Microsoft.MixedReality.Sharing.Matchmaking.Local.csproj", "{5BCD6468-E151-493A-A630-225A1B2D0A1D}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Matchmaking.Local.Test", "libs\Matchmaking.Local\test\Matchmaking.Local.Test\Matchmaking.Local.Test.csproj", "{67ECB9C3-2AAD-447E-B1B5-2516B80E2908}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -107,6 +109,18 @@ Global
 		{5BCD6468-E151-493A-A630-225A1B2D0A1D}.Release|x64.Build.0 = Release|Any CPU
 		{5BCD6468-E151-493A-A630-225A1B2D0A1D}.Release|x86.ActiveCfg = Release|Any CPU
 		{5BCD6468-E151-493A-A630-225A1B2D0A1D}.Release|x86.Build.0 = Release|Any CPU
+		{67ECB9C3-2AAD-447E-B1B5-2516B80E2908}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{67ECB9C3-2AAD-447E-B1B5-2516B80E2908}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{67ECB9C3-2AAD-447E-B1B5-2516B80E2908}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{67ECB9C3-2AAD-447E-B1B5-2516B80E2908}.Debug|x64.Build.0 = Debug|Any CPU
+		{67ECB9C3-2AAD-447E-B1B5-2516B80E2908}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{67ECB9C3-2AAD-447E-B1B5-2516B80E2908}.Debug|x86.Build.0 = Debug|Any CPU
+		{67ECB9C3-2AAD-447E-B1B5-2516B80E2908}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{67ECB9C3-2AAD-447E-B1B5-2516B80E2908}.Release|Any CPU.Build.0 = Release|Any CPU
+		{67ECB9C3-2AAD-447E-B1B5-2516B80E2908}.Release|x64.ActiveCfg = Release|Any CPU
+		{67ECB9C3-2AAD-447E-B1B5-2516B80E2908}.Release|x64.Build.0 = Release|Any CPU
+		{67ECB9C3-2AAD-447E-B1B5-2516B80E2908}.Release|x86.ActiveCfg = Release|Any CPU
+		{67ECB9C3-2AAD-447E-B1B5-2516B80E2908}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
