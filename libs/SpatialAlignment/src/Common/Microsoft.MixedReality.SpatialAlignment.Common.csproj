@@ -12,4 +12,8 @@
     <ProjectReference Include="..\..\..\Common\src\Utilities\Microsoft.MixedReality.Sharing.Utilities.csproj" />
   </ItemGroup>
 
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="xcopy /y $(TargetDir)$(TargetName).dll $(ProjectDir)..\..\unity\Assets\SpatialAlignment.Common.Output\&#xD;&#xA;xcopy /y $(TargetDir)$(TargetName).pdb $(ProjectDir)..\..\unity\Assets\SpatialAlignment.Common.Output\" />
+  </Target>
+
 </Project>
