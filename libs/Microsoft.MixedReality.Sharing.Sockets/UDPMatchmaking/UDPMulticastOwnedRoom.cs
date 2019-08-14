@@ -2,6 +2,7 @@
 using Microsoft.MixedReality.Sharing.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -11,16 +12,24 @@ using System.Threading.Tasks;
 
 namespace Microsoft.MixedReality.Sharing.Sockets
 {
-    public class UDPMulticastEditableRoom : UDPMulticastRoom, IEditableRoom
+    public class UDPMulticastOwnedRoom : UDPMulticastRoom, IOwnedRoom
     {
+        private volatile IDictionary<string, string> writeableAttributes;
         private CancellationTokenSource hostingCTS = null;
         private Socket hostingSocket = null;
 
-        internal UDPMulticastEditableRoom(UDPMulticastMatchmakingService matchmakingService, UDPMulticastRoomConfiguration roomConfig, IPAddress hostAddress, IDictionary<string, string> attributes)
-            : base(matchmakingService, roomConfig, hostAddress)
+        public ISession Session { get; }
+
+        internal UDPMulticastOwnedRoom(UDPMulticastMatchmakingService matchmakingService, UDPMulticastRoomConfiguration roomConfig, ISession session, IDictionary<string, string> attributes)
+            : base(matchmakingService, roomConfig)
         {
-            UpdateParticipants(matchmakingService.ParticipantProvider.CurrentParticipant, new IParticipant[] { matchmakingService.ParticipantProvider.CurrentParticipant });
-            UpdateAttributes(attributes);
+            Session = session ?? throw new ArgumentNullException(nameof(session));
+
+            owner = matchmakingService.ParticipantProvider.CurrentParticipant;
+            writeableAttributes = attributes;
+            this.attributes = new ReadOnlyDictionary<string, string>(attributes);
+
+            ETag = DateTime.UtcNow.Ticks;
         }
 
         internal void StartHosting(CancellationToken cancellationToken)
@@ -29,7 +38,7 @@ namespace Microsoft.MixedReality.Sharing.Sockets
             Task.Run(() => HostAsync(hostingCTS.Token), cancellationToken).FireAndForget();
         }
 
-        public void Close()
+        protected override void OnManagedDispose() // TODO update to using disposablebase
         {
             hostingCTS?.Cancel();
             hostingCTS?.Dispose();
@@ -38,14 +47,24 @@ namespace Microsoft.MixedReality.Sharing.Sockets
             hostingSocket?.Close();
             hostingSocket?.Dispose();
             hostingSocket = null;
+
+            Session.Dispose();
+        }
+
+        public void UpdateAttributes(Action<IDictionary<string, string>> updateCallback)
+        {
+            lock (DisposeLockObject)
+            {
+                updateCallback(writeableAttributes);
+            }
         }
 
         private async Task HostAsync(CancellationToken cancellationToken)
         {
             try
             {
-                hostingSocket = new Socket(hostAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-                hostingSocket.Bind(new IPEndPoint(hostAddress, RoomConfig.InfoPort));
+                hostingSocket = new Socket(RoomConfig.Address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                hostingSocket.Bind(new IPEndPoint(RoomConfig.Address, RoomConfig.InfoPort));
                 hostingSocket.Listen(100);
 
                 while (!cancellationToken.IsCancellationRequested)
@@ -66,25 +85,19 @@ namespace Microsoft.MixedReality.Sharing.Sockets
 
         private async Task SendDataAsync(Socket client, CancellationToken cancellationToken)
         {
-            // Expectation is that when someone connect to us - the host, we stream the following:
-            // [2 bytes : n participants] must be > 1
+            // Expectation is that we connect to the host at given port, and download the following:
+            // [4 bytes : n length] [n-bytes : owner id]
             // [2 bytes : m attributes] can be 0
-            // n * [[4 bytes : y length] [y-bytes : participant id]]
             // m * [[4 bytes : key length] [key-bytes : attribute key] [4 bytes : val length] [val-bytes : attribute value]]
-            // Where the first participant is owner
 
             using (NetworkStream stream = new NetworkStream(client))
             using (BinaryWriter writer = new BinaryWriter(stream, Encoding.ASCII))
             {
-                lock (lockObject)
-                {
-                    writer.Write((ushort)Participants.Count);
-                    writer.Write((ushort)Attributes.Count);
+                writer.Write(Owner.Id);
 
-                    foreach (IParticipant participant in Participants)
-                    {
-                        writer.Write(participant.Id);
-                    }
+                lock (DisposeLockObject)
+                {
+                    writer.Write((ushort)Attributes.Count);
 
                     foreach (KeyValuePair<string, string> attribute in Attributes)
                     {
@@ -95,6 +108,11 @@ namespace Microsoft.MixedReality.Sharing.Sockets
 
                 await stream.FlushAsync();
             }
+        }
+
+        public override Task<ISession> JoinAsync(CancellationToken cancellationToken)
+        {
+            throw new NotSupportedException("Can't join a room that is hosted by the current client.");
         }
     }
 }

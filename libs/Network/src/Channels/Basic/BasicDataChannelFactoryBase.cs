@@ -6,32 +6,28 @@ namespace Microsoft.MixedReality.Sharing.Channels
     /// <summary>
     /// Helper basic class to be used for inheriting from by various implementations.
     /// </summary>
-    public abstract class BasicDataChannelFactoryBase : IChannelFactory<BasicDataChannel>
+    public abstract class BasicDataChannelFactoryBase<TSession, TEndpoint> : IChannelFactory<BasicDataChannel>
+        where TSession : ISession
+        where TEndpoint : IEndpoint
     {
-        /// <summary>
-        /// Gets the name of this channel factory.
-        /// </summary>
-        public virtual string Name { get; } = $"Factory for {nameof(BasicDataChannel)}";
-
-
         BasicDataChannel IChannelFactory<BasicDataChannel>.GetChannel(ISession session, string channelId)
         {
-            return GetChannel(session, channelId);
+            return GetChannel((TSession)session, channelId);
         }
 
         BasicDataChannel IChannelFactory<BasicDataChannel>.GetChannel(IEndpoint endpoint, string channelId)
         {
-            return GetChannel(endpoint, channelId);
+            return GetChannel((TEndpoint)endpoint, channelId);
         }
 
         /// <summary>
         /// Implemented in the inheriting class to get a <see cref="BasicDataChannel"/> for the session.
         /// </summary>
-        protected abstract BasicDataChannel GetChannel(ISession session, string channelId);
+        protected abstract BasicDataChannel GetChannel(TSession session, string channelId);
 
         /// <summary>
         /// Implemented in the inheriting class to get a <see cref="BasicDataChannel"/> for the endpoint.
         /// </summary>
-        protected abstract BasicDataChannel GetChannel(IEndpoint endpoint, string channelId);
+        protected abstract BasicDataChannel GetChannel(TEndpoint endpoint, string channelId);
     }
 }

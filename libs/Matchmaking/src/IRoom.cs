@@ -32,11 +32,6 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         IParticipant Owner { get; }
 
         /// <summary>
-        /// Participants currently in the room.
-        /// </summary>
-        IReadOnlyCollection<IParticipant> Participants { get; }
-
-        /// <summary>
         /// Gets a read-only attribute map associated with this room.
         /// </summary>
         IReadOnlyDictionary<string, string> Attributes { get; }
@@ -49,8 +44,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         Task<ISession> JoinAsync(CancellationToken cancellationToken);
     }
 
-    public interface IEditableRoom : IRoom
+    public interface IOwnedRoom : IRoom, IDisposable
     {
-        void Close();
+        ISession Session { get; }
+
+        void UpdateAttributes(Action<IDictionary<string, string>> updateCallback);
     }
 }

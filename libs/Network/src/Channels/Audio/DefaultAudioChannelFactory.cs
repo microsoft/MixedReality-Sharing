@@ -71,11 +71,6 @@ namespace Microsoft.MixedReality.Sharing.Channels
         }
 
         /// <summary>
-        /// Gets the name of this channel factory.
-        /// </summary>
-        public string Name => $"AudioChannel Factory built on {nameof(BasicDataChannel)}.";
-
-        /// <summary>
         /// Creates a new instance of the factory providing it the factory to be used for the basic data channel transfer.
         /// </summary>
         /// <param name="basicChannelFactory">The factory to use for basic data channel.</param>

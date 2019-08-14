@@ -5,20 +5,16 @@ using System.Linq;
 
 namespace Microsoft.MixedReality.Sharing.Network.Test.Mocks
 {
-    internal class MockBasicChannelFactory : BasicDataChannelFactoryBase
+    internal class MockBasicChannelFactory : BasicDataChannelFactoryBase<MockSession, MockEndpoint>
     {
-        public override string Name => "Mock Implementation of Basic Data Channel";
-
-        protected override BasicDataChannel GetChannel(IEndpoint endpoint, string channelId)
+        protected override BasicDataChannel GetChannel(MockEndpoint endpoint, string channelId)
         {
-            MockEndpoint mockEndpoint = (MockEndpoint)endpoint;
-            return new MockBasicDataChannel(channelId, mockEndpoint.Session, mockEndpoint);
+            return new MockBasicDataChannel(channelId, endpoint.Session, endpoint);
         }
 
-        protected override BasicDataChannel GetChannel(ISession session, string channelId)
+        protected override BasicDataChannel GetChannel(MockSession session, string channelId)
         {
-            MockSession mockSession = (MockSession)session;
-            return new MockBasicDataChannel(channelId, mockSession, null);
+            return new MockBasicDataChannel(channelId, session, null);
         }
 
         private static void SendMessageImplementation(string channelId, Stream stream, MockSession ownerSession, MockEndpoint targetLocalEndpoint)

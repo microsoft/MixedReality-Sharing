@@ -4,6 +4,7 @@ using Microsoft.MixedReality.Sharing.Utilities.Collections;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -17,7 +18,7 @@ namespace Microsoft.MixedReality.Sharing.Sockets
     {
         private const byte RoomInfoPacket = 1;
         private readonly UDPMulticastSettings multicastSettings;
-        private readonly ConcurrentBag<UDPMulticastEditableRoom> locallyOwnedRooms = new ConcurrentBag<UDPMulticastEditableRoom>();
+        private readonly ConcurrentBag<UDPMulticastOwnedRoom> locallyOwnedRooms = new ConcurrentBag<UDPMulticastOwnedRoom>();
 
         private readonly ConcurrentDictionary<string, Task<UDPMulticastRoom>> discoveredRooms = new ConcurrentDictionary<string, Task<UDPMulticastRoom>>();
 
@@ -29,7 +30,7 @@ namespace Microsoft.MixedReality.Sharing.Sockets
 
         internal IParticipantProvider ParticipantProvider { get; }
 
-        public IReadOnlyCollection<IEditableRoom> LocallyOwnedRooms { get; }
+        public IReadOnlyCollection<IOwnedRoom> LocallyOwnedRooms { get; }
 
         public UDPMulticastMatchmakingService(ILogger logger, ISessionFactory<UDPMulticastRoomConfiguration> sessionFactory, IParticipantProvider participantProvider, UDPMulticastSettings multicastSettings)
         {
@@ -44,7 +45,7 @@ namespace Microsoft.MixedReality.Sharing.Sockets
 
             this.multicastSettings = multicastSettings;
 
-            LocallyOwnedRooms = new ReadOnlyCollectionWrapper<IEditableRoom>(locallyOwnedRooms);
+            LocallyOwnedRooms = new ReadOnlyCollectionWrapper<IOwnedRoom>(locallyOwnedRooms);
 
             Task.Run(() => StartBroadcast(DisposeCancellationToken), DisposeCancellationToken).FireAndForget();
 
@@ -61,23 +62,32 @@ namespace Microsoft.MixedReality.Sharing.Sockets
                 {
                     if (locallyOwnedRooms.Count > 0)
                     {
-                        // Layout is [1 header] [2 bytes : info port][2 bytes : session port][1-byte : n length][n-bytes : room id]
-                        byte[] buffer = new byte[261];
+                        // Layout is [1 packetType] [2 bytes : info port][2 bytes : data port][8 bytes - epoch][1-byte : n length][n-bytes : room id]
+                        int headerLength = (1 + 2 + 2 + 8 + 1);
+                        byte[] buffer = new byte[headerLength + 255];
                         buffer[0] = RoomInfoPacket;
-                        foreach (UDPMulticastEditableRoom room in locallyOwnedRooms)
+                        using (MemoryStream memoryStream = new MemoryStream(buffer))
+                        using (BinaryWriter writer = new BinaryWriter(memoryStream))
                         {
-                            ArraySegment<byte> toSend = new ArraySegment<byte>(buffer, 0, 6 + room.Id.Length);
-                            buffer.SetAsUInt16LittleIndian(room.RoomConfig.InfoPort, 1);
-                            buffer.SetAsUInt16LittleIndian(room.RoomConfig.InfoPort, 3);
-                            buffer[5] = (byte)room.Id.Length;
-                            Encoding.ASCII.GetBytes(room.Id).CopyTo(buffer, 6);
+                            foreach (UDPMulticastOwnedRoom room in locallyOwnedRooms)
+                            {
+                                // Reset to just after first byte
+                                memoryStream.Position = 1;
 
-                            await multicastSocket.SendToAsync(toSend, SocketFlags.None, multicastGroupEndpoint);
+                                writer.Write(room.RoomConfig.InfoPort);
+                                writer.Write(room.RoomConfig.DataPort);
+                                writer.Write(room.ETag);
+                                writer.Write((byte)room.Id.Length);
+                                writer.Write(Encoding.ASCII.GetBytes(room.Id));
+                                writer.Flush();
+
+                                await multicastSocket.SendToAsync(new ArraySegment<byte>(buffer, 0, (int)memoryStream.Position), SocketFlags.None, multicastGroupEndpoint);
+                            }
                         }
                     }
-
-                    await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
                 }
+
+                await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
             }
             catch (ObjectDisposedException) { }
         }
@@ -102,9 +112,9 @@ namespace Microsoft.MixedReality.Sharing.Sockets
             multicastSocket?.Close();
             multicastSocket?.Dispose();
 
-            foreach (UDPMulticastEditableRoom room in locallyOwnedRooms)
+            foreach (UDPMulticastOwnedRoom room in locallyOwnedRooms)
             {
-                room.Close();
+                room.Dispose();
             }
         }
 
@@ -114,7 +124,8 @@ namespace Microsoft.MixedReality.Sharing.Sockets
 
             try
             {
-                ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[261]);
+                int headerLength = (1 + 2 + 2 + 8 + 1);
+                ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[headerLength + 255]);
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     SocketReceiveFromResult result = await multicastSocket.ReceiveFromAsync(buffer, SocketFlags.None, multicastGroupEndpoint);
@@ -144,44 +155,69 @@ namespace Microsoft.MixedReality.Sharing.Sockets
 
         private void ProcessRoomInfoPacket(byte[] data, int dataLength, IPEndPoint endPoint, CancellationToken cancellationToken)
         {
-            // Layout is [1 header] [2 bytes : info port][2 bytes : session port][1-byte : n length][n-bytes : room id]
-            if (dataLength < 6 || data[5] == 0 || dataLength != data[5] + 6)
+            // Layout is [1 packetType] [2 bytes : info port][2 bytes : data port][8 bytes - epoch][1-byte : n length][n-bytes : room id]
+            int headerLength = (1 + 2 + 2 + 8 + 1);
+            if (dataLength < headerLength || data[headerLength - 1] == 0 || dataLength != data[headerLength - 1] + headerLength)
             {
                 Logger.LogError($"{nameof(UDPMulticastMatchmakingService)}: Received malformed room info packet.");
                 return;
             }
 
-            ushort infoPort = data.GetUInt16LittleEndian(1);
-            ushort sessionPort = data.GetUInt16LittleEndian(3);
-            string groupName = Encoding.ASCII.GetString(data, 6, data[5]);
+            ushort infoPort, dataPort;
+            long etag;
+            string groupName;
 
-            discoveredRooms.GetOrAdd(groupName, _ => ProcessNewRoomAsync(endPoint, infoPort, sessionPort, groupName, cancellationToken));
+            using (MemoryStream memoryStream = new MemoryStream(data))
+            using (BinaryReader reader = new BinaryReader(memoryStream))
+            {
+                memoryStream.Position = 1;
+
+                infoPort = reader.ReadUInt16();
+                dataPort = reader.ReadUInt16();
+                etag = reader.ReadInt64();
+                byte length = reader.ReadByte();
+                groupName = Encoding.ASCII.GetString(reader.ReadBytes(length));
+            }
+
+            discoveredRooms.AddOrUpdate(groupName,
+                addValueFactory: _ => ProcessNewRoomAsync(endPoint, infoPort, dataPort, etag, groupName, cancellationToken),
+                updateValueFactory: (_, previous) => ProcessExistingRoomAsync(previous, etag, cancellationToken));
         }
 
-        private async Task<UDPMulticastRoom> ProcessNewRoomAsync(IPEndPoint remoteEndpoint, ushort infoPort, ushort sessionPort, string roomId, CancellationToken cancellationToken)
+        private async Task<UDPMulticastRoom> ProcessNewRoomAsync(IPEndPoint remoteEndpoint, ushort infoPort, ushort sessionPort, long etag, string roomId, CancellationToken cancellationToken)
         {
-            UDPMulticastRoom room = new UDPMulticastRoom(this, new UDPMulticastRoomConfiguration(roomId, infoPort, sessionPort), remoteEndpoint.Address);
+            UDPMulticastRoom room = new UDPMulticastRoom(this, new UDPMulticastRoomConfiguration(roomId, remoteEndpoint.Address, infoPort, sessionPort));
 
             //TODO error handling, etc
-            await room.RefreshRoomInfoAsync(cancellationToken);
+            await room.RefreshRoomInfoAsync(etag, cancellationToken);
 
             return room;
         }
 
-        public async Task<IRoom> GetRandomRoomAsync(IReadOnlyDictionary<string, string> expectedAttributes, CancellationToken token)
+        private async Task<UDPMulticastRoom> ProcessExistingRoomAsync(Task<UDPMulticastRoom> task, long etag, CancellationToken cancellationToken)
+        {
+            UDPMulticastRoom room = (await task);
+            //TODO better
+            await room.RefreshRoomInfoAsync(etag, cancellationToken);
+            return room;
+        }
+
+        public async Task<ISession> JoinRandomSessionAsync(IReadOnlyDictionary<string, string> expectedAttributes, CancellationToken token)
         {
             IEnumerable<IRoom> results = await GetRoomsByAttributesAsync(expectedAttributes, token);
 
-            return results.Skip(new Random().Next(results.Count())).First();
+            IRoom room = results.Skip(new Random().Next(results.Count())).First();
+            return await room.JoinAsync(token);
         }
 
-        public async Task<IRoom> GetRoomByIdAsync(string roomId, CancellationToken token)
+        public async Task<ISession> JoinSessionByIdAsync(string roomId, CancellationToken token)
         {
             while (true)
             {
                 if (discoveredRooms.TryGetValue(roomId, out Task<UDPMulticastRoom> roomTask))
                 {
-                    return await roomTask.Unless(token);
+                    UDPMulticastRoom room = await roomTask.Unless(token);
+                    return await room.JoinAsync(token);
                 }
 
                 await Task.Delay(TimeSpan.FromSeconds(1), token);
@@ -192,32 +228,6 @@ namespace Microsoft.MixedReality.Sharing.Sockets
         {
             return (await Task.WhenAll(discoveredRooms.Values).Unless(token))
                 .Where(t => Equals(t.Owner, owner));
-        }
-
-        public async Task<IEnumerable<IRoom>> GetRoomsByParticipantsAsync(IEnumerable<IParticipant> participants, CancellationToken token)
-        {
-            UDPMulticastRoom[] rooms = (await Task.WhenAll(discoveredRooms.Values).Unless(token));
-
-            HashSet<IParticipant> participantsToFind = new HashSet<IParticipant>(participants);
-            List<IRoom> toReturn = new List<IRoom>();
-
-            foreach (UDPMulticastRoom room in rooms)
-            {
-                if (room.Participants.Count < participantsToFind.Count)
-                {
-                    continue;
-                }
-
-                int missingCount = room.Participants.Where(p => !participantsToFind.Contains(p)).Count();
-                if ((room.Participants.Count - missingCount) != participantsToFind.Count)
-                {
-                    continue;
-                }
-
-                toReturn.Add(room);
-            }
-
-            return toReturn;
         }
 
         public async Task<IEnumerable<IRoom>> GetRoomsByAttributesAsync(IReadOnlyDictionary<string, string> attributes, CancellationToken token)
@@ -252,11 +262,12 @@ namespace Microsoft.MixedReality.Sharing.Sockets
             return toReturn;
         }
 
-        public async Task<IEditableRoom> OpenRoomAsync(IDictionary<string, string> attributes, CancellationToken token)
+        public async Task<IOwnedRoom> OpenRoomAsync(IDictionary<string, string> attributes, CancellationToken token)
         {
             ThrowIfDisposed();
 
-            UDPMulticastEditableRoom toReturn = new UDPMulticastEditableRoom(this, await SessionFactory.HostNewRoomAsync(token), multicastSettings.LocalIPAddress, attributes);
+            KeyValuePair<UDPMulticastRoomConfiguration, ISession> result = await SessionFactory.HostNewRoomAsync(attributes, token);
+            UDPMulticastOwnedRoom toReturn = new UDPMulticastOwnedRoom(this, result.Key, result.Value, attributes);
             locallyOwnedRooms.Add(toReturn);
             toReturn.StartHosting(DisposeCancellationToken);
 

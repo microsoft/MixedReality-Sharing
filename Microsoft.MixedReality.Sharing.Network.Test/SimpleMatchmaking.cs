@@ -1,6 +1,7 @@
 ﻿using Autofac;
 using Microsoft.MixedReality.Sharing.Matchmaking;
 using Microsoft.MixedReality.Sharing.Sockets;
+using Microsoft.MixedReality.Sharing.Sockets.Core;
 using Microsoft.MixedReality.Sharing.Test.Mocks;
 using Microsoft.MixedReality.Sharing.Utilities;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -27,7 +28,11 @@ namespace Microsoft.MixedReality.Sharing.Test
             containerBuilder.RegisterType<MockParticipantProvider>()
                 .As<IParticipantProvider>(); // Not single instance to simulate different machines
 
-            containerBuilder.RegisterType<MockSessionFactory>()
+            //containerBuilder.RegisterType<MockSessionFactory>()
+            //    .As<ISessionFactory<UDPMulticastRoomConfiguration>>()
+            //    .SingleInstance();
+
+            containerBuilder.RegisterType<SocketSessionFactory>()
                 .As<ISessionFactory<UDPMulticastRoomConfiguration>>()
                 .SingleInstance();
 
@@ -40,50 +45,56 @@ namespace Microsoft.MixedReality.Sharing.Test
             rootLifetimeScope = containerBuilder.Build();
         }
 
-        [TestMethod]
-        public async Task CreateAndFindRoom()
-        {
-            using (ILifetimeScope lifetimeScope = rootLifetimeScope.BeginLifetimeScope())
-            using (IMatchmakingService hostService = lifetimeScope.Resolve<IMatchmakingService>())
-            using (IMatchmakingService clientService = lifetimeScope.Resolve<IMatchmakingService>())
-            {
-                IEditableRoom hostRoom = await hostService.OpenRoomAsync(new Dictionary<string, string>() { { "Test", "Value" } }, CancellationToken.None);
+        //[TestMethod]
+        //public async Task CreateAndFindRoom()
+        //{
+        //    using (ILifetimeScope lifetimeScope = rootLifetimeScope.BeginLifetimeScope())
+        //    using (IMatchmakingService hostService = lifetimeScope.Resolve<IMatchmakingService>())
+        //    using (IMatchmakingService clientService = lifetimeScope.Resolve<IMatchmakingService>())
+        //    using (IOwnedRoom hostRoom = await hostService.OpenRoomAsync(new Dictionary<string, string>() { { "Test", "Value" } }, CancellationToken.None))
+        //    using (ISession clientRoom = await clientService.JoinSessionByIdAsync(hostRoom.Id, CancellationToken.None))
+        //    {
 
-                IRoom clientRoom = await clientService.GetRoomByIdAsync(hostRoom.Id, CancellationToken.None);
-
-                Assert.AreEqual(hostRoom.Id, clientRoom.Id);
-                Assert.AreEqual(hostRoom.Owner, clientRoom.Owner);
-                Assert.AreEqual(hostRoom.Attributes["Test"], clientRoom.Attributes["Test"]);
-
-                hostRoom.Close();
-            }
-        }
+        //        Assert.AreEqual(hostRoom.Id, clientRoom.Id);
+        //        Assert.AreEqual(hostRoom.Owner, clientRoom.Owner);
+        //        Assert.AreEqual(hostRoom.Attributes["Test"], clientRoom.Attributes["Test"]);
+        //    }
+        //}
 
         [TestMethod]
         public async Task CreateAndFindRoomIdentical()
         {
+            Dictionary<string, string> attributes = new Dictionary<string, string>() { { "Test", "Value" } };
+
             using (ILifetimeScope lifetimeScope = rootLifetimeScope.BeginLifetimeScope())
             using (IMatchmakingService hostService = lifetimeScope.Resolve<IMatchmakingService>())
             using (IMatchmakingService clientService = lifetimeScope.Resolve<IMatchmakingService>())
+            using (IOwnedRoom hostRoom = await hostService.OpenRoomAsync(attributes, CancellationToken.None))
             {
-                Dictionary<string, string> attributes = new Dictionary<string, string>() { { "Test", "Value" } };
-                IEditableRoom hostRoom = await hostService.OpenRoomAsync(attributes, CancellationToken.None);
-
-                IRoom clientRoomId = await clientService.GetRoomByIdAsync(hostRoom.Id, CancellationToken.None);
-                IRoom clientRoomRandom = await clientService.GetRandomRoomAsync(new Dictionary<string, string>(), CancellationToken.None);
-                IRoom clientRoomAttributesRandom = await clientService.GetRandomRoomAsync(attributes, CancellationToken.None);
+                //ISession clientRoomId = await clientService.JoinSessionByIdAsync(hostRoom.Id, CancellationToken.None);
+                //ISession clientRoomRandom = await clientService.JoinRandomSessionAsync(new Dictionary<string, string>(), CancellationToken.None);
+                //ISession clientRoomAttributesRandom = await clientService.JoinRandomSessionAsync(attributes, CancellationToken.None);
 
                 IRoom clientRoomOwner = (await clientService.GetRoomsByOwnerAsync(hostRoom.Owner, CancellationToken.None)).FirstOrDefault();
-                IRoom clientRoomParticipant = (await clientService.GetRoomsByParticipantsAsync(new IParticipant[] { hostRoom.Owner }, CancellationToken.None)).FirstOrDefault();
                 IRoom clientRoomAttributes = (await clientService.GetRoomsByAttributesAsync(attributes, CancellationToken.None)).FirstOrDefault();
 
-                Assert.AreSame(clientRoomId, clientRoomRandom);
-                Assert.AreSame(clientRoomId, clientRoomAttributesRandom);
-                Assert.AreSame(clientRoomId, clientRoomOwner);
-                Assert.AreSame(clientRoomId, clientRoomParticipant);
-                Assert.AreSame(clientRoomId, clientRoomAttributes);
+                //Assert.AreSame(clientRoomId, clientRoomRandom);
+                //Assert.AreSame(clientRoomId, clientRoomAttributesRandom);
+                Assert.AreEqual(hostRoom.Id, clientRoomOwner.Id);
+                Assert.AreSame(clientRoomOwner, clientRoomAttributes);
+            }
+        }
 
-                hostRoom.Close();
+        [TestMethod]
+        public async Task CreateAndJoinRoom()
+        {
+            using (ILifetimeScope lifetimeScope = rootLifetimeScope.BeginLifetimeScope())
+            using (IMatchmakingService hostService = lifetimeScope.Resolve<IMatchmakingService>())
+            using (IMatchmakingService clientService = lifetimeScope.Resolve<IMatchmakingService>())
+            using (IOwnedRoom hostRoom = await hostService.OpenRoomAsync(new Dictionary<string, string>() { { "Test", "Value" } }, CancellationToken.None))
+            using (ISession clientRoom = await clientService.JoinSessionByIdAsync(hostRoom.Id, CancellationToken.None))
+            {
+                Assert.AreEqual(1, hostRoom.Session.ConnectedEndpoints.Count);
             }
         }
     }

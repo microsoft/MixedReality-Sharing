@@ -1,7 +1,8 @@
 ﻿using Microsoft.MixedReality.Sharing.Matchmaking;
+using Microsoft.MixedReality.Sharing.Utilities;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
-using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -9,74 +10,95 @@ using System.Threading.Tasks;
 
 namespace Microsoft.MixedReality.Sharing.Sockets
 {
-    public class UDPMulticastRoom : RoomBase
+    public class UDPMulticastRoom : DisposableBase, IRoom
     {
         private readonly UDPMulticastMatchmakingService matchmakingService;
 
-        internal UDPMulticastRoomConfiguration RoomConfig { get; }
-        protected readonly IPAddress hostAddress;
+        private CancellationTokenSource lastRoomRefreshCTS = null;
+        private Task lastRoomRefreshTask = Task.CompletedTask;
 
-        internal UDPMulticastRoom(UDPMulticastMatchmakingService matchmakingService, UDPMulticastRoomConfiguration roomConfig, IPAddress hostAddress)
-            : base(roomConfig.Id)
+        protected volatile IParticipant owner;
+        protected volatile IReadOnlyDictionary<string, string> attributes;
+
+        public long ETag { get; protected set; }
+
+        public string Id { get; }
+
+        public IParticipant Owner => owner;
+
+        public IReadOnlyDictionary<string, string> Attributes => attributes;
+
+        internal UDPMulticastRoomConfiguration RoomConfig { get; }
+
+        internal UDPMulticastRoom(UDPMulticastMatchmakingService matchmakingService, UDPMulticastRoomConfiguration roomConfig)
         {
+            Id = roomConfig.Id;
             RoomConfig = roomConfig;
             this.matchmakingService = matchmakingService;
-            this.hostAddress = hostAddress;
         }
 
-        internal async Task RefreshRoomInfoAsync(CancellationToken cancellationToken)
+        internal Task RefreshRoomInfoAsync(long newEtag, CancellationToken cancellationToken)
         {
-            List<Task<IParticipant>> newParticipants;
-            Dictionary<string, string> newAttriubtes;
+            lock (DisposeLockObject)
+            {
+                if (newEtag <= ETag)
+                {
+                    return Task.CompletedTask;
+                }
+
+                ETag = newEtag;
+
+                lastRoomRefreshCTS?.Cancel();
+                lastRoomRefreshCTS?.Dispose();
+                lastRoomRefreshCTS = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+                return lastRoomRefreshTask = OnRefreshRoomInfoAsync(lastRoomRefreshTask, cancellationToken);
+            }
+        }
+
+        private async Task OnRefreshRoomInfoAsync(Task previousTaskToAwait, CancellationToken cancellationToken)
+        {
+            await previousTaskToAwait.IgnoreCancellation().Unless(cancellationToken);
+
             try
             {
                 // Expectation is that we connect to the host at given port, and download the following:
-                // [2 bytes : n participants] must be > 1
+                // [4 bytes : n length] [n-bytes : owner id]
                 // [2 bytes : m attributes] can be 0
-                // n * [[4 bytes : y length] [y-bytes : participant id]]
                 // m * [[4 bytes : key length] [key-bytes : attribute key] [4 bytes : val length] [val-bytes : attribute value]]
-                // Where the first participant is owner
-                using (Socket socket = new Socket(hostAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
+                using (Socket socket = new Socket(RoomConfig.Address.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
                 {
-                    await socket.ConnectAsync(hostAddress, RoomConfig.InfoPort);
+                    await socket.ConnectAsync(RoomConfig.Address, RoomConfig.InfoPort);
 
                     using (BinaryReader reader = new BinaryReader(new NetworkStream(socket), Encoding.ASCII))
                     {
-
-                        int numParticipants = reader.ReadUInt16();
-                        if (numParticipants == 0)
-                        {
-                            matchmakingService.Logger.LogError($"{nameof(UDPMulticastRoom)}.{nameof(RefreshRoomInfoAsync)}: Downloading malformed room info data, no participants.");
-                            return;
-                        }
+                        string ownerId = reader.ReadString();
 
                         int numAttributes = reader.ReadUInt16();
 
-                        newParticipants = new List<Task<IParticipant>>(numParticipants);
-                        newAttriubtes = new Dictionary<string, string>(numAttributes);
-
-                        for (int i = 0; i < numParticipants; i++)
-                        {
-                            newParticipants.Add(matchmakingService.ParticipantProvider.GetParticipantAsync(reader.ReadString(), cancellationToken));
-                        }
+                        Dictionary<string, string> newAttriubtes = new Dictionary<string, string>(numAttributes);
 
                         for (int i = 0; i < numAttributes; i++)
                         {
                             newAttriubtes.Add(reader.ReadString(), reader.ReadString());
                         }
+
+
+                        // Update with new values
+                        owner = await matchmakingService.ParticipantProvider.GetParticipantAsync(ownerId, cancellationToken);
+                        attributes = new ReadOnlyDictionary<string, string>(newAttriubtes);
                     }
                 }
             }
             catch (EndOfStreamException ex)
             {
                 matchmakingService.Logger.LogError($"{nameof(UDPMulticastRoom)}.{nameof(RefreshRoomInfoAsync)}: Downloading malformed room info data, reached end of stream before completing reading.", ex);
-                return;
             }
+        }
 
-            UpdateAttributes(newAttriubtes);
-
-            IParticipant[] participants = await Task.WhenAll(newParticipants);
-            UpdateParticipants(participants[0], participants);
+        public virtual async Task<ISession> JoinAsync(CancellationToken cancellationToken)
+        {
+            return await matchmakingService.SessionFactory.JoinSessionAsync(RoomConfig, attributes, cancellationToken);
         }
     }
 }

@@ -13,13 +13,13 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// <summary>
         /// Gets a read-only collection of rooms that are owened by the current participant.
         /// </summary>
-        IReadOnlyCollection<IEditableRoom> LocallyOwnedRooms { get; }
+        IReadOnlyCollection<IOwnedRoom> LocallyOwnedRooms { get; }
 
         /// <summary>
         /// Join a random available existing room.
         /// </summary>
         /// <param name="expectedAttributes">Only consider the rooms that have these attributes.</param>
-        Task<IRoom> GetRandomRoomAsync(IReadOnlyDictionary<string, string> expectedAttributes, CancellationToken token);
+        Task<ISession> JoinRandomSessionAsync(IReadOnlyDictionary<string, string> expectedAttributes, CancellationToken token);
 
         /// <summary>
         /// Join a room by its unique ID.
@@ -27,17 +27,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// <returns>
         /// a <see cref="Task"/> containing the joined room if the provided ID is found, otherwise a null room.
         /// </returns>
-        Task<IRoom> GetRoomByIdAsync(string roomId, CancellationToken token);
+        Task<ISession> JoinSessionByIdAsync(string roomId, CancellationToken token);
 
         /// <summary>
         /// Get the list of all rooms with the specified owner.
         /// </summary>
         Task<IEnumerable<IRoom>> GetRoomsByOwnerAsync(IParticipant owner, CancellationToken token);
-
-        /// <summary>
-        /// Get the list of all rooms containing any of the specified participants.
-        /// </summary>
-        Task<IEnumerable<IRoom>> GetRoomsByParticipantsAsync(IEnumerable<IParticipant> participants, CancellationToken token);
 
         /// <summary>
         /// Get the list of all rooms containing all of these attributes with the specified value.
@@ -56,6 +51,6 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// <returns>
         /// The newly created, joined room.
         /// </returns>
-        Task<IEditableRoom> OpenRoomAsync(IDictionary<string, string> attributes, CancellationToken token);
+        Task<IOwnedRoom> OpenRoomAsync(IDictionary<string, string> attributes, CancellationToken token);
     }
 }

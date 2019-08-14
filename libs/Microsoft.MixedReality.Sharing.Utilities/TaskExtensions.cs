@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -103,9 +102,10 @@ namespace Microsoft.MixedReality.Sharing.Utilities
         /// <param name="task">The task to await.</param>
         /// <param name="cancellationToken">The cancellation token to stop awaiting.</param>
         /// <returns>The task that can be awaited unless the cancellation token is triggered.</returns>
-        public static Task Unless(this Task task, CancellationToken cancellationToken)
+        public static async Task Unless(this Task task, CancellationToken cancellationToken)
         {
-            return Task.WhenAny(task, cancellationToken.AsTask());
+            Task firstFinished = await Task.WhenAny(task, cancellationToken.AsTask());
+            await firstFinished; // Throws if it was the cancellation task
         }
 
         /// <summary>
@@ -118,7 +118,15 @@ namespace Microsoft.MixedReality.Sharing.Utilities
         /// <returns>The task that can be awaited unless the cancellation token is triggered.</returns>
         public static async Task<T> Unless<T>(this Task<T> task, CancellationToken cancellationToken)
         {
-            return (await Task.WhenAny(task, cancellationToken.AsTask())) is Task<T> result ? result.Result : default(T);
+            Task completedTask = await Task.WhenAny(task, cancellationToken.AsTask());
+
+            if (completedTask is Task<T> givenTask)
+            {
+                return await givenTask;
+            }
+
+            await completedTask; // Throws cancellation 
+            return default(T);
         }
 
         /// <summary>
