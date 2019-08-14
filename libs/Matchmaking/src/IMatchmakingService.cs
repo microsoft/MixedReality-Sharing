@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using Microsoft.MixedReality.Sharing.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -32,13 +33,13 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// <summary>
         /// Get the list of all rooms with the specified owner.
         /// </summary>
-        Task<IEnumerable<IRoom>> GetRoomsByOwnerAsync(IParticipant owner, CancellationToken token);
+        Task<IRefreshableCollection<IRoom>> GetRoomsByOwnerAsync(IParticipant owner, CancellationToken token);
 
         /// <summary>
         /// Get the list of all rooms containing all of these attributes with the specified value.
         /// Passing an empty dictionary will list all searchable rooms.
         /// </summary>
-        Task<IEnumerable<IRoom>> GetRoomsByAttributesAsync(IReadOnlyDictionary<string, string> attributes, CancellationToken token);
+        Task<IRefreshableCollection<IRoom>> GetRoomsByAttributesAsync(IReadOnlyDictionary<string, string> attributes, CancellationToken token);
 
         /// <summary>
         /// Create a new room and join it.
