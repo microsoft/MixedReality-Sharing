@@ -5,8 +5,4 @@
     <LangVersion>7.3</LangVersion>
   </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\Matchmaking\src\Microsoft.MixedReality.Sharing.Matchmaking.csproj" />
-  </ItemGroup>
-
 </Project>

@@ -9,7 +9,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Microsoft.MixedReality.Sharing.Utilities\Microsoft.MixedReality.Sharing.Utilities.csproj" />
+    <ProjectReference Include="..\..\..\Common\src\Utilities\Microsoft.MixedReality.Sharing.Utilities.csproj" />
   </ItemGroup>
 
 </Project>
