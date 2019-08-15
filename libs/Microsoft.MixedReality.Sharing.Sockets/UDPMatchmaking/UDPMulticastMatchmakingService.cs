@@ -1,14 +1,13 @@
 ﻿using Microsoft.MixedReality.Sharing.Matchmaking;
+using Microsoft.MixedReality.Sharing.Sockets.UDPMatchmaking.Messages;
 using Microsoft.MixedReality.Sharing.Utilities;
 using Microsoft.MixedReality.Sharing.Utilities.Collections;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,7 +19,7 @@ namespace Microsoft.MixedReality.Sharing.Sockets
         private readonly UDPMulticastSettings multicastSettings;
         private readonly ConcurrentBag<UDPMulticastOwnedRoom> locallyOwnedRooms = new ConcurrentBag<UDPMulticastOwnedRoom>();
 
-        private readonly ConcurrentDictionary<string, Task<UDPMulticastRoom>> discoveredRooms = new ConcurrentDictionary<string, Task<UDPMulticastRoom>>();
+        private readonly ConcurrentDictionary<Guid, UDPMulticastRoom> discoveredRooms = new ConcurrentDictionary<Guid, UDPMulticastRoom>();
 
         private Socket multicastSocket;
 
@@ -62,27 +61,15 @@ namespace Microsoft.MixedReality.Sharing.Sockets
                 {
                     if (locallyOwnedRooms.Count > 0)
                     {
-                        // Layout is [1 packetType] [2 bytes : info port][2 bytes : data port][8 bytes - epoch][1-byte : n length][n-bytes : room id]
-                        int headerLength = (1 + 2 + 2 + 8 + 1);
-                        byte[] buffer = new byte[headerLength + 255];
-                        buffer[0] = RoomInfoPacket;
-                        using (MemoryStream memoryStream = new MemoryStream(buffer))
-                        using (BinaryWriter writer = new BinaryWriter(memoryStream))
+                        byte[] buffer = new byte[AnnounceMessage.Size + 1];
+                        buffer[0] = AnnounceMessage.MessageTypeId;
+                        ArraySegment<byte> toSend = new ArraySegment<byte>(buffer);
+                        foreach (UDPMulticastOwnedRoom room in locallyOwnedRooms)
                         {
-                            foreach (UDPMulticastOwnedRoom room in locallyOwnedRooms)
-                            {
-                                // Reset to just after first byte
-                                memoryStream.Position = 1;
-
-                                writer.Write(room.RoomConfig.InfoPort);
-                                writer.Write(room.RoomConfig.DataPort);
-                                writer.Write(room.ETag);
-                                writer.Write((byte)room.Id.Length);
-                                writer.Write(Encoding.ASCII.GetBytes(room.Id));
-                                writer.Flush();
-
-                                await multicastSocket.SendToAsync(new ArraySegment<byte>(buffer, 0, (int)memoryStream.Position), SocketFlags.None, multicastGroupEndpoint);
-                            }
+                            // Reset to just after first byte
+                            AnnounceMessage message = new AnnounceMessage(room.Id, room.ETag, room.RoomConfig.DataPort, room.RoomConfig.InfoPort);
+                            message.ToBytes(buffer, 1);
+                            await multicastSocket.SendToAsync(toSend, SocketFlags.None, multicastGroupEndpoint);
                         }
                     }
                 }
@@ -124,8 +111,9 @@ namespace Microsoft.MixedReality.Sharing.Sockets
 
             try
             {
-                int headerLength = (1 + 2 + 2 + 8 + 1);
-                ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[headerLength + 255]);
+                // We only have 1 message, so just fit the buffer to it
+                ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[1 + AnnounceMessage.Size]);
+
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     SocketReceiveFromResult result = await multicastSocket.ReceiveFromAsync(buffer, SocketFlags.None, multicastGroupEndpoint);
@@ -141,8 +129,19 @@ namespace Microsoft.MixedReality.Sharing.Sockets
                         switch (buffer.Array[0])
                         {
                             case RoomInfoPacket:
-                                ProcessRoomInfoPacket(buffer.Array, result.ReceivedBytes, remoteIpEndpoint, cancellationToken);
-                                break;
+                            {
+                                if (result.ReceivedBytes != 1 + AnnounceMessage.Size)
+                                {
+                                    Logger.LogError($"{nameof(UDPMulticastMatchmakingService)}: Received malformed room info packet.");
+                                }
+                                else
+                                {
+                                    AnnounceMessage announceMessage = buffer.Array.AsStruct<AnnounceMessage>(1);
+                                    UDPMulticastRoom room = discoveredRooms.GetOrAdd(announceMessage.Id, new UDPMulticastRoom(this, new UDPMulticastRoomConfiguration(announceMessage.Id, remoteIpEndpoint.Address, announceMessage.InfoPort, announceMessage.DataPort)));
+                                    ProcessRoomUpdateAsync(announceMessage, room, cancellationToken).FireAndForget();
+                                }
+                            }
+                            break;
                             default:
                                 Logger.LogError($"{nameof(UDPMulticastMatchmakingService)}: Received unknown UDP Multicast packet with header byte '{buffer.Array[0]}', ignoring.");
                                 break;
@@ -153,38 +152,17 @@ namespace Microsoft.MixedReality.Sharing.Sockets
             catch (ObjectDisposedException) { }
         }
 
-        private void ProcessRoomInfoPacket(byte[] data, int dataLength, IPEndPoint endPoint, CancellationToken cancellationToken)
+        private async Task ProcessRoomUpdateAsync(AnnounceMessage announceMessage, UDPMulticastRoom room, CancellationToken cancellationToken)
         {
-            // Layout is [1 packetType] [2 bytes : info port][2 bytes : data port][8 bytes - epoch][1-byte : n length][n-bytes : room id]
-            int headerLength = (1 + 2 + 2 + 8 + 1);
-            if (dataLength < headerLength || data[headerLength - 1] == 0 || dataLength != data[headerLength - 1] + headerLength)
+            bool succeded = await room.RefreshRoomInfoAsync(announceMessage.ETag, cancellationToken);
+
+            if (succeded)
             {
-                Logger.LogError($"{nameof(UDPMulticastMatchmakingService)}: Received malformed room info packet.");
-                return;
+                // Go update waiting lists
             }
-
-            ushort infoPort, dataPort;
-            long etag;
-            string groupName;
-
-            using (MemoryStream memoryStream = new MemoryStream(data))
-            using (BinaryReader reader = new BinaryReader(memoryStream))
-            {
-                memoryStream.Position = 1;
-
-                infoPort = reader.ReadUInt16();
-                dataPort = reader.ReadUInt16();
-                etag = reader.ReadInt64();
-                byte length = reader.ReadByte();
-                groupName = Encoding.ASCII.GetString(reader.ReadBytes(length));
-            }
-
-            discoveredRooms.AddOrUpdate(groupName,
-                addValueFactory: _ => ProcessNewRoomAsync(endPoint, infoPort, dataPort, etag, groupName, cancellationToken),
-                updateValueFactory: (_, previous) => ProcessExistingRoomAsync(previous, etag, cancellationToken));
         }
 
-        private async Task<UDPMulticastRoom> ProcessNewRoomAsync(IPEndPoint remoteEndpoint, ushort infoPort, ushort sessionPort, long etag, string roomId, CancellationToken cancellationToken)
+        private async Task<UDPMulticastRoom> ProcessNewRoomAsync(IPEndPoint remoteEndpoint, ushort infoPort, ushort sessionPort, long etag, Guid roomId, CancellationToken cancellationToken)
         {
             UDPMulticastRoom room = new UDPMulticastRoom(this, new UDPMulticastRoomConfiguration(roomId, remoteEndpoint.Address, infoPort, sessionPort));
 
@@ -214,7 +192,7 @@ namespace Microsoft.MixedReality.Sharing.Sockets
         {
             while (true)
             {
-                if (discoveredRooms.TryGetValue(roomId, out Task<UDPMulticastRoom> roomTask))
+                if (discoveredRooms.TryGetValue(Guid.Parse(roomId), out Task<UDPMulticastRoom> roomTask))
                 {
                     UDPMulticastRoom room = await roomTask.Unless(token);
                     return await room.JoinAsync(token);

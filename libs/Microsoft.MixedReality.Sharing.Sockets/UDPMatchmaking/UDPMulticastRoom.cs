@@ -1,5 +1,6 @@
 ﻿using Microsoft.MixedReality.Sharing.Matchmaking;
 using Microsoft.MixedReality.Sharing.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -10,19 +11,30 @@ using System.Threading.Tasks;
 
 namespace Microsoft.MixedReality.Sharing.Sockets
 {
+    internal enum UDPMulticastRoomState
+    {
+        None,
+        Updating,
+        Ready,
+        Error
+    }
+
     public class UDPMulticastRoom : DisposableBase, IRoom
     {
         private readonly UDPMulticastMatchmakingService matchmakingService;
+        private readonly string id;
 
         private CancellationTokenSource lastRoomRefreshCTS = null;
-        private Task lastRoomRefreshTask = Task.CompletedTask;
+        private Task<bool> lastRoomRefreshTask = Task.FromResult(false);
 
         protected volatile IParticipant owner;
         protected volatile IReadOnlyDictionary<string, string> attributes;
 
         public long ETag { get; protected set; }
 
-        public string Id { get; }
+        public Guid Id { get; }
+
+        string IRoom.Id => id;
 
         public IParticipant Owner => owner;
 
@@ -30,20 +42,24 @@ namespace Microsoft.MixedReality.Sharing.Sockets
 
         internal UDPMulticastRoomConfiguration RoomConfig { get; }
 
+        internal UDPMulticastRoomState State { get; private set; } = UDPMulticastRoomState.None;
+
         internal UDPMulticastRoom(UDPMulticastMatchmakingService matchmakingService, UDPMulticastRoomConfiguration roomConfig)
         {
             Id = roomConfig.Id;
+            id = ((IRoomConfiguration)roomConfig).Id;
+
             RoomConfig = roomConfig;
             this.matchmakingService = matchmakingService;
         }
 
-        internal Task RefreshRoomInfoAsync(long newEtag, CancellationToken cancellationToken)
+        internal Task<bool> RefreshRoomInfoAsync(long newEtag, CancellationToken cancellationToken)
         {
             lock (DisposeLockObject)
             {
-                if (newEtag <= ETag)
+                if (newEtag < ETag || (newEtag == ETag && State != UDPMulticastRoomState.Error))
                 {
-                    return Task.CompletedTask;
+                    return Task.FromResult(false);
                 }
 
                 ETag = newEtag;
@@ -52,11 +68,13 @@ namespace Microsoft.MixedReality.Sharing.Sockets
                 lastRoomRefreshCTS?.Dispose();
                 lastRoomRefreshCTS = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
+                State = UDPMulticastRoomState.Updating;
+
                 return lastRoomRefreshTask = OnRefreshRoomInfoAsync(lastRoomRefreshTask, cancellationToken);
             }
         }
 
-        private async Task OnRefreshRoomInfoAsync(Task previousTaskToAwait, CancellationToken cancellationToken)
+        private async Task<bool> OnRefreshRoomInfoAsync(Task previousTaskToAwait, CancellationToken cancellationToken)
         {
             await previousTaskToAwait.IgnoreCancellation().Unless(cancellationToken);
 
@@ -67,8 +85,13 @@ namespace Microsoft.MixedReality.Sharing.Sockets
                 // [2 bytes : m attributes] can be 0
                 // m * [[4 bytes : key length] [key-bytes : attribute key] [4 bytes : val length] [val-bytes : attribute value]]
                 using (Socket socket = new Socket(RoomConfig.Address.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
+                using (cancellationToken.Register(() => socket.Close()))
                 {
-                    await socket.ConnectAsync(RoomConfig.Address, RoomConfig.InfoPort);
+                    await socket.ConnectAsync(RoomConfig.Address, RoomConfig.InfoPort).IgnoreSocketAbort();
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        return false;
+                    }
 
                     using (BinaryReader reader = new BinaryReader(new NetworkStream(socket), Encoding.ASCII))
                     {
@@ -89,11 +112,31 @@ namespace Microsoft.MixedReality.Sharing.Sockets
                         attributes = new ReadOnlyDictionary<string, string>(newAttriubtes);
                     }
                 }
+
+                lock (DisposeLockObject)
+                {
+                    if (!cancellationToken.IsCancellationRequested)
+                    {
+                        // If we reached here and aren't cancelled (no new update task was scheduled, then we are ready)
+                        State = UDPMulticastRoomState.Ready;
+                        return true;
+                    }
+                }
             }
-            catch (EndOfStreamException ex)
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
             {
-                matchmakingService.Logger.LogError($"{nameof(UDPMulticastRoom)}.{nameof(RefreshRoomInfoAsync)}: Downloading malformed room info data, reached end of stream before completing reading.", ex);
+                matchmakingService.Logger.LogError($"{nameof(UDPMulticastRoom)}.{nameof(RefreshRoomInfoAsync)}: Failed to download an update, encountered an exception.", ex);
+                lock (DisposeLockObject)
+                {
+                    if (!cancellationToken.IsCancellationRequested)
+                    {
+                        State = UDPMulticastRoomState.Error;
+                    }
+                }
             }
+
+            return false;
         }
 
         public virtual async Task<ISession> JoinAsync(CancellationToken cancellationToken)

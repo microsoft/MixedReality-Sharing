@@ -1,11 +1,16 @@
 ﻿using Microsoft.MixedReality.Sharing.Matchmaking;
+using System;
 using System.Net;
 
 namespace Microsoft.MixedReality.Sharing.Sockets
 {
     public struct UDPMulticastRoomConfiguration : IRoomConfiguration
     {
-        public string Id { get; }
+        private readonly string id;
+
+        public Guid Id { get; }
+
+        string IRoomConfiguration.Id => id;
 
         public IPAddress Address { get; }
 
@@ -13,9 +18,16 @@ namespace Microsoft.MixedReality.Sharing.Sockets
 
         public ushort DataPort { get; }
 
-        public UDPMulticastRoomConfiguration(string id, IPAddress address, ushort infoPort, ushort dataPort)
+        public UDPMulticastRoomConfiguration(IPAddress address, ushort infoPort, ushort dataPort)
+            : this(Guid.NewGuid(), address, infoPort, dataPort)
+        {
+
+        }
+        internal UDPMulticastRoomConfiguration(Guid id, IPAddress address, ushort infoPort, ushort dataPort)
         {
             Id = id;
+            this.id = id.ToString();
+
             Address = address;
             InfoPort = infoPort;
             DataPort = dataPort;
