@@ -11,6 +11,11 @@ namespace Microsoft.MixedReality.Sharing.Sockets
 {
     public static class Extensions
     {
+        /// <summary>
+        /// Checks whether this address is a valid multicast address.
+        /// </summary>
+        /// <param name="ipAddress">The address to check.</param>
+        /// <returns>True if the address is a multicast address.</returns>
         public static bool IsValidMulticastAddress(this IPAddress ipAddress)
         {
             if (ipAddress.IsIPv6Multicast)
@@ -27,26 +32,20 @@ namespace Microsoft.MixedReality.Sharing.Sockets
             return bytes[0] >= 224 && bytes[0] <= 239;
         }
 
+        /// <summary>
+        /// Gets whether this <see cref="IPAddress"/> is an IPv4 address.
+        /// </summary>
+        /// <param name="ipAddress">The address to check.</param>
+        /// <returns>True if the address is an IPv4 address.</returns>
         public static bool IsIPv4(this IPAddress ipAddress)
         {
             return ipAddress.AddressFamily == AddressFamily.InterNetwork;
         }
 
-        internal static ushort GetUInt16LittleEndian(this byte[] buffer, int offset)
-        {
-            return (ushort)((buffer[1 + offset] << 8) ^ buffer[offset]);
-        }
-
-        internal static void SetAsUInt16LittleIndian(this byte[] buffer, ushort value, int offset)
-        {
-            buffer[offset] = (byte)value;
-            buffer[offset + 1] = (byte)(value >> 8);
-        }
-
         /// <summary>
         /// Prevents abortion exceptions from trickling up, and gracefully exists the task.
         /// </summary>
-        /// <param name="task">The task to ignore exceptions for./param>
+        /// <param name="task">The task to ignore abortions for./param>
         /// <returns>A wrapping task for the given task.</returns>
         public static Task IgnoreSocketAbort(this Task task)
         {
@@ -64,10 +63,10 @@ namespace Microsoft.MixedReality.Sharing.Sockets
         /// Prevents abortion exceptions from trickling up, and gracefully exists the task.
         /// </summary>
         /// <typeparam name="T">The result type of the Task.</typeparam>
-        /// <param name="task">The task to ignore exceptions for./param>
-        /// <param name="defaultCancellationReturn">The default value to return in case the task is cancelled.</param>
+        /// <param name="task">The task to ignore abortions for./param>
+        /// <param name="defaultAbortResult">The default value to return in case the socket operation is aborted.</param>
         /// <returns>A wrapping task for the given task.</returns>
-        public static Task<T> IgnoreCancellation<T>(this Task<T> task, T defaultCancellationReturn = default(T))
+        public static Task<T> IgnoreSocketAbort<T>(this Task<T> task, T defaultAbortResult = default(T))
         {
             return task.ContinueWith(t =>
             {
@@ -75,10 +74,10 @@ namespace Microsoft.MixedReality.Sharing.Sockets
                 {
                     // This will rethrow any remaining exceptions, if any.
                     t.Exception.Handle(ex => ex is OperationCanceledException || ex is ObjectDisposedException || (ex is SocketException socketException && socketException.SocketErrorCode == SocketError.OperationAborted));
-                    return defaultCancellationReturn;
+                    return defaultAbortResult;
                 }
 
-                return t.IsCanceled ? defaultCancellationReturn : t.Result;
+                return t.IsCanceled ? defaultAbortResult : t.Result;
             }, TaskContinuationOptions.ExecuteSynchronously);
         }
 

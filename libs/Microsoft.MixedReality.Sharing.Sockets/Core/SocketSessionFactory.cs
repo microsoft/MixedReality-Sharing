@@ -22,7 +22,7 @@ namespace Microsoft.MixedReality.Sharing.Sockets.Core
 
         public Task<KeyValuePair<UDPMulticastRoomConfiguration, ISession>> HostNewRoomAsync(IDictionary<string, string> attributes, CancellationToken cancellationToken)
         {
-            UDPMulticastRoomConfiguration roomConfig = new UDPMulticastRoomConfiguration(Guid.NewGuid().ToString(), localAddress, 5477, 5478);
+            UDPMulticastRoomConfiguration roomConfig = new UDPMulticastRoomConfiguration(localAddress, 5477, 5478);
             SocketSession session = SocketSession.CreateServerSessionAsync(logger, channelFactories, roomConfig.Address, roomConfig.DataPort);
 
             return Task.FromResult(new KeyValuePair<UDPMulticastRoomConfiguration, ISession>(roomConfig, session));

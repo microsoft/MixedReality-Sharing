@@ -24,7 +24,7 @@ namespace Microsoft.MixedReality.Sharing.Test.Mocks
 
         public Task<KeyValuePair<UDPMulticastRoomConfiguration, ISession>> HostNewRoomAsync(IDictionary<string, string> attributes, CancellationToken cancellationToken)
         {
-            return Task.FromResult(new KeyValuePair<UDPMulticastRoomConfiguration, ISession>(new UDPMulticastRoomConfiguration("Random ID: " + Guid.NewGuid(), IPAddress.Any, 5477, 5478), new MockSession(logger, channelFactories)));
+            return Task.FromResult(new KeyValuePair<UDPMulticastRoomConfiguration, ISession>(new UDPMulticastRoomConfiguration(IPAddress.Any, 5477, 5478), new MockSession(logger, channelFactories)));
         }
 
         public Task<ISession> JoinSessionAsync(UDPMulticastRoomConfiguration configuration, IReadOnlyDictionary<string, string> attributes, CancellationToken cancellationToken)
