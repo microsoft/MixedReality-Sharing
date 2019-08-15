@@ -33,13 +33,13 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// <summary>
         /// Get the list of all rooms with the specified owner.
         /// </summary>
-        Task<IRefreshableCollection<IRoom>> GetRoomsByOwnerAsync(IParticipant owner, CancellationToken token);
+        IRefreshableCollection<IRoom> GetRoomsByOwnerAsync(IParticipant owner);
 
         /// <summary>
         /// Get the list of all rooms containing all of these attributes with the specified value.
         /// Passing an empty dictionary will list all searchable rooms.
         /// </summary>
-        Task<IRefreshableCollection<IRoom>> GetRoomsByAttributesAsync(IReadOnlyDictionary<string, string> attributes, CancellationToken token);
+        IRefreshableCollection<IRoom> GetRoomsByAttributesAsync(IReadOnlyDictionary<string, string> attributes);
 
         /// <summary>
         /// Create a new room and join it.

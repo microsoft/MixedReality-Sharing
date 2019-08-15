@@ -21,6 +21,8 @@ namespace Microsoft.MixedReality.Sharing.Sockets
 
     public class UDPMulticastRoom : DisposableBase, IRoom
     {
+        public event Action RoomUpdated;
+
         private readonly UDPMulticastMatchmakingService matchmakingService;
         private readonly string id;
 
@@ -36,9 +38,27 @@ namespace Microsoft.MixedReality.Sharing.Sockets
 
         string IRoom.Id => id;
 
-        public IParticipant Owner => owner;
+        public IParticipant Owner
+        {
+            get
+            {
+                lock (DisposeLockObject)
+                {
+                    return owner;
+                }
+            }
+        }
 
-        public IReadOnlyDictionary<string, string> Attributes => attributes;
+        public IReadOnlyDictionary<string, string> Attributes
+        {
+            get
+            {
+                lock (DisposeLockObject)
+                {
+                    return attributes;
+                }
+            }
+        }
 
         internal UDPMulticastRoomConfiguration RoomConfig { get; }
 
@@ -106,20 +126,30 @@ namespace Microsoft.MixedReality.Sharing.Sockets
                             newAttriubtes.Add(reader.ReadString(), reader.ReadString());
                         }
 
-
+                        IParticipant newOwner = await matchmakingService.ParticipantProvider.GetParticipantAsync(ownerId, cancellationToken);
                         // Update with new values
-                        owner = await matchmakingService.ParticipantProvider.GetParticipantAsync(ownerId, cancellationToken);
-                        attributes = new ReadOnlyDictionary<string, string>(newAttriubtes);
-                    }
-                }
+                        lock (DisposeLockObject)
+                        {
+                            if (!cancellationToken.IsCancellationRequested)
+                            {
+                                // If we reached here and aren't cancelled (no new update task was scheduled, then we are ready)
+                                owner = newOwner;
+                                attributes = new ReadOnlyDictionary<string, string>(newAttriubtes);
+                                State = UDPMulticastRoomState.Ready;
 
-                lock (DisposeLockObject)
-                {
-                    if (!cancellationToken.IsCancellationRequested)
-                    {
-                        // If we reached here and aren't cancelled (no new update task was scheduled, then we are ready)
-                        State = UDPMulticastRoomState.Ready;
-                        return true;
+                                if (matchmakingService.SynchronizationContext == null)
+                                {
+                                    RaiseUpdatedEvent();
+                                }
+                                else
+                                {
+                                    matchmakingService.SynchronizationContext.Post(_ => RaiseUpdatedEvent(), null);
+                                }
+
+
+                                return true;
+                            }
+                        }
                     }
                 }
             }
@@ -137,6 +167,18 @@ namespace Microsoft.MixedReality.Sharing.Sockets
             }
 
             return false;
+        }
+
+        private void RaiseUpdatedEvent()
+        {
+            try
+            {
+                RoomUpdated?.Invoke();
+            }
+            catch (Exception ex)
+            {
+                matchmakingService.Logger.LogError($"{nameof(UDPMulticastRoom)} Encountered an exception in a '{nameof(RoomUpdated)}' event handler.", ex);
+            }
         }
 
         public virtual async Task<ISession> JoinAsync(CancellationToken cancellationToken)

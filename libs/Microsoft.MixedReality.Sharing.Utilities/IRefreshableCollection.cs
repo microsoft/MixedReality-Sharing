@@ -26,16 +26,19 @@ namespace Microsoft.MixedReality.Sharing.Utilities
 
     public delegate void RefreshReadyEventHandler(RefreshEventToken refreshToken);
 
-    public interface IRefreshableCollection<out T> : IReadOnlyCollection<T>
+    public interface IRefreshableCollection<out T> : IReadOnlyCollection<T>, IDisposable
     {
         event RefreshReadyEventHandler RefreshReady;
     }
 
-    public abstract class RefreshableCollectionBase<T> : IRefreshableCollection<T>
+    public abstract class RefreshableCollectionBase<T> : DisposableBase, IRefreshableCollection<T>
     {
         public event RefreshReadyEventHandler RefreshReady;
 
+        private readonly Queue<Action> updates = new Queue<Action>();
         private readonly SynchronizationContext synchronizationContext;
+
+        private volatile bool refreshQueued = false;
 
         public abstract int Count { get; }
 
@@ -51,18 +54,59 @@ namespace Microsoft.MixedReality.Sharing.Utilities
             return GetEnumerator();
         }
 
-        protected async Task PerformRefreshAsync(Action updateCallback)
+        protected void QueueUpdate(Action action)
         {
-            await synchronizationContext;
+            ThrowIfDisposed();
 
-            bool updated = false;
-            // Happens synchronously
+            lock (updates)
+            {
+                if (RefreshReady == null)
+                {
+                    // We will only queue refreshes if the event is listened to, otherwise just process them
+                    action();
+                }
+                else
+                {
+                    updates.Enqueue(action);
+
+                    if (!refreshQueued)
+                    {
+                        Task.Run(() => PerformRefreshAsync(DisposeCancellationToken), DisposeCancellationToken).FireAndForget();
+                        refreshQueued = true;
+                    }
+                }
+            }
+        }
+
+        protected override void OnManagedDispose()
+        {
+            lock (updates)
+            {
+                updates.Clear();
+            }
+        }
+
+        private async Task PerformRefreshAsync(CancellationToken cancellationToken)
+        {
+            if (synchronizationContext != null)
+            {
+                await synchronizationContext.AsTask(cancellationToken);
+            }
+
+            // The callback has to happen synchronously
             RefreshReady?.Invoke(new RefreshEventToken(() =>
             {
-                if (!updated)
+                if (refreshQueued)
                 {
-                    updated = true;
-                    updateCallback();
+                    lock (updates)
+                    {
+                        while (updates.Count > 0)
+                        {
+                            updates.Dequeue().Invoke();
+                        }
+
+                        refreshQueued = false;
+                    }
                 }
             }));
         }

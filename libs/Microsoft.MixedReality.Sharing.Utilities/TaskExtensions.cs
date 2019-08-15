@@ -162,5 +162,15 @@ namespace Microsoft.MixedReality.Sharing.Utilities
         {
             return new SynchronizationContextAwaiter(context);
         }
+
+        public static async Task AsTask(this SynchronizationContext context, CancellationToken cancellationToken)
+        {
+            TaskCompletionSource<object> taskCompletionSource = new TaskCompletionSource<object>();
+            using (cancellationToken.Register(() => taskCompletionSource.TrySetCanceled()))
+            {
+                context.Post(_ => taskCompletionSource.TrySetResult(null), null);
+                await taskCompletionSource.Task;
+            }
+        }
     }
 }

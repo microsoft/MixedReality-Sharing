@@ -1,4 +1,5 @@
 ﻿using Microsoft.MixedReality.Sharing.Matchmaking;
+using Microsoft.MixedReality.Sharing.Sockets.UDPMatchmaking;
 using Microsoft.MixedReality.Sharing.Sockets.UDPMatchmaking.Messages;
 using Microsoft.MixedReality.Sharing.Utilities;
 using Microsoft.MixedReality.Sharing.Utilities.Collections;
@@ -20,6 +21,7 @@ namespace Microsoft.MixedReality.Sharing.Sockets
         private readonly ConcurrentBag<UDPMulticastOwnedRoom> locallyOwnedRooms = new ConcurrentBag<UDPMulticastOwnedRoom>();
 
         private readonly ConcurrentDictionary<Guid, UDPMulticastRoom> discoveredRooms = new ConcurrentDictionary<Guid, UDPMulticastRoom>();
+        private readonly List<MulticastRefreshableCollection> refreshableCollections = new List<MulticastRefreshableCollection>();
 
         private Socket multicastSocket;
 
@@ -29,9 +31,11 @@ namespace Microsoft.MixedReality.Sharing.Sockets
 
         internal IParticipantProvider ParticipantProvider { get; }
 
+        internal SynchronizationContext SynchronizationContext { get; }
+
         public IReadOnlyCollection<IOwnedRoom> LocallyOwnedRooms { get; }
 
-        public UDPMulticastMatchmakingService(ILogger logger, ISessionFactory<UDPMulticastRoomConfiguration> sessionFactory, IParticipantProvider participantProvider, UDPMulticastSettings multicastSettings)
+        public UDPMulticastMatchmakingService(ILogger logger, ISessionFactory<UDPMulticastRoomConfiguration> sessionFactory, IParticipantProvider participantProvider, UDPMulticastSettings multicastSettings, SynchronizationContext synchronizationContext = null)
         {
             if (!multicastSettings.GroupIPAddress.IsValidMulticastAddress())
             {
@@ -43,6 +47,7 @@ namespace Microsoft.MixedReality.Sharing.Sockets
             ParticipantProvider = participantProvider;
 
             this.multicastSettings = multicastSettings;
+            SynchronizationContext = synchronizationContext ?? SynchronizationContext.Current;
 
             LocallyOwnedRooms = new ReadOnlyCollectionWrapper<IOwnedRoom>(locallyOwnedRooms);
 
@@ -158,43 +163,38 @@ namespace Microsoft.MixedReality.Sharing.Sockets
 
             if (succeded)
             {
-                // Go update waiting lists
+                lock (refreshableCollections)
+                {
+                    refreshableCollections.ForEach(t => t.CheckForUpdate(room));
+                }
             }
-        }
-
-        private async Task<UDPMulticastRoom> ProcessNewRoomAsync(IPEndPoint remoteEndpoint, ushort infoPort, ushort sessionPort, long etag, Guid roomId, CancellationToken cancellationToken)
-        {
-            UDPMulticastRoom room = new UDPMulticastRoom(this, new UDPMulticastRoomConfiguration(roomId, remoteEndpoint.Address, infoPort, sessionPort));
-
-            //TODO error handling, etc
-            await room.RefreshRoomInfoAsync(etag, cancellationToken);
-
-            return room;
-        }
-
-        private async Task<UDPMulticastRoom> ProcessExistingRoomAsync(Task<UDPMulticastRoom> task, long etag, CancellationToken cancellationToken)
-        {
-            UDPMulticastRoom room = (await task);
-            //TODO better
-            await room.RefreshRoomInfoAsync(etag, cancellationToken);
-            return room;
         }
 
         public async Task<ISession> JoinRandomSessionAsync(IReadOnlyDictionary<string, string> expectedAttributes, CancellationToken token)
         {
-            IEnumerable<IRoom> results = await GetRoomsByAttributesAsync(expectedAttributes, token);
+            List<UDPMulticastRoom> results = new List<UDPMulticastRoom>();
+            foreach (UDPMulticastRoom room in discoveredRooms.Values)
+            {
+                if (CheckRoomForAttributeMatch(room, expectedAttributes))
+                {
+                    results.Add(room);
+                }
+            }
 
-            IRoom room = results.Skip(new Random().Next(results.Count())).First();
-            return await room.JoinAsync(token);
+            if (results.Count == 0)
+            {
+                return null;
+            }
+
+            return await results[new Random().Next(results.Count)].JoinAsync(token);
         }
 
         public async Task<ISession> JoinSessionByIdAsync(string roomId, CancellationToken token)
         {
             while (true)
             {
-                if (discoveredRooms.TryGetValue(Guid.Parse(roomId), out Task<UDPMulticastRoom> roomTask))
+                if (discoveredRooms.TryGetValue(Guid.Parse(roomId), out UDPMulticastRoom room))
                 {
-                    UDPMulticastRoom room = await roomTask.Unless(token);
                     return await room.JoinAsync(token);
                 }
 
@@ -202,39 +202,35 @@ namespace Microsoft.MixedReality.Sharing.Sockets
             }
         }
 
-        public async Task<IEnumerable<IRoom>> GetRoomsByOwnerAsync(IParticipant owner, CancellationToken token)
+        public IRefreshableCollection<IRoom> GetRoomsByOwnerAsync(IParticipant owner)
         {
-            return (await Task.WhenAll(discoveredRooms.Values).Unless(token))
-                .Where(t => Equals(t.Owner, owner));
+            MulticastRefreshableCollection toReturn = new MulticastRefreshableCollection(r => r.Owner?.Id == owner?.Id, SynchronizationContext);
+
+            foreach (UDPMulticastRoom room in discoveredRooms.Values)
+            {
+                toReturn.CheckForUpdate(room);
+            }
+
+            lock (refreshableCollections)
+            {
+                refreshableCollections.Add(toReturn);
+            }
+
+            return toReturn;
         }
 
-        public async Task<IEnumerable<IRoom>> GetRoomsByAttributesAsync(IReadOnlyDictionary<string, string> attributes, CancellationToken token)
+        public IRefreshableCollection<IRoom> GetRoomsByAttributesAsync(IReadOnlyDictionary<string, string> attributes)
         {
-            UDPMulticastRoom[] rooms = (await Task.WhenAll(discoveredRooms.Values).Unless(token));
+            MulticastRefreshableCollection toReturn = new MulticastRefreshableCollection(r => CheckRoomForAttributeMatch(r, attributes), SynchronizationContext);
 
-            List<IRoom> toReturn = new List<IRoom>();
-
-            foreach (UDPMulticastRoom room in rooms)
+            foreach (UDPMulticastRoom room in discoveredRooms.Values)
             {
-                if (room.Attributes.Count < attributes.Count)
-                {
-                    continue;
-                }
+                toReturn.CheckForUpdate(room);
+            }
 
-                bool isMatch = true;
-                foreach (KeyValuePair<string, string> attribute in attributes)
-                {
-                    if (!room.Attributes.TryGetValue(attribute.Key, out string foundValue) || attribute.Value != foundValue)
-                    {
-                        isMatch = false;
-                        break;
-                    }
-                }
-
-                if (isMatch)
-                {
-                    toReturn.Add(room);
-                }
+            lock (refreshableCollections)
+            {
+                refreshableCollections.Add(toReturn);
             }
 
             return toReturn;
@@ -250,6 +246,19 @@ namespace Microsoft.MixedReality.Sharing.Sockets
             toReturn.StartHosting(DisposeCancellationToken);
 
             return toReturn;
+        }
+
+        private bool CheckRoomForAttributeMatch(UDPMulticastRoom room, IReadOnlyDictionary<string, string> attributes)
+        {
+            foreach (KeyValuePair<string, string> attribute in attributes)
+            {
+                if (!room.Attributes.TryGetValue(attribute.Key, out string foundValue) || attribute.Value != foundValue)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }

@@ -23,6 +23,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     /// </summary>
     public interface IRoom
     {
+        event Action RoomUpdated;
+
         string Id { get; }
 
         /// <summary>

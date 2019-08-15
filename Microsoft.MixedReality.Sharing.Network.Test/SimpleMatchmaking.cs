@@ -75,8 +75,8 @@ namespace Microsoft.MixedReality.Sharing.Test
                 //ISession clientRoomRandom = await clientService.JoinRandomSessionAsync(new Dictionary<string, string>(), CancellationToken.None);
                 //ISession clientRoomAttributesRandom = await clientService.JoinRandomSessionAsync(attributes, CancellationToken.None);
 
-                IRoom clientRoomOwner = (await clientService.GetRoomsByOwnerAsync(hostRoom.Owner, CancellationToken.None)).FirstOrDefault();
-                IRoom clientRoomAttributes = (await clientService.GetRoomsByAttributesAsync(attributes, CancellationToken.None)).FirstOrDefault();
+                IRoom clientRoomOwner = (clientService.GetRoomsByOwnerAsync(hostRoom.Owner)).FirstOrDefault();
+                IRoom clientRoomAttributes = (clientService.GetRoomsByAttributesAsync(attributes)).FirstOrDefault();
 
                 //Assert.AreSame(clientRoomId, clientRoomRandom);
                 //Assert.AreSame(clientRoomId, clientRoomAttributesRandom);
