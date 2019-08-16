@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\Microsoft.MixedReality.Sharing.StateSync.csproj" />
+    <ProjectReference Include="..\..\libs\Managed\Microsoft.MixedReality.Sharing.StateSync.csproj" />
   </ItemGroup>
 
 </Project>
