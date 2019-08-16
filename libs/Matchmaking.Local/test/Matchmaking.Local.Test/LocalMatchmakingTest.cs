@@ -22,7 +22,7 @@ namespace Matchmaking.Local.Test
             public Context(string id, string name, string broadcastAddress, ushort port, string localAddress)
             {
                 PFactory = new MatchParticipantFactory(id, name);
-                Service = new MatchmakingService(PFactory, broadcastAddress, port, localAddress); ;
+                Service = new MatchmakingService(PFactory, broadcastAddress, port, localAddress);
             }
 
             public void Dispose()
@@ -31,7 +31,7 @@ namespace Matchmaking.Local.Test
             }
         }
 
-        private static int TestTimeout
+        private static int TestTimeoutMs
         {
             get
             {
@@ -51,7 +51,7 @@ namespace Matchmaking.Local.Test
         [Fact]
         public void CreateRoom()
         {
-            using (var cts = new CancellationTokenSource(TestTimeout))
+            using (var cts = new CancellationTokenSource(TestTimeoutMs))
             using (var ctx1 = new Context("1", "Participant 1", "127.255.255.255", 45678, "127.0.0.1"))
             {
                 var room1 = ctx1.Service.CreateRoomAsync(null, RoomVisibility.NotVisible, cts.Token).Result;
@@ -105,7 +105,7 @@ namespace Matchmaking.Local.Test
         [Fact]
         public void FindRoomByAttribute()
         {
-            using (var cts = new CancellationTokenSource(TestTimeout))
+            using (var cts = new CancellationTokenSource(TestTimeoutMs))
             using (var ctx1 = new Context("1", "Participant 1", "127.255.255.255", 45678, "127.0.0.1"))
             using (var ctx2 = new Context("2", "Participant 2", "127.255.255.255", 45678, "127.0.0.2"))
             {
@@ -145,7 +145,7 @@ namespace Matchmaking.Local.Test
         [Fact]
         public void JoinRandomRoom()
         {
-            using (var cts = new CancellationTokenSource(TestTimeout))
+            using (var cts = new CancellationTokenSource(TestTimeoutMs))
             using (var ctx1 = new Context("1", "Participant 1", "127.255.255.255", 45678, "127.0.0.1"))
             using (var ctx2 = new Context("2", "Participant 2", "127.255.255.255", 45678, "127.0.0.2"))
             {
@@ -167,7 +167,7 @@ namespace Matchmaking.Local.Test
         [Fact]
         public void JoinRoomById()
         {
-            using (var cts = new CancellationTokenSource(TestTimeout))
+            using (var cts = new CancellationTokenSource(TestTimeoutMs))
             using (var ctx1 = new Context("1", "Participant 1", "127.255.255.255", 45678, "127.0.0.1"))
             using (var ctx2 = new Context("2", "Participant 2", "127.255.255.255", 45678, "127.0.0.2"))
             {
@@ -207,7 +207,7 @@ namespace Matchmaking.Local.Test
                         Assert.Equal(foundRoom.Id, room1.Id);
                         ev.Set();
                     };
-                    ev.WaitOne(TestTimeout);
+                    ev.WaitOne(TestTimeoutMs);
                 }
                 Assert.NotNull(foundRoom);
 
@@ -215,7 +215,7 @@ namespace Matchmaking.Local.Test
                 Assert.Equal(room1.Id, room2.Id);
 
                 {
-                    var cts = new CancellationTokenSource(TestTimeout);
+                    var cts = new CancellationTokenSource(TestTimeoutMs);
                     while (room2.Attributes.Count != room1.Attributes.Count)
                     {
                         cts.Token.ThrowIfCancellationRequested();
@@ -227,7 +227,7 @@ namespace Matchmaking.Local.Test
                 room2.SetAttributesAsync(new Dictionary<string, object> { ["prop1"] = 42 }).Wait();
                 Assert.Equal(42, room2.Attributes["prop1"]);
                 {
-                    var cts = new CancellationTokenSource(TestTimeout);
+                    var cts = new CancellationTokenSource(TestTimeoutMs);
                     while (!room1.Attributes["prop1"].Equals(42))
                     {
                         cts.Token.ThrowIfCancellationRequested();
@@ -239,7 +239,7 @@ namespace Matchmaking.Local.Test
                 var room3 = (RoomBase)ctx3.Service.JoinRandomRoomAsync().Result;
                 Assert.Equal(room1.Id, room3.Id);
                 {
-                    var cts = new CancellationTokenSource(TestTimeout);
+                    var cts = new CancellationTokenSource(TestTimeoutMs);
                     while (room3.Attributes.Count != 2)
                     {
                         cts.Token.ThrowIfCancellationRequested();
@@ -261,7 +261,7 @@ namespace Matchmaking.Local.Test
                         ev.Set();
                     };
 
-                    var cts = new CancellationTokenSource(TestTimeout);
+                    var cts = new CancellationTokenSource(TestTimeoutMs);
                     ev.Wait(cts.Token);
                 }
             }
