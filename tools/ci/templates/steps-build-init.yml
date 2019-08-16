@@ -11,6 +11,9 @@ steps:
     inputs:
       versionSpec: '>=4.9.2' # need this for <license> tag in nuspec
 
+  - script: dotnet --list-sdks
+    displayName: List installed dotnet sdks
+
   - task: NuGetCommand@2
     displayName: 'Restore NuGet Packages'
     inputs:
