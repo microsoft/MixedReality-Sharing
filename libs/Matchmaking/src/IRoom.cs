@@ -78,13 +78,6 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// Calling this method invalidates this `IRoom` instance - no methods should be called after this.
         /// </summary>
         Task LeaveAsync();
-
-        /// <summary>
-        /// Subscription to the room state.
-        /// Can be used to join a <see cref="Session.ISession"/> (see <see cref="Session.ISessionFactory"/>), or
-        /// listened to/edited directly.
-        /// </summary>
-        StateSync.IStateSubscription State { get; }
     }
 
     /// Participant in a room.
