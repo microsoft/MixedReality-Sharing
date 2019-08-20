@@ -1,5 +1,4 @@
 using Microsoft.MixedReality.Sharing.Matchmaking;
-using Microsoft.MixedReality.Sharing.Matchmaking.Local;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -14,21 +13,12 @@ namespace Matchmaking.Local.Test
 {
     public class LocalMatchmakingTest
     {
-        private class Context : IDisposable
+        static private IMatchmakingService MakeMatchmakingService(int userIndex)
         {
-            public MatchParticipantFactory PFactory;
-            public MatchmakingService Service;
-
-            public Context(string id, string name, string broadcastAddress, ushort port, string localAddress)
-            {
-                PFactory = new MatchParticipantFactory(id, name);
-                Service = new MatchmakingService(PFactory, broadcastAddress, port, localAddress);
-            }
-
-            public void Dispose()
-            {
-                Service.Dispose();
-            }
+            //public Context(string broadcastAddress, ushort port, string localAddress)
+            //Comms = new UDPComms(broadcastAddress, localAddress, port);
+            //                Service = new SsdpMatchmakingService(Comms);
+            return null;
         }
 
         private static int TestTimeoutMs
@@ -52,26 +42,19 @@ namespace Matchmaking.Local.Test
         public void CreateRoom()
         {
             using (var cts = new CancellationTokenSource(TestTimeoutMs))
-            using (var ctx1 = new Context("1", "Participant 1", "127.255.255.255", 45678, "127.0.0.1"))
+            using (var svc1 = MakeMatchmakingService(1))
             {
-                var room1 = ctx1.Service.CreateRoomAsync(null, RoomVisibility.NotVisible, cts.Token).Result;
+                var room1 = svc1.CreateRoomAsync("Room1", "http://room1", null, cts.Token).Result;
 
-                Assert.Single(ctx1.Service.JoinedRooms);
-                Assert.Equal(ctx1.Service.JoinedRooms.First(), room1);
-
-                Assert.Single(room1.Participants);
-                Assert.Equal(ctx1.PFactory.LocalParticipantId, room1.Participants.First().MatchParticipant.Id);
+                Assert.Equal("Room1", room1.Id);
+                Assert.Equal("http://room1", room1.Connection);
                 Assert.Empty(room1.Attributes);
 
                 var attributes = new Dictionary<string, object> { ["prop1"] = 1, ["prop2"] = 2 };
-                var room2 = ctx1.Service.CreateRoomAsync(attributes, RoomVisibility.Searchable, cts.Token).Result;
+                var room2 = svc1.CreateRoomAsync("Room2", "foo://room2", attributes, cts.Token).Result;
 
-                Assert.Equal(2, ctx1.Service.JoinedRooms.Count());
-                Assert.Contains(room1, ctx1.Service.JoinedRooms);
-                Assert.Contains(room2, ctx1.Service.JoinedRooms);
-
-                Assert.Single(room2.Participants);
-                Assert.Equal(ctx1.PFactory.LocalParticipantId, room2.Participants.First().MatchParticipant.Id);
+                Assert.Equal("Room2", room2.Id);
+                Assert.Equal("foo://room2", room2.Connection);
                 Assert.Equal(1, room2.Attributes["prop1"]);
                 Assert.Equal(2, room2.Attributes["prop2"]);
 
@@ -79,10 +62,11 @@ namespace Matchmaking.Local.Test
             }
         }
 
-        private void AssertSame(IRoomInfo lhs, IRoomInfo rhs)
+        private void AssertSame(IRoom lhs, IRoom rhs)
         {
             // ID is equal.
             Assert.Equal(lhs.Id, rhs.Id);
+            Assert.Equal(lhs.Connection, rhs.Connection);
 
             // Attributes are equal.
             var lAttributes = lhs.Attributes.OrderBy(a => a.Key);
@@ -90,6 +74,18 @@ namespace Matchmaking.Local.Test
             Assert.True(lAttributes.SequenceEqual(rAttributes));
         }
 
+        private bool SameRoom(IRoom lhs, IRoom rhs)
+        {
+            if (lhs.Id != rhs.Id) return false;
+            if (lhs.Connection != rhs.Connection) return false;
+
+            // Attributes are equal.
+            var lAttributes = lhs.Attributes.OrderBy(a => a.Key);
+            var rAttributes = rhs.Attributes.OrderBy(a => a.Key);
+            return lAttributes.SequenceEqual(rAttributes);
+        }
+
+#if false
         private void AssertSame(IRoom lhs, IRoom rhs)
         {
             AssertSame(lhs, (IRoomInfo)rhs);
@@ -101,43 +97,46 @@ namespace Matchmaking.Local.Test
             // Match participant IDs are equal.
             Assert.True(lParticipants.Select(p => p.MatchParticipant.Id).SequenceEqual(rParticipants.Select(p => p.MatchParticipant.Id)));
         }
-
+#endif
         [Fact]
         public void FindRoomByAttribute()
         {
             using (var cts = new CancellationTokenSource(TestTimeoutMs))
-            using (var ctx1 = new Context("1", "Participant 1", "127.255.255.255", 45678, "127.0.0.1"))
-            using (var ctx2 = new Context("2", "Participant 2", "127.255.255.255", 45678, "127.0.0.2"))
+            using (var svc1 = MakeMatchmakingService(1))
+            using (var svc2 = MakeMatchmakingService(2))
             {
                 var attributes1 = new Dictionary<string, object> { ["prop1"] = 1, ["prop2"] = 1 };
                 var attributes2 = new Dictionary<string, object> { ["prop1"] = 1, ["prop2"] = 123 };
-                var room1 = ctx1.Service.CreateRoomAsync(attributes1, RoomVisibility.Searchable, cts.Token).Result;
-                var room2 = ctx1.Service.CreateRoomAsync(attributes2, RoomVisibility.Searchable, cts.Token).Result;
-                var room3 = ctx1.Service.CreateRoomAsync(attributes2, RoomVisibility.ByParticipantOnly, cts.Token).Result;
+                // Create some rooms in the first one
+                var room1 = svc1.CreateRoomAsync("Room1", "Conn1", attributes1, cts.Token).Result;
+                var room2 = svc1.CreateRoomAsync("Room2", "Conn2", attributes2, cts.Token).Result;
+                var room3 = svc1.CreateRoomAsync("Room3", "Conn3", attributes2, cts.Token).Result;
 
-                using (var roomList = ctx2.Service.FindRoomsByAttributes())
+                // Discover them from the second
+                using (var roomList = svc2.Discover(null))
                 {
-                    var rooms = roomList.CurrentRooms;
-                    while (rooms.Count() < 2)
+                    var rooms = roomList.Rooms;
+                    while (rooms.Count() < 3)
                     {
                         cts.Token.ThrowIfCancellationRequested();
-                        rooms = roomList.CurrentRooms;
+                        rooms = roomList.Rooms;
                     }
-                    Assert.Equal(2, rooms.Count());
+                    Assert.Equal(3, rooms.Count());
                     Assert.Contains(rooms, r => r.Id.Equals(room1.Id));
                     Assert.Contains(rooms, r => r.Id.Equals(room2.Id));
+                    Assert.Contains(rooms, r => r.Id.Equals(room3.Id));
                 }
 
-                using (var roomList = ctx2.Service.FindRoomsByAttributes(new Dictionary<string, object> { ["prop2"] = 123 }))
+                using (var roomList = svc2.Discover(new Dictionary<string, object> { ["prop2"] = 123 }))
                 {
-                    var rooms = roomList.CurrentRooms;
+                    var rooms = roomList.Rooms;
                     while (!rooms.Any())
                     {
                         cts.Token.ThrowIfCancellationRequested();
-                        rooms = roomList.CurrentRooms;
+                        rooms = roomList.Rooms;
                     }
-                    Assert.Single(rooms);
-                    AssertSame(rooms.First(), room2);
+                    Assert.Contains(rooms, r => SameRoom(r, room2));
+                    Assert.Contains(rooms, r => SameRoom(r, room3));
                 }
             }
         }
@@ -146,21 +145,28 @@ namespace Matchmaking.Local.Test
         public void JoinRandomRoom()
         {
             using (var cts = new CancellationTokenSource(TestTimeoutMs))
-            using (var ctx1 = new Context("1", "Participant 1", "127.255.255.255", 45678, "127.0.0.1"))
-            using (var ctx2 = new Context("2", "Participant 2", "127.255.255.255", 45678, "127.0.0.2"))
+            using (var svc1 = MakeMatchmakingService(1))
+            using (var svc2 = MakeMatchmakingService(2))
             {
                 var attributes1 = new Dictionary<string, object> { ["prop1"] = 1, ["prop2"] = 1 };
                 var attributes2 = new Dictionary<string, object> { ["prop1"] = 1, ["prop2"] = 123 };
-                var room1 = ctx1.Service.CreateRoomAsync(attributes1, RoomVisibility.Searchable, cts.Token).Result;
-                var room2 = ctx1.Service.CreateRoomAsync(attributes2, RoomVisibility.Searchable, cts.Token).Result;
+                var room1 = svc1.CreateRoomAsync("Room1", "foo1", attributes1, cts.Token).Result;
+                var room2 = svc2.CreateRoomAsync("Room2", "foo2", attributes2, cts.Token).Result;
 
-                var joinedRoom = ctx2.Service.JoinRandomRoomAsync(null, cts.Token).Result;
-                Assert.True(joinedRoom.Id.Equals(room1.Id) || joinedRoom.Id.Equals(room2.Id));
-                var roomToCompare = joinedRoom.Id.Equals(room1.Id) ? room1 : room2;
-                AssertSame(joinedRoom, roomToCompare);
+                {
+                    var list = svc2.Discover(null);
+                    var joinedRoom = list.Rooms.First();// ctx2.Service.JoinRandomRoomAsync(null, cts.Token).Result;
+                    Assert.True(joinedRoom.Id.Equals(room1.Id) || joinedRoom.Id.Equals(room2.Id));
+                    var roomToCompare = joinedRoom.Id.Equals(room1.Id) ? room1 : room2;
+                    AssertSame(joinedRoom, roomToCompare);
+                }
 
-                var joinedRoom2 = ctx2.Service.JoinRandomRoomAsync(new Dictionary<string, object> { ["prop2"] = 123 }, cts.Token).Result;
-                AssertSame(joinedRoom2, room2);
+                {
+                    var req2 = new Dictionary<string, object> { ["prop2"] = 123 };
+                    var list = svc2.Discover(req2);
+                    Assert.Single(list.Rooms);
+                    AssertSame(list.Rooms.First(), room2);
+                }
             }
         }
 
@@ -168,40 +174,61 @@ namespace Matchmaking.Local.Test
         public void JoinRoomById()
         {
             using (var cts = new CancellationTokenSource(TestTimeoutMs))
-            using (var ctx1 = new Context("1", "Participant 1", "127.255.255.255", 45678, "127.0.0.1"))
-            using (var ctx2 = new Context("2", "Participant 2", "127.255.255.255", 45678, "127.0.0.2"))
+            using (var svc1 = MakeMatchmakingService(1))
+            using (var svc2 = MakeMatchmakingService(2))
             {
+                // Create rooms from service1
                 var attributes = new Dictionary<string, object> { ["prop1"] = 1, ["prop2"] = 2 };
-                var room1 = ctx1.Service.CreateRoomAsync(attributes, RoomVisibility.Searchable, cts.Token).Result;
-                var room2 = ctx1.Service.CreateRoomAsync(attributes, RoomVisibility.NotVisible, cts.Token).Result;
+                var room1 = svc1.CreateRoomAsync("Room1", "conn1", attributes, cts.Token).Result;
+                var room2 = svc1.CreateRoomAsync("Room2", "conn2", attributes, cts.Token).Result;
 
-                var joinedRoom1 = ctx2.Service.JoinRoomByIdAsync(room1.Id, cts.Token).Result;
-                AssertSame(joinedRoom1, room1);
+                {
+                    var req1 = new Dictionary<string, object> { ["id"] = room1.Id };
+                    var roomList1 = svc2.Discover(req1);
+                    var rooms1 = roomList1.Rooms;
+                    while (rooms1.Count() == 0)
+                    {
+                        cts.Token.ThrowIfCancellationRequested();
+                        rooms1 = roomList1.Rooms;
+                    }
+                    Assert.Single(rooms1);
+                    AssertSame(rooms1.First(), room1);
+                }
 
-                var joinedRoom2 = ctx2.Service.JoinRoomByIdAsync(room2.Id, cts.Token).Result;
-                AssertSame(joinedRoom2, room2);
+                {
+                    var req2 = new Dictionary<string, object> { ["id"] = room2.Id };
+                    var roomList2 = svc2.Discover(req2);
+                    var rooms2 = roomList2.Rooms;
+                    while (rooms2.Count() == 0)
+                    {
+                        cts.Token.ThrowIfCancellationRequested();
+                        rooms2 = roomList2.Rooms;
+                    }
+                    Assert.Single(rooms2);
+                    AssertSame(rooms2.First(), room2);
+                }
             }
         }
 
         [Fact]
         public void Mix()
         {
-            using (var ctx1 = new Context("1", "Participant 1", "127.255.255.255", 45678, "127.0.0.1"))
-            using (var ctx2 = new Context("2", "Participant 2", "127.255.255.255", 45678, "127.0.0.2"))
-            using (var ctx3 = new Context("3", "Participant 3", "127.255.255.255", 45678, "127.0.0.3"))
+            using (var svc1 = MakeMatchmakingService(1))
+            using (var svc2 = MakeMatchmakingService(2))
+            using (var svc3 = MakeMatchmakingService(3))
             {
-                var room1 = ctx1.Service.CreateRoomAsync(
-                    new Dictionary<string, object> { ["prop1"] = 1, ["prop2"] = 2},
-                    RoomVisibility.Searchable).Result;
-                Assert.Single(room1.Participants);
+                var room1 = svc1.CreateRoomAsync(
+                    "MixRoom", "MixRoomConn",
+                    new Dictionary<string, object> { ["prop1"] = 1, ["prop2"] = 2 }
+                    ).Result;
 
-                var hiddenRoom = ctx1.Service.CreateRoomAsync(null).Result;
-                IRoomInfo foundRoom = null;
-                using (var roomList = ctx2.Service.FindRoomsByAttributes())
+                IRoom foundRoom = null;
+                using (var roomList = svc2.Discover(null))
                 {
                     var ev = new AutoResetEvent(false);
-                    roomList.RoomsRefreshed += (object o, IEnumerable<IRoomInfo> list) =>
+                    roomList.ListUpdated += (object sender, IRoomList updated) =>
                     {
+                        var list = updated.Rooms;
                         Assert.Single(list);
                         foundRoom = list.ElementAt(0);
                         Assert.Equal(foundRoom.Id, room1.Id);
@@ -210,10 +237,8 @@ namespace Matchmaking.Local.Test
                     ev.WaitOne(TestTimeoutMs);
                 }
                 Assert.NotNull(foundRoom);
-
-                var room2 = (RoomBase)foundRoom.JoinAsync().Result;
-                Assert.Equal(room1.Id, room2.Id);
-
+                Assert.Equal(room1.Id, foundRoom.Id);
+#if false
                 {
                     var cts = new CancellationTokenSource(TestTimeoutMs);
                     while (room2.Attributes.Count != room1.Attributes.Count)
@@ -264,6 +289,7 @@ namespace Matchmaking.Local.Test
                     var cts = new CancellationTokenSource(TestTimeoutMs);
                     ev.Wait(cts.Token);
                 }
+#endif
             }
         }
     }
