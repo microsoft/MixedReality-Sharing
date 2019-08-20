@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 
 namespace Microsoft.MixedReality.Sharing.StateSync
 {
@@ -10,9 +11,15 @@ namespace Microsoft.MixedReality.Sharing.StateSync
     /// </summary>
     public class Snapshot : DisposablePointerBase
     {
-        internal Snapshot(IntPtr snapshotPtr)
+        public VersionedStorage Storage { get; }
+
+        public ulong Version { get; }
+
+        internal Snapshot(IntPtr snapshotPtr, VersionedStorage storage, ulong version)
             : base(snapshotPtr)
         {
+            Storage = storage;
+            Version = version;
         }
 
         /// <summary>
@@ -20,24 +27,13 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// </summary>
         /// <param name="key">The key to lookup with.</param>
         /// <param name="subkey">The subkey to lookup with.</param>
-        /// <returns>The associated value, if exists, otherwise an empty span.</returns>
-        public ReadOnlySpan<byte> Get(KeyRef key, ulong subkey)
+        /// <param name="readOnlySpan">Stores the value in the out parameter if succesful.</param>
+        /// <returns>True if there is a value associated with key/subkey, otherwise false.</returns>
+        public bool TryGetValue(KeyRef key, ulong subkey, out ReadOnlySpan<byte> readOnlySpan)
         {
             ThrowIfDisposed();
 
-            return StateSyncAPI.Snapshot_Get(Pointer, key.Pointer, subkey);
-        }
-
-        /// <summary>
-        /// Checks whether the storage has any values associated with a key.
-        /// </summary>
-        /// <param name="key">The key to check against.</param>
-        /// <returns>True if there is at least one entry associated with the key.</returns>
-        public bool Contains(KeyRef key)
-        {
-            ThrowIfDisposed();
-
-            return StateSyncAPI.Snapshot_Contains(Pointer, key.Pointer);
+            return StateSyncAPI.Snapshot_TryGet(Pointer, key.Pointer, subkey, out readOnlySpan);
         }
 
         /// <summary>
@@ -45,11 +41,13 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// </summary>
         /// <param name="key">The key to check against.</param>
         /// <returns>The span of subkeys associated with the key, empty if none.</returns>
-        public ReadOnlySpan<ulong> GetSubkeys(KeyRef key)
+        public IReadOnlyCollection<SubkeyValuePair> GetSubkeys(KeyRef key)
         {
             ThrowIfDisposed();
 
-            return StateSyncAPI.Snapshot_GetSubkeys(Pointer, key.Pointer);
+            //TODO
+            return new _SubkeyValueCollection(this, key.Pointer, 0);
+            //return StateSyncAPI.Snapshot_GetSubkeys(Pointer, key.Pointer);
         }
 
         /// <summary>

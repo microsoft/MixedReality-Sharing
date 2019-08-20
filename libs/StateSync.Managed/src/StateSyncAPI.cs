@@ -65,7 +65,8 @@ namespace Microsoft.MixedReality.Sharing.StateSync
             throw new NotImplementedException();
         }
 
-        internal static IntPtr Snapshot_Allocate(IntPtr storagePointer)
+        // return (Ptr, Version)
+        internal static (IntPtr, ulong) Snapshot_Allocate(IntPtr storagePointer)
         {
             throw new NotImplementedException();
         }
@@ -75,7 +76,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync
             throw new NotImplementedException();
         }
 
-        internal static ReadOnlySpan<byte> Snapshot_Get(IntPtr snapshotPointer, IntPtr searchKeyPointer, ulong subkey)
+        internal static bool Snapshot_TryGet(IntPtr snapshotPointer, IntPtr searchKeyPointer, ulong subkey, out ReadOnlySpan<byte> readOnlySpan)
         {
             throw new NotImplementedException();
         }
@@ -95,12 +96,12 @@ namespace Microsoft.MixedReality.Sharing.StateSync
             throw new NotImplementedException();
         }
 
-        internal static void Transaction_Set(IntPtr transactionPointer, IntPtr searchKeyPointer, ulong subkey, ReadOnlySpan<byte> value)
+        internal static void Transaction_Put(IntPtr transactionPointer, IntPtr searchKeyPointer, ulong subkey, ReadOnlySpan<byte> value)
         {
             throw new NotImplementedException();
         }
 
-        internal static void Transaction_Clear(IntPtr transactionPointer, IntPtr searchKeyPointer, ulong subkey)
+        internal static void Transaction_Delete(IntPtr transactionPointer, IntPtr searchKeyPointer, ulong subkey)
         {
             throw new NotImplementedException();
         }

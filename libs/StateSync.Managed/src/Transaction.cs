@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.MixedReality.Sharing.StateSync
@@ -26,10 +25,11 @@ namespace Microsoft.MixedReality.Sharing.StateSync
 
         /// <summary>
         /// Specifies a key as an immutable constraints in order for this transaction to be commited succesfully.
-        /// If the value for the key changes, this transaction will be rejected.
+        /// If the value associated with key/subkey changes, this transaction will be rejected.
         /// </summary>
         /// <param name="key">The required key.</param>
-        public void Require(KeyRef key)
+        /// <param name="subkey">The required subkey.</param>
+        public void Require(KeyRef key, ulong subkey)
         {
             ThrowIfDisposed();
 
@@ -42,7 +42,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// <param name="key">Key to associate the value with.</param>
         /// <param name="subkey">Subkey to associate the value with.</param>
         /// <param name="value">The binary value.</param>
-        public void Set(KeyRef key, ulong subkey, ReadOnlySpan<byte> value)
+        public void Put(KeyRef key, ulong subkey, ReadOnlySpan<byte> value)
         {
             if (value.Length == 0)
             {
@@ -51,19 +51,19 @@ namespace Microsoft.MixedReality.Sharing.StateSync
 
             ThrowIfDisposed();
 
-            StateSyncAPI.Transaction_Set(Pointer, key.Pointer, subkey, value);
+            StateSyncAPI.Transaction_Put(Pointer, key.Pointer, subkey, value);
         }
 
         /// <summary>
-        /// Clears (removes) a value associated wiht a key and subkey.
+        /// Removes a value associated wiht a key and subkey.
         /// </summary>
         /// <param name="key">Key for which to remove the associated value.</param>
         /// <param name="subkey">Subkey for which to remove the associated value.</param>
-        public void Clear(KeyRef key, ulong subkey)
+        public void Delete(KeyRef key, ulong subkey)
         {
             ThrowIfDisposed();
 
-            StateSyncAPI.Transaction_Clear(Pointer, key.Pointer, subkey);
+            StateSyncAPI.Transaction_Delete(Pointer, key.Pointer, subkey);
         }
 
         /// <summary>
