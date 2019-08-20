@@ -24,7 +24,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync
             throw new NotImplementedException();
         }
 
-        internal static IntPtr Subscription_Allocate(IntPtr storagePointer, IntPtr keyPointer, ulong subKey, ISubKeySubscription subKeySubscription)
+        internal static IntPtr Subscription_Allocate(IntPtr storagePointer, IntPtr keyPointer, ulong subkey, ISubkeySubscription subkeySubscription)
         {
             throw new NotImplementedException();
         }
@@ -75,7 +75,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync
             throw new NotImplementedException();
         }
 
-        internal static ReadOnlySpan<byte> Snapshot_Get(IntPtr snapshotPointer, IntPtr searchKeyPointer, ulong subKey)
+        internal static ReadOnlySpan<byte> Snapshot_Get(IntPtr snapshotPointer, IntPtr searchKeyPointer, ulong subkey)
         {
             throw new NotImplementedException();
         }
@@ -85,7 +85,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync
             throw new NotImplementedException();
         }
 
-        internal static ReadOnlySpan<ulong> Snapshot_GetSubKeys(IntPtr snapshotPointer, IntPtr searchKeyPointer)
+        internal static ReadOnlySpan<ulong> Snapshot_GetSubkeys(IntPtr snapshotPointer, IntPtr searchKeyPointer)
         {
             throw new NotImplementedException();
         }
@@ -95,12 +95,12 @@ namespace Microsoft.MixedReality.Sharing.StateSync
             throw new NotImplementedException();
         }
 
-        internal static void Transaction_Set(IntPtr transactionPointer, IntPtr searchKeyPointer, ulong subKey, ReadOnlySpan<byte> value)
+        internal static void Transaction_Set(IntPtr transactionPointer, IntPtr searchKeyPointer, ulong subkey, ReadOnlySpan<byte> value)
         {
             throw new NotImplementedException();
         }
 
-        internal static void Transaction_Clear(IntPtr transactionPointer, IntPtr searchKeyPointer, ulong subKey)
+        internal static void Transaction_Clear(IntPtr transactionPointer, IntPtr searchKeyPointer, ulong subkey)
         {
             throw new NotImplementedException();
         }

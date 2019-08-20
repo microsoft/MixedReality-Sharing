@@ -29,7 +29,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// If the value for the key changes, this transaction will be rejected.
         /// </summary>
         /// <param name="key">The required key.</param>
-        public void Require(RefKey key)
+        public void Require(KeyRef key)
         {
             ThrowIfDisposed();
 
@@ -37,33 +37,33 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         }
 
         /// <summary>
-        /// Adds a value to be applied to the storage with a given key and sub key combination.
+        /// Adds a value to be applied to the storage with a given key and subkey combination.
         /// </summary>
         /// <param name="key">Key to associate the value with.</param>
-        /// <param name="subKey">Sub key to associate the value with.</param>
+        /// <param name="subkey">Subkey to associate the value with.</param>
         /// <param name="value">The binary value.</param>
-        public void Set(RefKey key, ulong subKey, ReadOnlySpan<byte> value)
+        public void Set(KeyRef key, ulong subkey, ReadOnlySpan<byte> value)
         {
             if (value.Length == 0)
             {
-                throw new ArgumentException("Given value is empty, if you intend to clear a value associated with key and sub key, use Clear.");
+                throw new ArgumentException("Given value is empty, if you intend to clear a value associated with key and subkey, use Clear.");
             }
 
             ThrowIfDisposed();
 
-            StateSyncAPI.Transaction_Set(Pointer, key.Pointer, subKey, value);
+            StateSyncAPI.Transaction_Set(Pointer, key.Pointer, subkey, value);
         }
 
         /// <summary>
-        /// Clears (removes) a value associated wiht a key and sub key.
+        /// Clears (removes) a value associated wiht a key and subkey.
         /// </summary>
         /// <param name="key">Key for which to remove the associated value.</param>
-        /// <param name="subKey">Sub key for which to remove the associated value.</param>
-        public void Clear(RefKey key, ulong subKey)
+        /// <param name="subkey">Subkey for which to remove the associated value.</param>
+        public void Clear(KeyRef key, ulong subkey)
         {
             ThrowIfDisposed();
 
-            StateSyncAPI.Transaction_Clear(Pointer, key.Pointer, subKey);
+            StateSyncAPI.Transaction_Clear(Pointer, key.Pointer, subkey);
         }
 
         /// <summary>

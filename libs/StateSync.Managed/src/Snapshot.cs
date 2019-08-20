@@ -6,7 +6,7 @@ using System;
 namespace Microsoft.MixedReality.Sharing.StateSync
 {
     /// <summary>
-    /// Represents a snapshot of the storage in time, use <see cref="SearchKey"/> or <see cref="RefKey"/> with this to access values in the storage usinh.
+    /// Represents a snapshot of the storage in time, use <see cref="SearchKey"/> or <see cref="KeyRef"/> with this to access values in the storage usinh.
     /// </summary>
     public class Snapshot : DisposablePointerBase
     {
@@ -16,40 +16,40 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         }
 
         /// <summary>
-        /// Gets the binary value looked up by a combination of key and a sub key.
+        /// Gets the binary value looked up by a combination of key and a subkey.
         /// </summary>
         /// <param name="key">The key to lookup with.</param>
-        /// <param name="subKey">The sub key to lookup with.</param>
+        /// <param name="subkey">The subkey to lookup with.</param>
         /// <returns>The associated value, if exists, otherwise an empty span.</returns>
-        public ReadOnlySpan<byte> Get(RefKey key, ulong subKey)
+        public ReadOnlySpan<byte> Get(KeyRef key, ulong subkey)
         {
             ThrowIfDisposed();
 
-            return StateSyncAPI.Snapshot_Get(Pointer, key.Pointer, subKey);
+            return StateSyncAPI.Snapshot_Get(Pointer, key.Pointer, subkey);
         }
-        
+
         /// <summary>
         /// Checks whether the storage has any values associated with a key.
         /// </summary>
         /// <param name="key">The key to check against.</param>
         /// <returns>True if there is at least one entry associated with the key.</returns>
-        public bool Contains(RefKey key)
+        public bool Contains(KeyRef key)
         {
             ThrowIfDisposed();
 
             return StateSyncAPI.Snapshot_Contains(Pointer, key.Pointer);
         }
-        
+
         /// <summary>
-        /// Gets all the sub keys associated with a key.
+        /// Gets all the subkeys associated with a key.
         /// </summary>
         /// <param name="key">The key to check against.</param>
-        /// <returns>The span of sub keys associated with the key, empty if none.</returns>
-        public ReadOnlySpan<ulong> GetSubKeys(RefKey key)
+        /// <returns>The span of subkeys associated with the key, empty if none.</returns>
+        public ReadOnlySpan<ulong> GetSubkeys(KeyRef key)
         {
             ThrowIfDisposed();
 
-            return StateSyncAPI.Snapshot_GetSubKeys(Pointer, key.Pointer);
+            return StateSyncAPI.Snapshot_GetSubkeys(Pointer, key.Pointer);
         }
 
         /// <summary>

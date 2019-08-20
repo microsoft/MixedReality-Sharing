@@ -9,16 +9,16 @@ namespace Microsoft.MixedReality.Sharing.StateSync
     /// A lightweight unallocated key that can be used to lookup values in the storage. 
     /// This key can be convered to an allocated SearchKey, <see cref="AsSearchKey"/>.
     /// </summary>
-    public ref struct RefKey
+    public ref struct KeyRef
     {
-        public static implicit operator RefKey(SearchKey key)
+        public static implicit operator KeyRef(SearchKey key)
         {
-            return new RefKey(key.Pointer);
+            return new KeyRef(key.Pointer);
         }
 
         internal IntPtr Pointer { get; }
 
-        internal RefKey(IntPtr refKeyPtr)
+        internal KeyRef(IntPtr refKeyPtr)
         {
             Pointer = refKeyPtr;
         }

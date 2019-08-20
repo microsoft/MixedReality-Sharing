@@ -41,7 +41,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// <param name="key">The key for which to register the subscription.</param>
         /// <param name="subscription">The subscription instance.</param>
         /// <returns>A token to unregister the subscription.</returns>
-        public SubscriptionToken SubscribeToKey(SearchKey key, IKeySubscription subscription)
+        public SubscriptionToken SubscribeToKey(KeyRef key, IKeySubscription subscription)
         {
             ThrowIfDisposed();
 
@@ -49,17 +49,17 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         }
 
         /// <summary>
-        /// Registers a key and sub key subscription to the storage.
+        /// Registers a key and subkey subscription to the storage.
         /// </summary>
         /// <param name="key">The key for which to register the subscription.</param>
-        /// <param name="subKey">The sub key for which to register the subscription.</param>
+        /// <param name="subkey">The subkey for which to register the subscription.</param>
         /// <param name="subscription">The subscription instance.</param>
         /// <returns>A token to unregister the subscription.</returns>
-        public SubscriptionToken SubscribeToKey(SearchKey key, ulong subKey, ISubKeySubscription subscription)
+        public SubscriptionToken SubscribeToKey(KeyRef key, ulong subkey, ISubkeySubscription subscription)
         {
             ThrowIfDisposed();
 
-            return new SubscriptionToken(StateSyncAPI.Subscription_Allocate(Pointer, key.Pointer, subKey, subscription));
+            return new SubscriptionToken(StateSyncAPI.Subscription_Allocate(Pointer, key.Pointer, subkey, subscription));
         }
 
         protected override void ReleasePointer(IntPtr pointer)
