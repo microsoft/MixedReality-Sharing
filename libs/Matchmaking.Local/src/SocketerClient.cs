@@ -1,6 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-
+#if false
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -403,7 +403,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
             Connected?.Invoke(this, e.SourceId, e.RemoteAddress.Address.ToString(), e.RemoteAddress.Port);
         }
 
-        #region Private UDP Implementation
+#region Private UDP Implementation
         private class CrossPlatformUDPClient
         {
             public static string GetLocalIPAddress()
@@ -604,9 +604,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
 #endif
             }
         }
-        #endregion
+#endregion
 
-        #region Private TCP Implementation
+#region Private TCP Implementation
 #if !NETFX_CORE
         private class SocketClient
         {
@@ -1628,7 +1628,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Local
                 return null;
             }
         }
-        #endregion
+#endregion
     }
 }
 
+#endif

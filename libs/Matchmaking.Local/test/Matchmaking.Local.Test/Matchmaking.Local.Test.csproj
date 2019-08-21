@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Microsoft.MixedReality.Sharing.Matchmaking.Local.csproj" />
+    <ProjectReference Include="..\..\..\Matchmaking\src\Microsoft.MixedReality.Sharing.Matchmaking.csproj" />
   </ItemGroup>
 
 </Project>
