@@ -37,6 +37,19 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         }
 
         /// <summary>
+        /// Checks if the key/subkey pair exists in this snapshot.
+        /// </summary>
+        /// <param name="key">The key to check for.</param>
+        /// <param name="subkey">The subkey to check for.</param>
+        /// <returns>True if there is an entry for the key/subkey.</returns>
+        public bool Contains(KeyRef key, ulong subkey)
+        {
+            ThrowIfDisposed();
+
+            return StateSyncAPI.Snapshot_Contains(Pointer, key.Pointer, subkey);
+        }
+
+        /// <summary>
         /// Gets all the subkeys associated with a key.
         /// </summary>
         /// <param name="key">The key to check against.</param>
@@ -45,9 +58,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         {
             ThrowIfDisposed();
 
-            //TODO
-            return new _SubkeyValueCollection(this, key.Pointer, 0);
-            //return StateSyncAPI.Snapshot_GetSubkeys(Pointer, key.Pointer);
+            return new SubkeyValueCollection(this, key.Pointer, StateSyncAPI.Snapshot_GetSubkeyCount(Pointer, key.Pointer));
         }
 
         /// <summary>

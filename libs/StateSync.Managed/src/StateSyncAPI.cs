@@ -81,12 +81,12 @@ namespace Microsoft.MixedReality.Sharing.StateSync
             throw new NotImplementedException();
         }
 
-        internal static bool Snapshot_Contains(IntPtr snapshotPointer, IntPtr searchKeyPointer)
+        internal static bool Snapshot_Contains(IntPtr snapshotPointer, IntPtr searchKeyPointer, ulong subkey)
         {
             throw new NotImplementedException();
         }
 
-        internal static ReadOnlySpan<ulong> Snapshot_GetSubkeys(IntPtr snapshotPointer, IntPtr searchKeyPointer)
+        internal static int Snapshot_GetSubkeyCount(IntPtr snapshotPointer, IntPtr searchKeyPointer)
         {
             throw new NotImplementedException();
         }
@@ -117,6 +117,26 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         }
 
         internal static void Transaction_Release(IntPtr transactionPointer)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal static IntPtr SubkeyEnumerator_Allocate(IntPtr snapshotPointer, IntPtr keyPointer)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal static bool SubkeyEnumerator_MoveNext(IntPtr enumeratorPointer)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal static (ulong, IntPtr, int) SubkeyEnumerator_Current(IntPtr enumeratorPointer)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal static IntPtr SubkeyEnumerator_Release(IntPtr enumeratorPointer)
         {
             throw new NotImplementedException();
         }

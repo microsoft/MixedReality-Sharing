@@ -45,7 +45,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// <summary>
         /// If the object is disposed, throws an exception.
         /// </summary>
-        protected void ThrowIfDisposed()
+        internal void ThrowIfDisposed()
         {
             if (Pointer == IntPtr.Zero)
             {
