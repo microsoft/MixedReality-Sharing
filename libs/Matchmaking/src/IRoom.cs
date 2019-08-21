@@ -19,12 +19,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// </summary>
         string Id { get; }
 
-		/// <summary>
+        /// <summary>
         /// An implementation specific connection string which can be used to join this room.
         /// </summary>
         string Connection { get; }
 
-		/// <summary>
+        /// <summary>
         /// The time this information was last refreshed.
         /// </summary>
         DateTime LastRefreshed { get; }
@@ -33,22 +33,6 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// Dictionary used to store data associated with the room, which can be used to filter and query rooms,
         /// and to store data which can be retrieved by any participant.
         /// </summary>
-        IReadOnlyDictionary<string, object> Attributes { get; } //TODO ObservableCollection?
-
-        /// <summary>
-        /// Triggered when the room attributes are changed, by the local participant or another member of the room.
-        /// </summary>
-        event EventHandler AttributesChanged;
+        IReadOnlyDictionary<string, object> Attributes { get; }
     }
-	/// <summary>
-	/// A dynamic list of rooms corresponding to a discovery request.
-	/// </summary>
-   public interface IRoomList : IDisposable
-   {
-        IEnumerable<IRoom> Rooms { get; }
-
-        event EventHandler<IRoomList> ListUpdated;
-        //void Refresh();
-        //void Poll(float intervalMs);
-   }
 }

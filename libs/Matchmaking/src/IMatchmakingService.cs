@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -11,10 +12,18 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     public interface IMatchmakingService : IDisposable
     {
         /// <summary>
-        /// Get the list of all rooms containing all of these attributes with the specified value.
+        /// Start discovery of all rooms containing all of these attributes with the specified value.
         /// Passing a null or empty dictionary will list all searchable rooms.
+        /// The returned collection will change over time. Use the INotifyCollectionChanged.CollectionChanged
+        /// event to subscribe to changes.
+        /// The collection will update indefinitely until StopDiscovery is called.
         /// </summary>
-        IRoomList Discover(IReadOnlyDictionary<string, object> query);
+        ReadOnlyObservableCollection<IRoom> StartDiscovery(IReadOnlyDictionary<string, object> query);
+
+        /// <summary>
+        /// Stop an in-progress discovery.
+        /// </summary>
+        void StopDiscovery(ReadOnlyObservableCollection<IRoom> rooms);
 
         /// <summary>
         /// Create a new room.
@@ -32,14 +41,5 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             string connection,
             Dictionary<string, object> attributes = null,
             CancellationToken token = default);
-
-        /// <summary>
-        /// Set some property values on the room.
-        /// The method will set the keys contained in the passed dictionary to the passed values.
-        /// If the room attributes do not contain some of the keys, those will be added.
-        /// The types supported for the property values are defined by each implementation.
-        /// </summary>
-        /// <param name="attributes"></param>
-        Task SetAttributesAsync(IRoom room, Dictionary<string, string> attributes);
     }
 }

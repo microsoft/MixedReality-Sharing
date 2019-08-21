@@ -1,12 +1,15 @@
 using Microsoft.MixedReality.Sharing.Matchmaking;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Matchmaking.Local.Test
@@ -85,6 +88,55 @@ namespace Matchmaking.Local.Test
             return lAttributes.SequenceEqual(rAttributes);
         }
 
+        class RaiiGuard : IDisposable
+        {
+            private Action Quit { get; set; }
+            public RaiiGuard(Action init, Action quit)
+            {
+                Quit = quit;
+                if (init != null) init();
+            }
+            void IDisposable.Dispose()
+            {
+                if (Quit != null) Quit();
+            }
+        }
+
+        // Return true if the collection satisfies 'pred' before 'token' is cancelled.
+        // Otherwise return false.
+        private bool WaitForCollectionPredicate<T>(ReadOnlyObservableCollection<T> coll, Func<bool> pred, CancellationToken token)
+        {
+            bool predicateResult = pred();
+            if (predicateResult)
+            {
+                return true; // optimistic path
+            }
+            using (var wakeUp = new AutoResetEvent(false))
+            {
+                var ncoll = ((INotifyCollectionChanged)coll); //https://stackoverflow.com/questions/2058176
+                NotifyCollectionChangedEventHandler onChange = (object sender, NotifyCollectionChangedEventArgs e) => wakeUp.Set();
+
+                using (var unregisterCancel = token.Register(() => wakeUp.Set()))
+                using (var unregisterWatch = new RaiiGuard(() => ncoll.CollectionChanged += onChange, () => ncoll.CollectionChanged -= onChange))
+                {
+                    while (true)
+                    {
+                        predicateResult = pred();
+                        if (predicateResult)
+                        {
+                            return true;
+                        }
+                        wakeUp.WaitOne();
+                        if (token.IsCancellationRequested)
+                        {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+        
+
 #if false
         private void AssertSame(IRoom lhs, IRoom rhs)
         {
@@ -113,28 +165,20 @@ namespace Matchmaking.Local.Test
                 var room3 = svc1.CreateRoomAsync("Room3", "Conn3", attributes2, cts.Token).Result;
 
                 // Discover them from the second
-                using (var roomList = svc2.Discover(null))
                 {
-                    var rooms = roomList.Rooms;
-                    while (rooms.Count() < 3)
-                    {
-                        cts.Token.ThrowIfCancellationRequested();
-                        rooms = roomList.Rooms;
-                    }
+                    var rooms = svc2.StartDiscovery(null);
+                    WaitForCollectionPredicate(rooms, () => rooms.Count >= 3, cts.Token);
+                    svc2.StopDiscovery(rooms);
                     Assert.Equal(3, rooms.Count());
                     Assert.Contains(rooms, r => r.Id.Equals(room1.Id));
                     Assert.Contains(rooms, r => r.Id.Equals(room2.Id));
                     Assert.Contains(rooms, r => r.Id.Equals(room3.Id));
                 }
 
-                using (var roomList = svc2.Discover(new Dictionary<string, object> { ["prop2"] = 123 }))
                 {
-                    var rooms = roomList.Rooms;
-                    while (!rooms.Any())
-                    {
-                        cts.Token.ThrowIfCancellationRequested();
-                        rooms = roomList.Rooms;
-                    }
+                    var rooms = svc2.StartDiscovery(new Dictionary<string, object> { ["prop2"] = 123 });
+                    WaitForCollectionPredicate(rooms, () => rooms.Any(), cts.Token);
+                    svc2.StopDiscovery(rooms);
                     Assert.Contains(rooms, r => SameRoom(r, room2));
                     Assert.Contains(rooms, r => SameRoom(r, room3));
                 }
@@ -154,8 +198,10 @@ namespace Matchmaking.Local.Test
                 var room2 = svc2.CreateRoomAsync("Room2", "foo2", attributes2, cts.Token).Result;
 
                 {
-                    var list = svc2.Discover(null);
-                    var joinedRoom = list.Rooms.First();// ctx2.Service.JoinRandomRoomAsync(null, cts.Token).Result;
+                    var rooms = svc2.StartDiscovery(null);
+                    WaitForCollectionPredicate(rooms, () => rooms.Count > 0, cts.Token);
+                    svc2.StopDiscovery(rooms);
+                    var joinedRoom = rooms.First();
                     Assert.True(joinedRoom.Id.Equals(room1.Id) || joinedRoom.Id.Equals(room2.Id));
                     var roomToCompare = joinedRoom.Id.Equals(room1.Id) ? room1 : room2;
                     AssertSame(joinedRoom, roomToCompare);
@@ -163,9 +209,11 @@ namespace Matchmaking.Local.Test
 
                 {
                     var req2 = new Dictionary<string, object> { ["prop2"] = 123 };
-                    var list = svc2.Discover(req2);
-                    Assert.Single(list.Rooms);
-                    AssertSame(list.Rooms.First(), room2);
+                    var rooms = svc2.StartDiscovery(req2);
+                    WaitForCollectionPredicate(rooms, () => rooms.Count > 0, cts.Token);
+                    svc2.StopDiscovery(rooms);
+                    Assert.Single(rooms);
+                    AssertSame(rooms.First(), room2);
                 }
             }
         }
@@ -184,28 +232,20 @@ namespace Matchmaking.Local.Test
 
                 {
                     var req1 = new Dictionary<string, object> { ["id"] = room1.Id };
-                    var roomList1 = svc2.Discover(req1);
-                    var rooms1 = roomList1.Rooms;
-                    while (rooms1.Count() == 0)
-                    {
-                        cts.Token.ThrowIfCancellationRequested();
-                        rooms1 = roomList1.Rooms;
-                    }
-                    Assert.Single(rooms1);
-                    AssertSame(rooms1.First(), room1);
+                    var rooms = svc2.StartDiscovery(req1);
+                    WaitForCollectionPredicate(rooms, () => rooms.Count > 0, cts.Token);
+                    svc2.StopDiscovery(rooms);
+                    Assert.Single(rooms);
+                    AssertSame(rooms.First(), room1);
                 }
 
                 {
                     var req2 = new Dictionary<string, object> { ["id"] = room2.Id };
-                    var roomList2 = svc2.Discover(req2);
-                    var rooms2 = roomList2.Rooms;
-                    while (rooms2.Count() == 0)
-                    {
-                        cts.Token.ThrowIfCancellationRequested();
-                        rooms2 = roomList2.Rooms;
-                    }
-                    Assert.Single(rooms2);
-                    AssertSame(rooms2.First(), room2);
+                    var rooms = svc2.StartDiscovery(req2);
+                    WaitForCollectionPredicate(rooms, () => rooms.Count > 0, cts.Token);
+                    svc2.StopDiscovery(rooms);
+                    Assert.Single(rooms);
+                    AssertSame(rooms.First(), room2);
                 }
             }
         }
@@ -222,9 +262,10 @@ namespace Matchmaking.Local.Test
                     new Dictionary<string, object> { ["prop1"] = 1, ["prop2"] = 2 }
                     ).Result;
 
+#if false
                 IRoom foundRoom = null;
-                using (var roomList = svc2.Discover(null))
                 {
+                    var rooms = svc2.StartDiscovery(null);
                     var ev = new AutoResetEvent(false);
                     roomList.ListUpdated += (object sender, IRoomList updated) =>
                     {
@@ -238,7 +279,6 @@ namespace Matchmaking.Local.Test
                 }
                 Assert.NotNull(foundRoom);
                 Assert.Equal(room1.Id, foundRoom.Id);
-#if false
                 {
                     var cts = new CancellationTokenSource(TestTimeoutMs);
                     while (room2.Attributes.Count != room1.Attributes.Count)
