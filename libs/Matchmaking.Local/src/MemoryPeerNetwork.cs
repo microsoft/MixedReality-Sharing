@@ -7,10 +7,10 @@ using System.Diagnostics;
 
 namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
-    class MemoryFooMessage : IPeerNetworkMessage
+    class MemoryPeerNetworkMessage : IPeerNetworkMessage
     {
         public byte[] Message { get; }
-        internal MemoryFooMessage(MemoryPeerNetwork sender, byte[] msg)
+        internal MemoryPeerNetworkMessage(MemoryPeerNetwork sender, byte[] msg)
         {
             Message = msg;
             sender_ = sender;
@@ -21,7 +21,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     public class MemoryPeerNetwork : IPeerNetwork
     {
         int ident_;
-        Queue<MemoryFooMessage> incoming_ = new Queue<MemoryFooMessage>();
+        Queue<MemoryPeerNetworkMessage> incoming_ = new Queue<MemoryPeerNetworkMessage>();
 
         //TODO extract into a factory so we can have independent networks
         static List<MemoryPeerNetwork> instances_ = new List<MemoryPeerNetwork>();
@@ -48,7 +48,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         public void Broadcast(byte[] msg)
         {
-            var m = new MemoryFooMessage(this, msg);
+            var m = new MemoryPeerNetworkMessage(this, msg);
             foreach (var c in instances_)
             {
                 if( c != this )
@@ -61,8 +61,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         public void Reply(IPeerNetworkMessage req, byte[] msg)
         {
-            var r = req as MemoryFooMessage;
-            var m = new MemoryFooMessage(this, msg);
+            var r = req as MemoryPeerNetworkMessage;
+            var m = new MemoryPeerNetworkMessage(this, msg);
             r.sender_.incoming_.Enqueue(m);
             PumpNetwork();
         }

@@ -6,6 +6,7 @@ using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Net;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Text;
@@ -19,7 +20,8 @@ namespace Matchmaking.Local.Test
     {
         static private IMatchmakingService MakeMatchmakingService(int userIndex)
         {
-            var net = new MemoryPeerNetwork(userIndex);
+            //var net = new MemoryPeerNetwork(userIndex);
+            var net = new UdpPeerNetwork(new IPEndPoint(0xffffff7f,45277), new IPEndPoint(0x0000007f+(userIndex<<24), 45277));
             return new PeerMatchmakingService(net);
         }
 
@@ -28,7 +30,7 @@ namespace Matchmaking.Local.Test
             get
             {
                 //return Debugger.IsAttached ? Timeout.Infinite : 10000;
-                return 100;
+                return 30000;
             }
         }
 
@@ -130,7 +132,7 @@ namespace Matchmaking.Local.Test
                 }
             }
         }
-        
+
 
 #if false
         private void AssertSame(IRoom lhs, IRoom rhs)
@@ -192,6 +194,7 @@ namespace Matchmaking.Local.Test
                 var room1 = svc1.CreateRoomAsync("foo1", attributes1, cts.Token).Result;
                 var room2 = svc2.CreateRoomAsync("foo2", attributes2, cts.Token).Result;
 
+                // join any room at all
                 {
                     var rooms = svc2.StartDiscovery(null);
                     WaitForCollectionPredicate(rooms, () => rooms.Count > 0, cts.Token);
@@ -202,13 +205,14 @@ namespace Matchmaking.Local.Test
                     AssertSame(joinedRoom, roomToCompare);
                 }
 
+                // join a remote room
                 {
-                    var req2 = new Dictionary<string, object> { ["prop2"] = 123 };
+                    var req2 = new Dictionary<string, object> { ["prop2"] = 1 };
                     var rooms = svc2.StartDiscovery(req2);
                     WaitForCollectionPredicate(rooms, () => rooms.Count > 0, cts.Token);
                     svc2.StopDiscovery(rooms);
                     Assert.Single(rooms);
-                    AssertSame(rooms.First(), room2);
+                    AssertSame(rooms.First(), room1);
                 }
             }
         }
