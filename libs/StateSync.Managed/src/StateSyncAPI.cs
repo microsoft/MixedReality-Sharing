@@ -140,5 +140,25 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         {
             throw new NotImplementedException();
         }
+
+        internal static IntPtr KeyEnumerator_Allocate(IntPtr snapshotPointer)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal static bool KeyEnumerator_MoveNext(IntPtr enumeratorPointer)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal static IntPtr KeyEnumerator_Current(IntPtr enumeratorPointer)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal static IntPtr KeyEnumerator_Release(IntPtr enumeratorPointer)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections.Generic;
 
 namespace Microsoft.MixedReality.Sharing.StateSync
 {
@@ -11,15 +10,29 @@ namespace Microsoft.MixedReality.Sharing.StateSync
     /// </summary>
     public class Snapshot : DisposablePointerBase
     {
+        private readonly int keyCount;
+
+        /// <summary>
+        /// Gets the <see cref="VersionedStorage"/> associated with this snapshot.
+        /// </summary>
         public VersionedStorage Storage { get; }
 
+        /// <summary>
+        /// Gets the version of this snapshot.
+        /// </summary>
         public ulong Version { get; }
 
-        internal Snapshot(IntPtr snapshotPtr, VersionedStorage storage, ulong version)
+        /// <summary>
+        /// Gets the keys contained within this snapshot.
+        /// </summary>
+        public KeyCollection Keys => new KeyCollection(Pointer, keyCount);
+
+        internal Snapshot(IntPtr snapshotPtr, VersionedStorage storage, ulong version, int keyCount)
             : base(snapshotPtr)
         {
             Storage = storage;
             Version = version;
+            this.keyCount = keyCount;
         }
 
         /// <summary>
@@ -54,11 +67,11 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// </summary>
         /// <param name="key">The key to check against.</param>
         /// <returns>The span of subkeys associated with the key, empty if none.</returns>
-        public IReadOnlyCollection<SubkeyValuePair> GetSubkeys(KeyRef key)
+        public SubkeyValueCollection GetSubkeys(KeyRef key)
         {
             ThrowIfDisposed();
 
-            return new SubkeyValueCollection(this, key.Pointer, StateSyncAPI.Snapshot_GetSubkeyCount(Pointer, key.Pointer));
+            return new SubkeyValueCollection(Pointer, key.Pointer, StateSyncAPI.Snapshot_GetSubkeyCount(Pointer, key.Pointer));
         }
 
         /// <summary>
