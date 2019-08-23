@@ -32,8 +32,8 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         {
             ThrowIfDisposed();
 
-            (IntPtr pointer, ulong version) = StateSyncAPI.Snapshot_Allocate(Pointer);
-            return new Snapshot(pointer, this, version);
+            (IntPtr pointer, ulong version, int keyCount) = StateSyncAPI.Snapshot_Allocate(Pointer);
+            return new Snapshot(pointer, this, version, keyCount);
         }
 
         /// <summary>

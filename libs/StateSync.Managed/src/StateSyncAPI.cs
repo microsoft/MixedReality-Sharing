@@ -65,8 +65,8 @@ namespace Microsoft.MixedReality.Sharing.StateSync
             throw new NotImplementedException();
         }
 
-        // return (Ptr, Version)
-        internal static (IntPtr, ulong) Snapshot_Allocate(IntPtr storagePointer)
+        // return (Ptr, Version, KeyCount)
+        internal static (IntPtr, ulong, int) Snapshot_Allocate(IntPtr storagePointer)
         {
             throw new NotImplementedException();
         }
