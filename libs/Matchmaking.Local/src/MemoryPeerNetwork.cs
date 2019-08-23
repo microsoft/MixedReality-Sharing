@@ -24,8 +24,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         Queue<MemoryPeerNetworkMessage> incoming_ = new Queue<MemoryPeerNetworkMessage>();
 
         //TODO extract into a factory so we can have independent networks
-        static List<MemoryPeerNetwork> instances_ = new List<MemoryPeerNetwork>();
-        static bool pumpingNetwork_ = false;
+        static volatile List<MemoryPeerNetwork> instances_ = new List<MemoryPeerNetwork>();
+        static volatile bool pumpingNetwork_ = false;
 
         public MemoryPeerNetwork(int ident)
         {
@@ -34,14 +34,26 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         public void Start()
         {
-            Debug.Assert(instances_.Contains(this) == false);
-            instances_.Add(this);
+            // In Start() and Stop() we replace the entire list so that we don't invalidate
+            // any existing iterators.
+            lock (instances_)
+            {
+                Debug.Assert(instances_.Contains(this) == false);
+                var i = new List<MemoryPeerNetwork>(instances_);
+                i.Add(this);
+                instances_ = i;
+            }
         }
 
         public void Stop()
         {
-            Debug.Assert(instances_.Contains(this));
-            instances_.Remove(this);
+            lock (instances_)
+            {
+                Debug.Assert(instances_.Contains(this));
+                var i = new List<MemoryPeerNetwork>(instances_);
+                i.Remove(this);
+                instances_ = i;
+            }
         }
 
         public event Action<IPeerNetwork, IPeerNetworkMessage> Message;
@@ -51,7 +63,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             var m = new MemoryPeerNetworkMessage(this, msg);
             foreach (var c in instances_)
             {
-                if( c != this )
+                if (c != this)
                 {
                     c.incoming_.Enqueue(m);
                 }
@@ -69,18 +81,18 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         static void PumpNetwork()
         {
-            if( pumpingNetwork_ )
+            if (pumpingNetwork_)
             {
                 return;
             }
             pumpingNetwork_ = true;
             bool workDone = true;
-            while(workDone)
+            while (workDone)
             {
                 workDone = false;
-                foreach( var c in instances_)
+                foreach (var c in instances_)
                 {
-                    while( c.incoming_.Count > 0 )
+                    while (c.incoming_.Count > 0)
                     {
                         var m = c.incoming_.Dequeue();
                         c.Message.Invoke(c, m);
