@@ -48,7 +48,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             {
                 nb = socket_.EndReceiveFrom(ar, ref asyncReadData_.sender_);
             }
-            catch(ObjectDisposedException e)
+            catch (ObjectDisposedException e)
             {
                 return;
             }

@@ -23,16 +23,16 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             query_ = query;
         }
 
-        internal static bool IsStrictSubset( IReadOnlyDictionary<string, object> query, IReadOnlyDictionary<string, object> attrs )
+        internal static bool IsStrictSubset(IReadOnlyDictionary<string, object> query, IReadOnlyDictionary<string, object> attrs)
         {
             foreach (var kvp in query)
             {
                 object val;
-                if (attrs.TryGetValue(kvp.Key, out val) == false )
+                if (attrs.TryGetValue(kvp.Key, out val) == false)
                 {
                     return false;
                 }
-                if (kvp.Value.ToString() != val.ToString() ) //TODO proper comparision
+                if (kvp.Value.ToString() != val.ToString()) //TODO proper comparision
                 {
                     return false;
                 }
@@ -120,17 +120,17 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                         if (numAttr > 0)
                         {
                             var d = new Dictionary<string, object>();
-                            for( int i = 0; i < numAttr; ++i )
+                            for (int i = 0; i < numAttr; ++i)
                             {
                                 var k = br.ReadString();
                                 var v = br.ReadString();
                                 d.Add(k, v);
                             }
-                            dict = new ReadOnlyDictionary<string,object>(d);
+                            dict = new ReadOnlyDictionary<string, object>(d);
                         }
                         foreach (var room in localRooms_)
                         {
-                            if (dict==null || PeerDiscoveryRequest.IsStrictSubset(dict, room.Attributes))
+                            if (dict == null || PeerDiscoveryRequest.IsStrictSubset(dict, room.Attributes))
                             {
                                 _Reply(msg, (BinaryWriter w) =>
                                 {
@@ -194,7 +194,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 _Broadcast((BinaryWriter w) =>
                 {
                     w.Write(Proto.SrvQuery);
-                    if (query!=null)
+                    if (query != null)
                     {
                         w.Write(query.Count);
                         foreach (var kvp in query)
@@ -234,7 +234,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             CancellationToken token = default)
         {
             var room = new PeerLocalRoom(connection,
-                attributes!=null ? attributes : new Dictionary<string, object>());
+                attributes != null ? attributes : new Dictionary<string, object>());
             lock (this)
             {
                 localRooms_.Add(room);
