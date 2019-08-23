@@ -13,6 +13,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     // Holds info for an in-progress discovery operation
     class PeerDiscoveryRequest
     {
+        internal IReadOnlyDictionary<string, object> query_;
+        internal ObservableCollection<IRoom> discovered_ = new ObservableCollection<IRoom>();
+        internal ReadOnlyObservableCollection<IRoom> rodiscovered_;
+
         public PeerDiscoveryRequest(IReadOnlyDictionary<string, object> query)
         {
             rodiscovered_ = new ReadOnlyObservableCollection<IRoom>(discovered_);
@@ -36,7 +40,6 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             return true;
         }
 
-
         internal bool Match(IRoom room)
         {
             if (query_ == null)
@@ -45,10 +48,6 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
             return IsStrictSubset(query_, room.Attributes);
         }
-
-        internal IReadOnlyDictionary<string, object> query_;
-        internal ObservableCollection<IRoom> discovered_ = new ObservableCollection<IRoom>();
-        internal ReadOnlyObservableCollection<IRoom> rodiscovered_;
     }
 
     // Room which has been created locally. And is owned locally.
@@ -82,33 +81,6 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     /// <summary>
     /// Simple matchmaking service for local networks.
     /// </summary>
-    ///
-    /// <remarks>
-    /// Rooms are created and stored by the clients themselves. A room is open as long as its owner
-    /// is connected and in the room. On room creation, the owner broadcasts a ROOM packet containing the room details.
-    ///
-    /// Clients who are looking for a room broadcast a FIND packet. Each owner replies with a ROOM
-    /// packet for each room it owns.
-    ///
-    /// On the owner every room corresponds to a TCP port listening for connections. Other participants
-    /// can join a room by making a connection to its port.
-    ///
-    /// * TODO this should arguably all be replaced by state sync *
-    /// On connection, a participant sends a JOIN packet to the server containing the participant details,
-    /// and receives the current list of participants and room attributes. After this, the connection is
-    /// used to:
-    /// <list type="bullet">
-    /// <item><description>
-    /// Receive announcements of participants joining or leaving (PARJ and PARL packets)
-    /// </description></item>
-    /// <item><description>
-    /// Send and receive changes to the room attributes (ATTR packets)
-    /// </description></item>
-    /// <item><description>
-    /// Send and receive arbitrary messages (MSSG packets).
-    /// </description></item>
-    /// </list>
-    /// </remarks>
     public class PeerMatchmakingService : IMatchmakingService
     {
         internal static class Proto
