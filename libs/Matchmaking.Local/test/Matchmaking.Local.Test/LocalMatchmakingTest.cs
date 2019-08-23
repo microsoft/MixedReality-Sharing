@@ -53,12 +53,12 @@ namespace Matchmaking.Local.Test
                 Assert.Equal("http://room1", room1.Connection);
                 Assert.Empty(room1.Attributes);
 
-                var attributes = new Dictionary<string, object> { ["prop1"] = 1, ["prop2"] = 2 };
+                var attributes = new Dictionary<string, string> { ["prop1"] = "1", ["prop2"] = "2" };
                 var room2 = svc1.CreateRoomAsync("foo://room2", attributes, cts.Token).Result;
 
                 Assert.Equal("foo://room2", room2.Connection);
-                Assert.Equal(1, room2.Attributes["prop1"]);
-                Assert.Equal(2, room2.Attributes["prop2"]);
+                Assert.Equal("1", room2.Attributes["prop1"]);
+                Assert.Equal("2", room2.Attributes["prop2"]);
             }
         }
 
@@ -153,8 +153,8 @@ namespace Matchmaking.Local.Test
             using (var svc1 = MakeMatchmakingService(1))
             using (var svc2 = MakeMatchmakingService(2))
             {
-                var attributes1 = new Dictionary<string, object> { ["prop1"] = 1, ["prop2"] = 1 };
-                var attributes2 = new Dictionary<string, object> { ["prop1"] = 1, ["prop2"] = 123 };
+                var attributes1 = new Dictionary<string, string> { ["prop1"] = "1", ["prop2"] = "1" };
+                var attributes2 = new Dictionary<string, string> { ["prop1"] = "1", ["prop2"] = "123" };
                 // Create some rooms in the first one
                 var room1 = svc1.CreateRoomAsync("Conn1", attributes1, cts.Token).Result;
                 var room2 = svc1.CreateRoomAsync("Conn2", attributes2, cts.Token).Result;
@@ -172,7 +172,7 @@ namespace Matchmaking.Local.Test
                 }
 
                 {
-                    var rooms = svc2.StartDiscovery(new Dictionary<string, object> { ["prop2"] = 123 });
+                    var rooms = svc2.StartDiscovery(new Dictionary<string, string> { ["prop2"] = "123" });
                     WaitForCollectionPredicate(rooms, () => rooms.Any(), cts.Token);
                     svc2.StopDiscovery(rooms);
                     Assert.Contains(rooms, r => SameRoom(r, room2));
@@ -188,8 +188,8 @@ namespace Matchmaking.Local.Test
             using (var svc1 = MakeMatchmakingService(1))
             using (var svc2 = MakeMatchmakingService(2))
             {
-                var attributes1 = new Dictionary<string, object> { ["prop1"] = 1, ["prop2"] = 1 };
-                var attributes2 = new Dictionary<string, object> { ["prop1"] = 1, ["prop2"] = 123 };
+                var attributes1 = new Dictionary<string, string> { ["prop1"] = "1", ["prop2"] = "1" };
+                var attributes2 = new Dictionary<string, string> { ["prop1"] = "1", ["prop2"] = "123" };
                 var room1 = svc1.CreateRoomAsync("foo1", attributes1, cts.Token).Result;
                 var room2 = svc2.CreateRoomAsync("foo2", attributes2, cts.Token).Result;
 
@@ -206,7 +206,7 @@ namespace Matchmaking.Local.Test
 
                 // join a remote room
                 {
-                    var req2 = new Dictionary<string, object> { ["prop2"] = 1 };
+                    var req2 = new Dictionary<string, string> { ["prop2"] = "1" };
                     var rooms = svc2.StartDiscovery(req2);
                     WaitForCollectionPredicate(rooms, () => rooms.Count > 0, cts.Token);
                     svc2.StopDiscovery(rooms);
@@ -224,14 +224,14 @@ namespace Matchmaking.Local.Test
             using (var svc2 = MakeMatchmakingService(2))
             {
                 // Create rooms from service1
-                var attributes1 = new Dictionary<string, object> { ["Id"] = "room1", ["prop1"] = 1, ["prop2"] = 2 };
-                var attributes2 = new Dictionary<string, object> { ["Id"] = "room2", ["prop1"] = 1, ["prop2"] = 2 };
+                var attributes1 = new Dictionary<string, string> { ["Id"] = "room1", ["prop1"] = "1", ["prop2"] = "2" };
+                var attributes2 = new Dictionary<string, string> { ["Id"] = "room2", ["prop1"] = "1", ["prop2"] = "2" };
                 var room1 = svc1.CreateRoomAsync("conn1", attributes1, cts.Token).Result;
                 var room2 = svc1.CreateRoomAsync("conn2", attributes2, cts.Token).Result;
 
                 // discover from service2
                 {
-                    var req1 = new Dictionary<string, object> { ["Id"] = "room1" };
+                    var req1 = new Dictionary<string, string> { ["Id"] = "room1" };
                     var rooms = svc2.StartDiscovery(req1);
                     WaitForCollectionPredicate(rooms, () => rooms.Count > 0, cts.Token);
                     svc2.StopDiscovery(rooms);
@@ -240,7 +240,7 @@ namespace Matchmaking.Local.Test
                 }
 
                 {
-                    var req2 = new Dictionary<string, object> { ["Id"] = "room2" };
+                    var req2 = new Dictionary<string, string> { ["Id"] = "room2" };
                     var rooms = svc2.StartDiscovery(req2);
                     WaitForCollectionPredicate(rooms, () => rooms.Count > 0, cts.Token);
                     svc2.StopDiscovery(rooms);
@@ -259,7 +259,7 @@ namespace Matchmaking.Local.Test
             {
                 var room1 = svc1.CreateRoomAsync(
                     "MixRoomConn",
-                    new Dictionary<string, object> { ["prop1"] = 1, ["prop2"] = 2 }
+                    new Dictionary<string, string> { ["prop1"] = "1", ["prop2"] = "2" }
                     ).Result;
 
 #if false
@@ -289,7 +289,7 @@ namespace Matchmaking.Local.Test
                 Assert.Equal(room1.Attributes, room2.Attributes);
 
 
-                room2.SetAttributesAsync(new Dictionary<string, object> { ["prop1"] = 42 }).Wait();
+                room2.SetAttributesAsync(new Dictionary<string, string> { ["prop1"] = "42" }).Wait();
                 Assert.Equal(42, room2.Attributes["prop1"]);
                 {
                     var cts = new CancellationTokenSource(TestTimeoutMs);

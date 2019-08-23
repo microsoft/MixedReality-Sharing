@@ -13,26 +13,26 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     // Holds info for an in-progress discovery operation
     class PeerDiscoveryRequest
     {
-        internal IReadOnlyDictionary<string, object> query_;
+        internal IReadOnlyDictionary<string, string> query_;
         internal ObservableCollection<IRoom> discovered_ = new ObservableCollection<IRoom>();
         internal ReadOnlyObservableCollection<IRoom> rodiscovered_;
 
-        public PeerDiscoveryRequest(IReadOnlyDictionary<string, object> query)
+        public PeerDiscoveryRequest(IReadOnlyDictionary<string, string> query)
         {
             rodiscovered_ = new ReadOnlyObservableCollection<IRoom>(discovered_);
             query_ = query;
         }
 
-        internal static bool IsStrictSubset(IReadOnlyDictionary<string, object> query, IReadOnlyDictionary<string, object> attrs)
+        internal static bool IsStrictSubset(IReadOnlyDictionary<string, string> query, IReadOnlyDictionary<string, string> attrs)
         {
             foreach (var kvp in query)
             {
-                object val;
+                string val;
                 if (attrs.TryGetValue(kvp.Key, out val) == false)
                 {
                     return false;
                 }
-                if (kvp.Value.ToString() != val.ToString()) //TODO proper comparision
+                if (kvp.Value != val)
                 {
                     return false;
                 }
@@ -53,7 +53,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     // Room which has been created locally. And is owned locally.
     class PeerLocalRoom : IRoom
     {
-        public PeerLocalRoom(string connection, IReadOnlyDictionary<string, object> attrs)
+        public PeerLocalRoom(string connection, IReadOnlyDictionary<string, string> attrs)
         {
             Connection = connection;
             Attributes = attrs;
@@ -61,13 +61,13 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         public string Connection { get; }
         public DateTime LastRefreshed { get { return DateTime.Now; } }
-        public IReadOnlyDictionary<string, object> Attributes { get; }
+        public IReadOnlyDictionary<string, string> Attributes { get; }
     }
 
     // Room which we've heard about from a remote
     class PeerRemoteRoom : IRoom
     {
-        public PeerRemoteRoom(string connection, IReadOnlyDictionary<string, object> attrs)
+        public PeerRemoteRoom(string connection, IReadOnlyDictionary<string, string> attrs)
         {
             Connection = connection;
             Attributes = attrs;
@@ -75,7 +75,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         public string Connection { get; }
         public DateTime LastRefreshed { get => DateTime.Now; }
-        public IReadOnlyDictionary<string, object> Attributes { get; }
+        public IReadOnlyDictionary<string, string> Attributes { get; }
     }
 
     /// <summary>
@@ -116,17 +116,17 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     using (var br = new BinaryReader(ms))
                     {
                         var numAttr = br.ReadInt32();
-                        ReadOnlyDictionary<string, object> dict = null;
+                        ReadOnlyDictionary<string, string> dict = null;
                         if (numAttr > 0)
                         {
-                            var d = new Dictionary<string, object>();
+                            var d = new Dictionary<string, string>();
                             for (int i = 0; i < numAttr; ++i)
                             {
                                 var k = br.ReadString();
                                 var v = br.ReadString();
                                 d.Add(k, v);
                             }
-                            dict = new ReadOnlyDictionary<string, object>(d);
+                            dict = new ReadOnlyDictionary<string, string>(d);
                         }
                         foreach (var room in localRooms_)
                         {
@@ -156,7 +156,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     {
                         var con = br.ReadString();
                         var cnt = br.ReadInt32();
-                        var attrs = cnt != 0 ? new Dictionary<string, object>() : null;
+                        var attrs = cnt != 0 ? new Dictionary<string, string>() : null;
                         for (int i = 0; i < cnt; ++i)
                         {
                             var k = br.ReadString();
@@ -177,7 +177,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
         }
 
-        public ReadOnlyObservableCollection<IRoom> StartDiscovery(IReadOnlyDictionary<string, object> query)
+        public ReadOnlyObservableCollection<IRoom> StartDiscovery(IReadOnlyDictionary<string, string> query)
         {
             lock (this)
             {
@@ -230,11 +230,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         public Task<IRoom> CreateRoomAsync(
             string connection,
-            IReadOnlyDictionary<string, object> attributes = null,
+            IReadOnlyDictionary<string, string> attributes = null,
             CancellationToken token = default)
         {
             var room = new PeerLocalRoom(connection,
-                attributes != null ? attributes : new Dictionary<string, object>());
+                attributes != null ? attributes : new Dictionary<string, string>());
             lock (this)
             {
                 localRooms_.Add(room);
