@@ -85,18 +85,6 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         public event Action<IPeerNetwork, IPeerNetworkMessage> Message;
 
-        private void ListenToNetwork(CancellationToken token)
-        {
-            var buf = new byte[1024]; // todo noncopying
-            while (token.IsCancellationRequested == false)
-            {
-                EndPoint senderEp = new IPEndPoint(IPAddress.Any, 0);
-                int n = socket_.ReceiveFrom(buf, ref senderEp);
-                Debug.Assert(n>0);
-                Message.Invoke(this, new UdpPeerNetworkMessage(senderEp, buf));
-            }
-        }
-
         public void Broadcast(byte[] msg)
         {
             socket_.SendTo(msg, broadcastEndpoint_);
