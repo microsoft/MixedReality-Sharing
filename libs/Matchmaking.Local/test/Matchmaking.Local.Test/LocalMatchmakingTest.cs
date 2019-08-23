@@ -29,8 +29,7 @@ namespace Matchmaking.Local.Test
         {
             get
             {
-                //return Debugger.IsAttached ? Timeout.Infinite : 10000;
-                return 30000;
+                return Debugger.IsAttached ? Timeout.Infinite : 10000;
             }
         }
 
@@ -230,6 +229,7 @@ namespace Matchmaking.Local.Test
                 var room1 = svc1.CreateRoomAsync("conn1", attributes1, cts.Token).Result;
                 var room2 = svc1.CreateRoomAsync("conn2", attributes2, cts.Token).Result;
 
+                // discover from service2
                 {
                     var req1 = new Dictionary<string, object> { ["Id"] = "room1" };
                     var rooms = svc2.StartDiscovery(req1);
