@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -21,7 +22,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     public class MemoryPeerNetwork : IPeerNetwork
     {
         int ident_;
-        Queue<MemoryPeerNetworkMessage> incoming_ = new Queue<MemoryPeerNetworkMessage>();
+        ConcurrentQueue<MemoryPeerNetworkMessage> incoming_ = new ConcurrentQueue<MemoryPeerNetworkMessage>();
 
         //TODO extract into a factory so we can have independent networks
         static volatile List<MemoryPeerNetwork> instances_ = new List<MemoryPeerNetwork>();
@@ -58,9 +59,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         public event Action<IPeerNetwork, IPeerNetworkMessage> Message;
 
-        public void Broadcast(byte[] msg)
+        public void Broadcast(byte[] message)
         {
-            var m = new MemoryPeerNetworkMessage(this, msg);
+            var m = new MemoryPeerNetworkMessage(this, message);
             foreach (var c in instances_)
             {
                 if (c != this)
@@ -71,15 +72,15 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             PumpNetwork();
         }
 
-        public void Reply(IPeerNetworkMessage req, byte[] msg)
+        public void Reply(IPeerNetworkMessage req, byte[] message)
         {
             var r = req as MemoryPeerNetworkMessage;
-            var m = new MemoryPeerNetworkMessage(this, msg);
+            var m = new MemoryPeerNetworkMessage(this, message);
             r.sender_.incoming_.Enqueue(m);
             PumpNetwork();
         }
 
-        static void PumpNetwork()
+        static protected void PumpNetwork()
         {
             if (pumpingNetwork_)
             {
@@ -92,10 +93,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 workDone = false;
                 foreach (var c in instances_)
                 {
-                    while (c.incoming_.Count > 0)
+                    MemoryPeerNetworkMessage msg;
+                    while (c.incoming_.TryDequeue(out msg))
                     {
-                        var m = c.incoming_.Dequeue();
-                        c.Message.Invoke(c, m);
+                        c.Message.Invoke(c, msg);
                         workDone = true;
                     }
                 }
