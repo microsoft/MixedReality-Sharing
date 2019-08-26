@@ -217,13 +217,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         {
             lock (this)
             {
-                for (int i = 0; i < discovery_.Count; ++i)
+                int idx = discovery_.FindIndex(disc => disc.rodiscovered_ == rooms);
+                if (idx >= 0)
                 {
-                    if (discovery_[i].rodiscovered_ == rooms)
-                    {
-                        discovery_.RemoveAt(i);
-                        return;
-                    }
+                    discovery_.RemoveAt(idx);
                 }
             }
         }
