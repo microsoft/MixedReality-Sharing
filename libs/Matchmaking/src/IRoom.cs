@@ -14,12 +14,6 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     public interface IRoom
     {
         /// <summary>
-        /// Identifies this room.
-        /// The matchmaking implementation must guarantee that this is unique for every new room.
-        /// </summary>
-        string Id { get; }
-
-        /// <summary>
         /// An implementation specific connection string which can be used to join this room.
         /// </summary>
         string Connection { get; }
@@ -33,6 +27,6 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// Dictionary used to store data associated with the room, which can be used to filter and query rooms,
         /// and to store data which can be retrieved by any participant.
         /// </summary>
-        IReadOnlyDictionary<string, object> Attributes { get; }
+        IReadOnlyDictionary<string, string> Attributes { get; }
     }
 }

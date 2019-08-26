@@ -18,7 +18,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// event to subscribe to changes.
         /// The collection will update indefinitely until StopDiscovery is called.
         /// </summary>
-        ReadOnlyObservableCollection<IRoom> StartDiscovery(IReadOnlyDictionary<string, object> query);
+        ReadOnlyObservableCollection<IRoom> StartDiscovery(IReadOnlyDictionary<string, string> query);
 
         /// <summary>
         /// Stop an in-progress discovery.
@@ -37,9 +37,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// The newly created, joined room.
         /// </returns>
         Task<IRoom> CreateRoomAsync(
-            string name,
             string connection,
-            Dictionary<string, object> attributes = null,
+            IReadOnlyDictionary<string, string> attributes = null,
             CancellationToken token = default);
     }
 }
