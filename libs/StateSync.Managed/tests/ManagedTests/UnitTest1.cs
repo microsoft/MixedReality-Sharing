@@ -8,8 +8,26 @@ namespace Microsoft.MixedReality.Sharing.StateSync.Test
         [Fact]
         public void Test1()
         {
-            var snap = new Snapshot();
-            Assert.NotNull(snap.GetType());
+            Assert.NotNull(typeof(Snapshot));
+        }
+
+        // This method is just to ensure compilation at this stage, will be replaced with implementation later
+        internal void EnsureCompilation()
+        {
+            Snapshot s = default;
+            foreach (SubkeyValuePair pair in s.GetSubkeys(default))
+            {
+                ulong subkey = pair.Subkey;
+                ReadOnlySpan<byte> value = pair.Value;
+
+                // Some dumb thing just to have this here for compiler
+                Assert.True(value.Length + (long)subkey > 0);
+            }
+
+            foreach (KeyRef key in s.Keys)
+            {
+                Assert.True(key.AsSearchKey() != null);
+            }
         }
 
         [Theory]
