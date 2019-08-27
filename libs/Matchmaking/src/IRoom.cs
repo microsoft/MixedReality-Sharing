@@ -2,26 +2,29 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 
 namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
     /// <summary>
     /// Information about a matchmaking room.
-    ///
     /// </summary>
     public interface IRoom
     {
         /// <summary>
+        /// The category of room. This is an application-defined free form URI.
+        /// </summary>
+        string Category { get; }
+
+        /// <summary>
+        /// The unique identifier of this room.
+        /// </summary>
+        Guid UniqueId { get; }
+
+        /// <summary>
         /// An implementation specific connection string which can be used to join this room.
         /// </summary>
         string Connection { get; }
-
-        /// <summary>
-        /// The time this information was last refreshed.
-        /// </summary>
-        DateTime LastRefreshed { get; }
 
         /// <summary>
         /// Dictionary used to store data associated with the room, which can be used to filter and query rooms,

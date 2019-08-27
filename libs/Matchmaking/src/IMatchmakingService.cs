@@ -3,27 +3,35 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
+    /// <summary>
+    /// Handle to an ongoing discovery task.
+    /// </summary>
+    public interface IDiscoveryTask : IDisposable
+    {
+        /// <summary>
+        /// The list of discovered rooms, ordered by IRoom.UniqueId.
+        /// </summary>
+        IList<IRoom> Rooms { get; }
+
+        /// <summary>
+        /// Event raised when the 'Rooms' property will return an updated result.
+        /// </summary>
+        event Action<IDiscoveryTask> Updated;
+    }
+
     public interface IMatchmakingService : IDisposable
     {
         /// <summary>
-        /// Start discovery of all rooms containing all of these attributes with the specified value.
-        /// Passing a null or empty dictionary will list all searchable rooms.
-        /// The returned collection will change over time. Use the INotifyCollectionChanged.CollectionChanged
-        /// event to subscribe to changes.
-        /// The collection will update indefinitely until StopDiscovery is called.
+        /// Start discovery of all rooms whose category matches the one given.
+        /// The returned result will change over time. Use the Updated event to subscribe to changes.
+        /// The collection will update indefinitely until disposed.
         /// </summary>
-        ReadOnlyObservableCollection<IRoom> StartDiscovery(IReadOnlyDictionary<string, string> query);
-
-        /// <summary>
-        /// Stop an in-progress discovery.
-        /// </summary>
-        void StopDiscovery(ReadOnlyObservableCollection<IRoom> rooms);
+        IDiscoveryTask StartDiscovery(string category);
 
         /// <summary>
         /// Create a new room.
@@ -34,9 +42,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// room, or roll back any changes to the system state and return a canceled Task.
         /// </param>
         /// <returns>
-        /// The newly created, joined room.
+        /// The newly created room.
         /// </returns>
         Task<IRoom> CreateRoomAsync(
+            string category,
             string connection,
             IReadOnlyDictionary<string, string> attributes = null,
             CancellationToken token = default);
