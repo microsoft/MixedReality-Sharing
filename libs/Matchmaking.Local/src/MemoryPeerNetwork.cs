@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 
 namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
@@ -26,7 +27,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         //TODO extract into a factory so we can have independent networks
         static volatile List<MemoryPeerNetwork> instances_ = new List<MemoryPeerNetwork>();
-        static volatile bool pumpingNetwork_ = false;
+
+        const int NetworkPumpInProgress = 1;
+        const int NetworkQueuedSome = 2;
+        static int networkStatus_ = 0;
 
         public MemoryPeerNetwork(int ident)
         {
@@ -80,28 +84,51 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             PumpNetwork();
         }
 
-        static protected void PumpNetwork()
+        static protected void PumpNetworkInternal()
         {
-            if (pumpingNetwork_)
+            // Notation - networkStatus is two bits : P = NetworkPumpInProgress, Q = NetworkQueuedSome
+            // The only valid states are [00, P0, PQ], [0Q] is invalid.
+            while (true)
             {
-                return;
-            }
-            pumpingNetwork_ = true;
-            bool workDone = true;
-            while (workDone)
-            {
-                workDone = false;
+                // We're about to process the whole list so clear the NetworkQueuedSome bit. [P? -> P0]
+                Interlocked.CompareExchange(ref networkStatus_, NetworkPumpInProgress, NetworkPumpInProgress | NetworkQueuedSome);
+
+                // Raise the messsage events
                 foreach (var c in instances_)
                 {
                     MemoryPeerNetworkMessage msg;
                     while (c.incoming_.TryDequeue(out msg))
                     {
                         c.Message.Invoke(c, msg);
-                        workDone = true;
                     }
                 }
+
+                // Exit if no more work has been queued while we were working. i.e. NetworkQueuedSome is still clear.
+                if (Interlocked.CompareExchange(ref networkStatus_, 0, NetworkPumpInProgress) == 0)
+                {
+                    return; // [P0 -> 00]
+                }
             }
-            pumpingNetwork_ = false;
+        }
+
+        // Called after a Broadcast() or Reply() to ensure the message is delivered.
+        // The first thread to send a message becomes the pumper until all messages are deliverd.
+        static protected void PumpNetwork()
+        {
+            while (true)
+            {
+                int orig = networkStatus_;
+                const int NetFlagsBoth = NetworkPumpInProgress | NetworkQueuedSome;
+                // Ensure the NetworkQueuedSome bit is set.  [?? -> PQ]
+                if( Interlocked.CompareExchange(ref networkStatus_, NetFlagsBoth, orig) == NetFlagsBoth )
+                {
+                    if( (orig & NetworkPumpInProgress) == 0 )
+                    {
+                        PumpNetworkInternal(); // If [0? -> PQ], then we became the pumper
+                    }
+                    return;
+                }
+            }           
         }
     }
 }
