@@ -86,7 +86,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         static protected void PumpNetworkInternal()
         {
-            // Notation - networkStatus is two bits : P = NetworkPumpInProgress, Q = NetworkPumpInProgress
+            // Notation - networkStatus is two bits : P = NetworkPumpInProgress, Q = NetworkQueuedSome
             // The only valid states are [00, P0, PQ], [0Q] is invalid.
             while (true)
             {
