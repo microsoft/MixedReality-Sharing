@@ -349,10 +349,6 @@ namespace Matchmaking.Local.Test
             return new PeerMatchmakingService(net);
         }
 
-        public LocalMatchmakingTestMemory()
-            : base(MakeMatchmakingService)
-        {
-
-        }
+        public LocalMatchmakingTestMemory() : base(MakeMatchmakingService) { }
     }
 }
