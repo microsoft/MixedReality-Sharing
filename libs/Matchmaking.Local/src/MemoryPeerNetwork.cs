@@ -104,7 +104,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 }
 
                 // Exit if no more work has been queued while we were working. i.e. NetworkQueuedSome is still clear.
-                if (Interlocked.CompareExchange(ref networkStatus_, 0, NetworkPumpInProgress) == 0)
+                if (Interlocked.CompareExchange(ref networkStatus_, 0, NetworkPumpInProgress) == NetworkPumpInProgress)
                 {
                     return; // [P0 -> 00]
                 }
@@ -118,11 +118,15 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             while (true)
             {
                 int orig = networkStatus_;
+                if( (orig & NetworkQueuedSome) != 0 )
+                {
+                    return;
+                }
                 const int NetFlagsBoth = NetworkPumpInProgress | NetworkQueuedSome;
                 // Ensure the NetworkQueuedSome bit is set.  [?? -> PQ]
-                if( Interlocked.CompareExchange(ref networkStatus_, NetFlagsBoth, orig) == NetFlagsBoth )
+                if (Interlocked.CompareExchange(ref networkStatus_, NetFlagsBoth, orig) == orig)
                 {
-                    if( (orig & NetworkPumpInProgress) == 0 )
+                    if ((orig & NetworkPumpInProgress) == 0)
                     {
                         PumpNetworkInternal(); // If [0? -> PQ], then we became the pumper
                     }
