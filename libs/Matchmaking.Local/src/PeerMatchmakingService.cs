@@ -17,39 +17,49 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
     public static class Extensions
     {
-        public static IEnumerable<T> MergeSortedEnumerators<T>(IEnumerator<T> a, IEnumerator<T> b, Func<T, T, bool> less)
+        public static IEnumerable<T> MergeSortedEnumerators<T>(IEnumerator<T> a, IEnumerator<T> b, Func<T, T, int> compare)
         {
             // a and b have at least 1 element
-            while (true)
+            bool moreA = true;
+            bool moreB = true;
+            while (moreA && moreB)
             {
-                if (less(a.Current, b.Current))
+                switch (compare(a.Current, b.Current))
                 {
-                    yield return a.Current;
-                    if (a.MoveNext() == false)
+                    case -1:
                     {
-                        do
-                        {
-                            yield return b.Current;
-                        } while (b.MoveNext());
-                        yield break;
+                        yield return a.Current;
+                        moreA = a.MoveNext();
+                        break;
                     }
-                }
-                else
-                {
-                    yield return b.Current;
-                    if (b.MoveNext() == false)
+                    case 1:
                     {
-                        do
-                        {
-                            yield return a.Current;
-                        } while (a.MoveNext());
-                        yield break;
+                        yield return b.Current;
+                        moreB = b.MoveNext();
+                        break;
+                    }
+                    case 0: // merge duplicates
+                    {
+                        yield return a.Current;
+                        moreA = a.MoveNext();
+                        moreB = b.MoveNext();
+                        break;
                     }
                 }
             }
+            while (moreA)
+            {
+                yield return a.Current;
+                moreA = a.MoveNext();
+            }
+            while (moreB)
+            {
+                yield return b.Current;
+                moreB = b.MoveNext();
+            }
         }
 
-        public static IEnumerable<T> MergeSortedEnumerables<T>(IEnumerable<T> a, IEnumerable<T> b, Func<T, T, bool> less)
+        public static IEnumerable<T> MergeSortedEnumerables<T>(IEnumerable<T> a, IEnumerable<T> b, Func<T, T, int> compare)
         {
             var ea = a.GetEnumerator();
             var eb = b.GetEnumerator();
@@ -62,8 +72,27 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             {
                 return a;
             }
-            return MergeSortedEnumerators(ea, eb, less);
+            return MergeSortedEnumerators(ea, eb, compare);
         }
+
+        public static bool DictionariesDiffer<K, V>(IReadOnlyDictionary<K, V> a, IDictionary<K, V> b)
+        {
+            if (a == null)
+            {
+                return b != null;
+            }
+            else if (b == null)
+            {
+                return true;
+            }
+            else
+            {
+                var sa = a.OrderBy(kvp => kvp.Key);
+                var sb = b.OrderBy(kvp => kvp.Key);
+                return true;
+            }
+        }
+
     }
 
     // Internal class which holds the latest results for each category.
@@ -197,7 +226,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 {
                     var remotes = info.roomsRemote_.Values;
                     var locals = localRooms_.Where(r => r.Category == info.category_);
-                    rooms = new List<IRoom>(Extensions.MergeSortedEnumerables<IRoom>(remotes, locals, (a, b) => a.UniqueId.CompareTo(b.UniqueId) <= 0));
+                    rooms = new List<IRoom>(Extensions.MergeSortedEnumerables<IRoom>(remotes, locals, (a, b) => a.UniqueId.CompareTo(b.UniqueId)));
                     serial = info.roomSerial_;
                 }
             }
@@ -275,8 +304,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                             room.Connection = con;
                             updatedInfo = info;
                         }
-                        if (room.Attributes.OrderBy(kvp => kvp.Key)
-                            .SequenceEqual(attrs.OrderBy(kvp => kvp.Key)) == false)
+                        if (Extensions.DictionariesDiffer(room.Attributes, attrs))
                         {
                             room.Attributes = attrs;
                             updatedInfo = info;
@@ -323,7 +351,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     {
                         var category = br.ReadString();
                         IList<PeerLocalRoom> matching;
-                        lock(this)
+                        lock (this)
                         {
                             matching = localRooms_.FindAll(r => r.Category == category);
                         }
