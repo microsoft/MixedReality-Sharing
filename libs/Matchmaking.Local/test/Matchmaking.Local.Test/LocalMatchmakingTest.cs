@@ -210,41 +210,41 @@ namespace Matchmaking.Local.Test
                 }
             }
         }
-#if false
-        [Fact]
-        public void JoinRoomById()
-        {
-            using (var cts = new CancellationTokenSource(TestTimeoutMs))
-            using (var svc1 = MakeMatchmakingService(1))
-            using (var svc2 = MakeMatchmakingService(2))
-            {
-                // Create rooms from service1
-                var attributes1 = new Dictionary<string, string> { ["Id"] = "room1", ["prop1"] = "1", ["prop2"] = "2" };
-                var attributes2 = new Dictionary<string, string> { ["Id"] = "room2", ["prop1"] = "1", ["prop2"] = "2" };
-                var room1 = svc1.CreateRoomAsync("conn1", attributes1, cts.Token).Result;
-                var room2 = svc1.CreateRoomAsync("conn2", attributes2, cts.Token).Result;
 
-                // discover from service2
+        [Fact]
+        public void ServiceShutdownRemovesRooms()
+        {
+            // start discovery, then start services afterwards
+
+            using (var cts = new CancellationTokenSource(TestTimeoutMs))
+            using (var svc1 = matchmakingServiceFactory_(1))
+            {
+                const string category = "ServiceShutdownRemovesRooms";
+                var rooms1 = svc1.StartDiscovery(category);
+                Assert.Empty(rooms1.Rooms);
+
+                using (var svc2 = matchmakingServiceFactory_(2))
                 {
-                    var req1 = new Dictionary<string, string> { ["Id"] = "room1" };
-                    var rooms = svc2.StartDiscovery(req1);
-                    WaitForCollectionPredicate(rooms, () => rooms.Count > 0, cts.Token);
-                    svc2.StopDiscovery(rooms);
-                    Assert.Single(rooms);
-                    AssertSame(rooms.First(), room1);
+                    // Create rooms from svc2
+                    var room1 = svc2.CreateRoomAsync(category, "conn1", null, cts.Token).Result;
+
+                    // It should show up in svc1
+                    {
+                        var res1 = QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Any(), cts.Token);
+                        Assert.Single(res1);
+                        Assert.Equal(room1.UniqueId, res1.First().UniqueId);
+                    }
                 }
 
+                // After svc2 is shut down, its rooms should be gone from svc1
                 {
-                    var req2 = new Dictionary<string, string> { ["Id"] = "room2" };
-                    var rooms = svc2.StartDiscovery(req2);
-                    WaitForCollectionPredicate(rooms, () => rooms.Count > 0, cts.Token);
-                    svc2.StopDiscovery(rooms);
-                    Assert.Single(rooms);
-                    AssertSame(rooms.First(), room2);
+                    var res1 = QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Count == 0, cts.Token);
+                    Assert.Empty(res1);
                 }
             }
         }
-
+#if false
+    
         [Fact]
         public void Mix()
         {

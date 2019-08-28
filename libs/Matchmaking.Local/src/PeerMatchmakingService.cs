@@ -75,24 +75,27 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             return MergeSortedEnumerators(ea, eb, compare);
         }
 
-        public static bool DictionariesDiffer<K, V>(IReadOnlyDictionary<K, V> a, IDictionary<K, V> b)
+        public static bool DictionariesEqual<K, V>(IReadOnlyDictionary<K, V> a, IDictionary<K, V> b)
         {
-            if (a == null)
-            {
-                return b != null;
-            }
-            else if (b == null)
+            if (a == b) // same object or both null
             {
                 return true;
             }
-            else
+            else if (b == null || a == null) // only one null
+            {
+                return false;
+            }
+            else if (a.Count != b.Count)
+            {
+                return false;
+            }
+            else // Deep compare, using the sorted keyvalue pairs
             {
                 var sa = a.OrderBy(kvp => kvp.Key);
                 var sb = b.OrderBy(kvp => kvp.Key);
-                return true;
+                return sa.SequenceEqual(sb);
             }
         }
-
     }
 
     // Internal class which holds the latest results for each category.
@@ -304,7 +307,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                             room.Connection = con;
                             updatedInfo = info;
                         }
-                        if (Extensions.DictionariesDiffer(room.Attributes, attrs))
+                        if (Extensions.DictionariesEqual(room.Attributes, attrs) == false)
                         {
                             room.Attributes = attrs;
                             updatedInfo = info;
@@ -340,7 +343,26 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 }
                 case Proto.ServerByeBye:
                 {
-                    // TODO - check if it matches an existing query
+                    var ms = new MemoryStream(packet);
+                    ms.Position += 4;
+                    using (var br = new BinaryReader(ms))
+                    {
+                        int numRemoved = br.ReadInt32();
+                        lock (this)
+                        {
+                            for (int i = 0; i < numRemoved; ++i)
+                            {
+                                string cat = br.ReadString();
+                                byte[] uid = br.ReadBytes(16);
+                                PeerCategoryInfo info;
+                                if (infoFromCategory_.TryGetValue(cat, out info))
+                                {
+                                    info.roomsRemote_.Remove(new Guid(uid));
+                                    info.roomSerial_ += 1;
+                                }
+                            }
+                        }
+                    }
                     break;
                 }
                 case Proto.ClientQuery:
@@ -439,6 +461,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 w.Write(localRooms_.Count);
                 foreach (var room in localRooms_)
                 {
+                    w.Write(room.Category);
                     w.Write(room.UniqueId.ToByteArray());
                 }
             });
