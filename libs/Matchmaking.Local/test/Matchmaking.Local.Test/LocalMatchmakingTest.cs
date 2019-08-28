@@ -3,21 +3,23 @@
 
 using Microsoft.MixedReality.Sharing.Matchmaking;
 using System;
+using System.Net;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using Xunit;
+using Xunit.Sdk;
 
 namespace Matchmaking.Local.Test
 {
-    public class LocalMatchmakingTest
+    public abstract class LocalMatchmakingTest
     {
-        static private IMatchmakingService MakeMatchmakingService(int userIndex)
+        Func<int, IMatchmakingService> matchmakingServiceFactory_;
+
+        protected LocalMatchmakingTest(Func<int, IMatchmakingService> matchmakingServiceFactory)
         {
-            //var net = new MemoryPeerNetwork(userIndex);
-            var net = new UdpPeerNetwork(new IPEndPoint(0xffffff7f, 45277), new IPEndPoint(0x0000007f + (userIndex << 24), 45277));
-            return new PeerMatchmakingService(net);
+            matchmakingServiceFactory_ = matchmakingServiceFactory;
         }
 
         private static int TestTimeoutMs
@@ -41,7 +43,7 @@ namespace Matchmaking.Local.Test
         public void CreateRoom()
         {
             using (var cts = new CancellationTokenSource(TestTimeoutMs))
-            using (var svc1 = MakeMatchmakingService(1))
+            using (var svc1 = matchmakingServiceFactory_(1))
             {
                 var room1 = svc1.CreateRoomAsync("CreateRoom", "http://room1", null, cts.Token).Result;
 
@@ -149,11 +151,11 @@ namespace Matchmaking.Local.Test
         public void FindRoomsLocalAndRemote()
         {
             using (var cts = new CancellationTokenSource(TestTimeoutMs))
-            using (var svc1 = MakeMatchmakingService(1))
-            using (var svc2 = MakeMatchmakingService(2))
+            using (var svc1 = matchmakingServiceFactory_(1))
+            using (var svc2 = matchmakingServiceFactory_(2))
             {
                 // Create some rooms in the first one
-				const string category = "FindRoomsLocalAndRemote";
+                const string category = "FindRoomsLocalAndRemote";
                 var room1 = svc1.CreateRoomAsync(category, "Conn1", null, cts.Token).Result;
                 var room2 = svc1.CreateRoomAsync(category, "Conn2", null, cts.Token).Result;
                 var room3 = svc1.CreateRoomAsync(category, "Conn3", null, cts.Token).Result;
@@ -184,8 +186,8 @@ namespace Matchmaking.Local.Test
             // start discovery, then start services afterwards
 
             using (var cts = new CancellationTokenSource(TestTimeoutMs))
-            using (var svc1 = MakeMatchmakingService(1))
-            using (var svc2 = MakeMatchmakingService(2))
+            using (var svc1 = matchmakingServiceFactory_(1))
+            using (var svc2 = matchmakingServiceFactory_(2))
             {
                 const string category = "FindRoomsFromAnnouncement";
 
@@ -326,5 +328,31 @@ namespace Matchmaking.Local.Test
             }
         }
 #endif
+    }
+
+    public class LocalMatchmakingTestUdp : LocalMatchmakingTest
+    {
+        static private IMatchmakingService MakeMatchmakingService(int userIndex)
+        {
+            var net = new UdpPeerNetwork(new IPEndPoint(0xffffff7f, 45277), new IPEndPoint(0x0000007f + (userIndex << 24), 45277));
+            return new PeerMatchmakingService(net);
+        }
+
+        public LocalMatchmakingTestUdp() : base(MakeMatchmakingService) { }
+    }
+
+    public class LocalMatchmakingTestMemory : LocalMatchmakingTest
+    {
+        static private IMatchmakingService MakeMatchmakingService(int userIndex)
+        {
+            var net = new MemoryPeerNetwork(userIndex);
+            return new PeerMatchmakingService(net);
+        }
+
+        public LocalMatchmakingTestMemory()
+            : base(MakeMatchmakingService)
+        {
+
+        }
     }
 }
