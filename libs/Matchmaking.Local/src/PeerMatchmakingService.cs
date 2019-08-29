@@ -17,7 +17,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
     public static class Extensions
     {
-        // Return true iff isOk( a[n], a[n+1] ) is true for all n. Or if a has 0 or 1 element.
+        // Return true if (Count(a)<= 1) or (isOk( a[n], a[n+1] ) is true for all n).
         public static bool CheckAdjacenctElements<T>(IEnumerable<T> a, Func<T, T, bool> isOk)
         {
             var ea = a.GetEnumerator();
