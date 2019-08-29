@@ -12,7 +12,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     public interface IRoom
     {
         /// <summary>
-        /// The category of room. This is an application-defined free form URI.
+        /// The category of room. This is an application-defined URI.
         /// </summary>
         string Category { get; }
 
@@ -22,7 +22,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         Guid UniqueId { get; }
 
         /// <summary>
-        /// An implementation specific connection string which can be used to join this room.
+        /// An application specific connection string which can be used to join this room.
         /// </summary>
         string Connection { get; }
 

@@ -17,6 +17,38 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
     public static class Extensions
     {
+        // Return true iff isOk( a[n], a[n+1] ) is true for all n. Or if a has 0 or 1 element.
+        public static bool CheckAdjacenctElements<T>(IEnumerable<T> a, Func<T, T, bool> isOk)
+        {
+            var ea = a.GetEnumerator();
+            if (ea.MoveNext())
+            {
+                var prev = ea.Current;
+                while (ea.MoveNext())
+                {
+                    var cur = ea.Current;
+                    if (isOk(prev, cur))
+                    {
+                        prev = cur;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        internal class RoomComparer : IComparer<IRoom>
+        {
+            public int Compare(IRoom a, IRoom b)
+            {
+                return a.UniqueId.CompareTo(b.UniqueId);
+            }
+        }
+
+
         public static IEnumerable<T> MergeSortedEnumerators<T>(IEnumerator<T> a, IEnumerator<T> b, Func<T, T, int> compare)
         {
             // a and b have at least 1 element
@@ -64,11 +96,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             var ea = a.GetEnumerator();
             var eb = b.GetEnumerator();
             // early outs for empty lists
-            if (ea.MoveNext() == false)
+            if (!ea.MoveNext())
             {
                 return b;
             }
-            if (eb.MoveNext() == false)
+            if (!eb.MoveNext())
             {
                 return a;
             }
@@ -123,14 +155,19 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     {
         PeerMatchmakingService service_;
         PeerCategoryInfo info_;
-        IList<IRoom> cachedRooms_ = null;
+        List<IRoom> cachedRooms_ = null;
         int cachedRoomsSerial_ = -1;
 
-        public IList<IRoom> Rooms
+        public IEnumerable<IRoom> Rooms
         {
             get
             {
-                service_.TaskUpdateRooms(info_, ref cachedRooms_, ref cachedRoomsSerial_);
+                var updated = service_.TaskFetchRooms(info_, cachedRoomsSerial_);
+                if (updated != null)
+                {
+                    cachedRoomsSerial_ = updated.Item1;
+                    cachedRooms_ = updated.Item2;
+                }
                 return cachedRooms_;
             }
         }
@@ -139,10 +176,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         public void FireUpdated()
         {
-            if (Updated != null)
-            {
-                Updated.Invoke(this);
-            }
+            Updated?.Invoke(this);
         }
 
         public void Dispose()
@@ -208,7 +242,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// The network for this matchmaking
         IPeerNetwork network_;
         /// The list of all local rooms of all categories
-        internal List<PeerLocalRoom> localRooms_ = new List<PeerLocalRoom>();
+        internal SortedSet<PeerLocalRoom> localRooms_ = new SortedSet<PeerLocalRoom>(new Extensions.RoomComparer());
         /// The list of all local rooms of all categories
         IDictionary<string, PeerCategoryInfo> infoFromCategory_ = new Dictionary<string, PeerCategoryInfo>();
 
@@ -221,17 +255,20 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         // Task helpers
 
-        internal void TaskUpdateRooms(PeerCategoryInfo info, ref IList<IRoom> rooms, ref int serial)
+        // return the new list of rooms or null if the serial hasn't changed.
+        internal Tuple<int, List<IRoom>> TaskFetchRooms(PeerCategoryInfo info, int serial)
         {
             lock (this) // Update the cached copy if it has changed
             {
-                if (info.roomSerial_ != serial)
+                if (info.roomSerial_ == serial)
                 {
-                    var remotes = info.roomsRemote_.Values;
-                    var locals = localRooms_.Where(r => r.Category == info.category_);
-                    rooms = new List<IRoom>(Extensions.MergeSortedEnumerables<IRoom>(remotes, locals, (a, b) => a.UniqueId.CompareTo(b.UniqueId)));
-                    serial = info.roomSerial_;
+                    return null;
                 }
+                var remotes = info.roomsRemote_.Values;
+                var locals = localRooms_.Where(r => r.Category == info.category_);
+                Debug.Assert(Extensions.CheckAdjacenctElements(locals, (a, b) => a.UniqueId.CompareTo(b.UniqueId) < 0));
+                var lst = new List<IRoom>(Extensions.MergeSortedEnumerables<IRoom>(locals, remotes, (a, b) => a.UniqueId.CompareTo(b.UniqueId)));
+                return new Tuple<int, List<IRoom>>(info.roomSerial_, lst);
             }
         }
 
@@ -283,12 +320,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 {
                     // see if the category is relevant to us, we created a info in StartDiscovery if so.
                     PeerCategoryInfo info;
-                    if (infoFromCategory_.TryGetValue(cat, out info) == false)
+                    if (!infoFromCategory_.TryGetValue(cat, out info))
                     {
                         return; // we don't care about this category
                     }
                     PeerRemoteRoom room;
-                    if (info.roomsRemote_.TryGetValue(uid, out room) == false) // new room
+                    if (!info.roomsRemote_.TryGetValue(uid, out room)) // new room
                     {
                         room = new PeerRemoteRoom(cat, uid, con, attrs);
                         info.roomsRemote_[uid] = room;
@@ -307,7 +344,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                             room.Connection = con;
                             updatedInfo = info;
                         }
-                        if (Extensions.DictionariesEqual(room.Attributes, attrs) == false)
+                        if (!Extensions.DictionariesEqual(room.Attributes, attrs))
                         {
                             room.Attributes = attrs;
                             updatedInfo = info;
@@ -372,10 +409,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     using (var br = new BinaryReader(ms))
                     {
                         var category = br.ReadString();
-                        IList<PeerLocalRoom> matching;
+                        PeerLocalRoom[] matching;
                         lock (this)
                         {
-                            matching = localRooms_.FindAll(r => r.Category == category);
+                            matching = (from lr in localRooms_
+                                        where lr.Category == category
+                                        select lr).ToArray();
                         }
                         foreach (var room in matching)
                         {
@@ -404,7 +443,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             {
                 // Create internals for this category if it doesn't already exist.
                 PeerCategoryInfo info;
-                if (infoFromCategory_.TryGetValue(category, out info) == false)
+                if (!infoFromCategory_.TryGetValue(category, out info))
                 {
                     info = new PeerCategoryInfo(category);
                     infoFromCategory_.Add(category, info);

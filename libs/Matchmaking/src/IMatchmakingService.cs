@@ -16,7 +16,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// <summary>
         /// The list of discovered rooms, ordered by IRoom.UniqueId.
         /// </summary>
-        IList<IRoom> Rooms { get; }
+        IEnumerable<IRoom> Rooms { get; }
 
         /// <summary>
         /// Event raised when the 'Rooms' property will return an updated result.

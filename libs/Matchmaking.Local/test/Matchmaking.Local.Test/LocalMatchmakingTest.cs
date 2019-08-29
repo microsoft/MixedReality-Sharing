@@ -97,9 +97,9 @@ namespace Matchmaking.Local.Test
 
         // Run a query and wait for the predicate to be satisfied.
         // Return the list of rooms which satisfied the predicate or null if cancelled before the preducate was satisfied.
-        private IList<IRoom> QueryAndWaitForRoomsPredicate(
+        private IEnumerable<IRoom> QueryAndWaitForRoomsPredicate(
             IMatchmakingService svc, string type,
-            Func<IList<IRoom>, bool> pred, CancellationToken token)
+            Func<IEnumerable<IRoom>, bool> pred, CancellationToken token)
         {
             using (var result = svc.StartDiscovery(type))
             {
@@ -162,7 +162,7 @@ namespace Matchmaking.Local.Test
 
                 // Discover them from the first service
                 {
-                    var rooms = QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Count >= 3, cts.Token);
+                    var rooms = QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Count() >= 3, cts.Token);
                     Assert.Equal(3, rooms.Count());
                     Assert.Contains(rooms, r => r.UniqueId.Equals(room1.UniqueId));
                     Assert.Contains(rooms, r => r.UniqueId.Equals(room2.UniqueId));
@@ -171,7 +171,7 @@ namespace Matchmaking.Local.Test
 
                 // And also from the second
                 {
-                    var rooms = QueryAndWaitForRoomsPredicate(svc2, category, rl => rl.Count >= 3, cts.Token);
+                    var rooms = QueryAndWaitForRoomsPredicate(svc2, category, rl => rl.Count() >= 3, cts.Token);
                     Assert.Equal(3, rooms.Count());
                     Assert.Contains(rooms, r => r.UniqueId.Equals(room1.UniqueId));
                     Assert.Contains(rooms, r => r.UniqueId.Equals(room2.UniqueId));
@@ -238,7 +238,7 @@ namespace Matchmaking.Local.Test
 
                 // After svc2 is shut down, its rooms should be gone from svc1
                 {
-                    var res1 = QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Count == 0, cts.Token);
+                    var res1 = QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Count() == 0, cts.Token);
                     Assert.Empty(res1);
                 }
             }

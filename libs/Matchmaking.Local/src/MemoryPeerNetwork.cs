@@ -43,7 +43,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             // any existing iterators.
             lock (instances_)
             {
-                Debug.Assert(instances_.Contains(this) == false);
+                Debug.Assert(!instances_.Contains(this));
                 var i = new List<MemoryPeerNetwork>(instances_);
                 i.Add(this);
                 instances_ = i;
