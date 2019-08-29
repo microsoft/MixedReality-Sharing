@@ -15,10 +15,10 @@ using System.Threading.Tasks;
 
 namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
-    public static class Extensions
+    internal static class Extensions
     {
         // Return true if (Count(a)<= 1) or (isOk( a[n], a[n+1] ) is true for all n).
-        public static bool CheckAdjacenctElements<T>(IEnumerable<T> a, Func<T, T, bool> isOk)
+        internal static bool CheckAdjacenctElements<T>(IEnumerable<T> a, Func<T, T, bool> isOk)
         {
             var ea = a.GetEnumerator();
             if (ea.MoveNext())
@@ -91,7 +91,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
         }
 
-        public static IEnumerable<T> MergeSortedEnumerables<T>(IEnumerable<T> a, IEnumerable<T> b, Func<T, T, int> compare)
+        internal static IEnumerable<T> MergeSortedEnumerables<T>(IEnumerable<T> a, IEnumerable<T> b, Func<T, T, int> compare)
         {
             var ea = a.GetEnumerator();
             var eb = b.GetEnumerator();
@@ -107,7 +107,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             return MergeSortedEnumerators(ea, eb, compare);
         }
 
-        public static bool DictionariesEqual<K, V>(IReadOnlyDictionary<K, V> a, IDictionary<K, V> b)
+        internal static bool DictionariesEqual<K, V>(IReadOnlyDictionary<K, V> a, IDictionary<K, V> b)
         {
             if (a == b) // same object or both null
             {
@@ -121,8 +121,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             {
                 return false;
             }
-            else // Deep compare, using the sorted keyvalue pairs
+            else // Deep compare, using the sorted keyvalue pairs.
             {
+                // potentially slow for large dictionaries
                 var sa = a.OrderBy(kvp => kvp.Key);
                 var sb = b.OrderBy(kvp => kvp.Key);
                 return sa.SequenceEqual(sb);
