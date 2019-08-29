@@ -48,8 +48,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
         }
 
-
-        public static IEnumerable<T> MergeSortedEnumerators<T>(IEnumerator<T> a, IEnumerator<T> b, Func<T, T, int> compare)
+        // Helper method for MergeSortedEnumerables. Assumes "a" and "b" have had MoveNext already called.
+        private static IEnumerable<T> MergeSortedEnumerators<T>(IEnumerator<T> a, IEnumerator<T> b, Func<T, T, int> compare)
         {
             // a and b have at least 1 element
             bool moreA = true;
