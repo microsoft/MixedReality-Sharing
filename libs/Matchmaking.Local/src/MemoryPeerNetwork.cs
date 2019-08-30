@@ -68,10 +68,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             var m = new MemoryPeerNetworkMessage(this, message);
             foreach (var c in instances_)
             {
-                if (c != this)
-                {
-                    c.incoming_.Enqueue(m);
-                }
+                c.incoming_.Enqueue(m);
             }
             PumpNetwork();
         }
@@ -99,7 +96,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     MemoryPeerNetworkMessage msg;
                     while (c.incoming_.TryDequeue(out msg))
                     {
-                        c.Message.Invoke(c, msg);
+                        c.Message?.Invoke(c, msg);
                     }
                 }
 
