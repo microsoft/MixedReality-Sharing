@@ -27,58 +27,54 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         Socket socket_;
         EndPoint broadcastEndpoint_;
         EndPoint localEndpoint_;
-        class AsyncReadData
-        {
-            internal byte[] buffer_ = new byte[1024];
-            internal EndPoint sender_ = new IPEndPoint(IPAddress.Any, 0);
-        }
-        AsyncReadData asyncReadData_ = new AsyncReadData();
+
+        private readonly EndPoint anywhere_ = new IPEndPoint(IPAddress.Any, 0);
+        private readonly byte[] readBuffer_ = new byte[1024];
+        private readonly ArraySegment<byte> readSegment_;
 
         public UdpPeerNetwork(EndPoint broadcast, EndPoint local)
         {
+            readSegment_ = new ArraySegment<byte>(readBuffer_);
             broadcastEndpoint_ = broadcast;
             localEndpoint_ = local;
         }
 
-        private void HandleAsyncRead(IAsyncResult ar)
+        private void HandleAsyncRead(Task<SocketReceiveFromResult> task)
         {
-            Debug.Assert(ar.AsyncState == asyncReadData_);
-            int nb;
-            try
+            if (task.IsFaulted)
             {
-                nb = socket_.EndReceiveFrom(ar, ref asyncReadData_.sender_);
-            }
-            catch (ObjectDisposedException)
-            {
+                task.Exception.Handle(e =>
+                {
+                    // If the socket has been closed, quit gracefully.
+                    return e is ObjectDisposedException;
+                });
                 return;
             }
-            Debug.Assert(nb > 0);
-            var buf = new byte[nb];
-            Array.Copy(asyncReadData_.buffer_, 0, buf, 0, nb);
-            Message.Invoke(this, new UdpPeerNetworkMessage(asyncReadData_.sender_, buf));
 
-            // listen again
-            var s = asyncReadData_.sender_ as IPEndPoint;
-            s.Address = IPAddress.Any;
-            s.Port = 0;
-            socket_.BeginReceiveFrom(asyncReadData_.buffer_, 0, 1024, SocketFlags.None,
-                ref asyncReadData_.sender_, HandleAsyncRead, asyncReadData_);
+            // Dispatch the message.
+            var result = task.Result;
+            var buf = new byte[result.ReceivedBytes];
+            Array.Copy(readBuffer_, 0, buf, 0, buf.Length);
+            Message.Invoke(this, new UdpPeerNetworkMessage(result.RemoteEndPoint, buf));
+
+            // Listen again.
+            socket_.ReceiveFromAsync(readSegment_, SocketFlags.None, anywhere_)
+                .ContinueWith(HandleAsyncRead);
         }
 
         public void Start()
         {
             Debug.Assert(socket_ == null);
-            socket_ = new Socket(SocketType.Dgram, ProtocolType.Udp);
+            socket_ = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             socket_.Bind(localEndpoint_);
             socket_.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, 1);
 
-            socket_.BeginReceiveFrom(asyncReadData_.buffer_, 0, 1024, SocketFlags.None,
-                ref asyncReadData_.sender_, HandleAsyncRead, asyncReadData_);
+            socket_.ReceiveFromAsync(readSegment_, SocketFlags.None, anywhere_)
+                .ContinueWith(HandleAsyncRead);
         }
 
         public void Stop()
         {
-            socket_.Close();
             socket_.Dispose();
             socket_ = null;
         }
