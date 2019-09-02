@@ -76,7 +76,6 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         public void Stop()
         {
             socket_.Dispose();
-            socket_ = null;
         }
 
         public event Action<IPeerNetwork, IPeerNetworkMessage> Message;
