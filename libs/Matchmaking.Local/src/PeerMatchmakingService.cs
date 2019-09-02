@@ -174,6 +174,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         internal void Stop()
         {
+            net_.Message -= ServerOnMessage;
             Extensions.Broadcast(net_, (BinaryWriter w) =>
             {
                 w.Write(Proto.ServerByeBye);
@@ -184,7 +185,6 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     w.Write(room.UniqueId.ToByteArray());
                 }
             });
-            net_.Message -= ServerOnMessage;
         }
 
         internal Task<IRoom> CreateRoomAsync(
@@ -304,7 +304,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         internal IDiscoveryTask StartDiscovery(string category)
         {
-            lock(this)
+            lock (this)
             {
                 // Create internals for this category if it doesn't already exist.
                 CategoryInfo info;
@@ -454,7 +454,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     attrs.Add(k, v);
                 }
 
-                CategoryInfo updatedInfo = null;
+                DiscoveryTask[] tasksUpdated = null;
                 lock (this)
                 {
                     // see if the category is relevant to us, we created a info in StartDiscovery if so.
@@ -464,35 +464,40 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                         return; // we don't care about this category
                     }
                     RemoteRoom room;
+                    bool updated = false;
                     if (!info.roomsRemote_.TryGetValue(uid, out room)) // new room
                     {
                         room = new RemoteRoom(cat, uid, con, attrs);
                         info.roomsRemote_[uid] = room;
                         info.roomSerial_ += 1;
-                        updatedInfo = info;
+                        updated = true;
                     }
                     else // existing room, has it changed?
                     {
                         if (room.Category != cat)
                         {
                             room.Category = cat;
-                            updatedInfo = info;
+                            updated = true;
                         }
                         if (room.Connection != con)
                         {
                             room.Connection = con;
-                            updatedInfo = info;
+                            updated = true;
                         }
                         if (!Extensions.DictionariesEqual(room.Attributes, attrs))
                         {
                             room.Attributes = attrs;
-                            updatedInfo = info;
+                            updated = true;
                         }
                     }
+                    if (updated)
+                    {
+                        tasksUpdated = info.tasks_.ToArray();
+                    }
                 }
-                if (updatedInfo != null) // outside the lock
+                if (tasksUpdated != null) // outside the lock
                 {
-                    foreach (var t in updatedInfo.tasks_)
+                    foreach (var t in tasksUpdated)
                     {
                         t.FireUpdated();
                     }
@@ -573,7 +578,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         public PeerMatchmakingService(IPeerNetwork network)
         {
             this.network_ = network;
-			network_.Start();
+            network_.Start();
         }
 
         // public interface implementations
