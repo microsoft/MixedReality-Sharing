@@ -615,6 +615,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         {
             server_?.Stop();
             client_?.Stop();
+
+            // Give some time for the ByeBye message to be sent before shutting down the sockets.
+            // todo is there a smarter way to do this?
+            Thread.Sleep(1);
+
             network_.Stop();
             network_ = null;
         }
