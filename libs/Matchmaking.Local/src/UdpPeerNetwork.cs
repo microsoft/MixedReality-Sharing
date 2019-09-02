@@ -55,7 +55,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             Debug.Assert(nb > 0);
             var buf = new byte[nb];
             Array.Copy(asyncReadData_.buffer_, 0, buf, 0, nb);
-            Message.Invoke(this, new UdpPeerNetworkMessage(asyncReadData_.sender_, buf));
+            Message?.Invoke(this, new UdpPeerNetworkMessage(asyncReadData_.sender_, buf));
 
             // listen again
             var s = asyncReadData_.sender_ as IPEndPoint;
