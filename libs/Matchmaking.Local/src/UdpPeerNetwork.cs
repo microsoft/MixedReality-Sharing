@@ -80,7 +80,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         public void Start()
         {
             Debug.Assert(socket_ == null);
-            socket_ = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            socket_ = new Socket(broadcastEndpoint_.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
             socket_.Bind(localEndpoint_);
 
             if (joinMulticastGroup_ == JoinMulticastGroup.Join)
