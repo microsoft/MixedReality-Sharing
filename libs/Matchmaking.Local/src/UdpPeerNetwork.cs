@@ -94,7 +94,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                                                 SocketOptionName.AddMembership,
                                                 mcastOption);
                 }
-                else //< IPv6
+                else if (broadcastEndpoint_.AddressFamily == AddressFamily.InterNetworkV6)
                 {
                     IPv6MulticastOption mcastOption;
                     var ifaceIdx = GetIfaceIdxFromAddress(localEndpoint_.Address);
@@ -103,6 +103,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     socket_.SetSocketOption(SocketOptionLevel.IP,
                                                 SocketOptionName.AddMembership,
                                                 mcastOption);
+                }
+                else
+                {
+                    // Should never happen
+                    throw new NotSupportedException($"Invalid address family: {broadcastEndpoint_.AddressFamily}");
                 }
             }
             else
