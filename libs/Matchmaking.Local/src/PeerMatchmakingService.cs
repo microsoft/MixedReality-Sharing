@@ -618,7 +618,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
             // Give some time for the ByeBye message to be sent before shutting down the sockets.
             // todo is there a smarter way to do this?
-            Thread.Sleep(1);
+            Task.Delay(1).Wait();
 
             network_.Stop();
             network_ = null;
