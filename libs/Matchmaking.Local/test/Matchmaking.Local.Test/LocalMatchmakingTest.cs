@@ -134,19 +134,6 @@ namespace Matchmaking.Local.Test
             }
         }
 
-#if false
-        private void AssertSame(IRoom lhs, IRoom rhs)
-        {
-            AssertSame(lhs, (IRoomInfo)rhs);
-
-            var lParticipants = lhs.Participants.OrderBy(p => p.IdInRoom);
-            var rParticipants = rhs.Participants.OrderBy(p => p.IdInRoom);
-            // Participant IDs in room are equal.
-            Assert.True(lParticipants.Select(p => p.IdInRoom).SequenceEqual(rParticipants.Select(p => p.IdInRoom)));
-            // Match participant IDs are equal.
-            Assert.True(lParticipants.Select(p => p.MatchParticipant.Id).SequenceEqual(rParticipants.Select(p => p.MatchParticipant.Id)));
-        }
-#endif
         [Fact]
         public void FindRoomsLocalAndRemote()
         {
@@ -243,91 +230,6 @@ namespace Matchmaking.Local.Test
                 }
             }
         }
-#if false
-    
-        [Fact]
-        public void Mix()
-        {
-            using (var svc1 = MakeMatchmakingService(1))
-            using (var svc2 = MakeMatchmakingService(2))
-            using (var svc3 = MakeMatchmakingService(3))
-            {
-                var room1 = svc1.CreateRoomAsync(
-                    "MixRoomConn",
-                    new Dictionary<string, string> { ["prop1"] = "1", ["prop2"] = "2" }
-                    ).Result;
-
-#if false
-                IRoom foundRoom = null;
-                {
-                    var rooms = svc2.StartDiscovery(null);
-                    var ev = new AutoResetEvent(false);
-                    roomList.ListUpdated += (object sender, IRoomList updated) =>
-                    {
-                        var list = updated.Rooms;
-                        Assert.Single(list);
-                        foundRoom = list.ElementAt(0);
-                        Assert.Equal(foundRoom.Id, room1.Id);
-                        ev.Set();
-                    };
-                    ev.WaitOne(TestTimeoutMs);
-                }
-                Assert.NotNull(foundRoom);
-                Assert.Equal(room1.Id, foundRoom.Id);
-                {
-                    var cts = new CancellationTokenSource(TestTimeoutMs);
-                    while (room2.Attributes.Count != room1.Attributes.Count)
-                    {
-                        cts.Token.ThrowIfCancellationRequested();
-                    }
-                }
-                Assert.Equal(room1.Attributes, room2.Attributes);
-
-
-                room2.SetAttributesAsync(new Dictionary<string, string> { ["prop1"] = "42" }).Wait();
-                Assert.Equal(42, room2.Attributes["prop1"]);
-                {
-                    var cts = new CancellationTokenSource(TestTimeoutMs);
-                    while (!room1.Attributes["prop1"].Equals(42))
-                    {
-                        cts.Token.ThrowIfCancellationRequested();
-                    }
-                }
-                Assert.Equal(2, room1.Participants.Count());
-                Assert.Equal(2, room2.Participants.Count());
-
-                var room3 = (RoomBase)ctx3.Service.JoinRandomRoomAsync().Result;
-                Assert.Equal(room1.Id, room3.Id);
-                {
-                    var cts = new CancellationTokenSource(TestTimeoutMs);
-                    while (room3.Attributes.Count != 2)
-                    {
-                        cts.Token.ThrowIfCancellationRequested();
-                    }
-                }
-
-                AssertSameAttributes(room1, room3);
-                Assert.Equal(3, room1.Participants.Count());
-                Assert.Equal(3, room2.Participants.Count());
-                Assert.Equal(3, room3.Participants.Count());
-
-                room2.SendMessage(room2.Participants.First(p => p.MatchParticipant != null && p.MatchParticipant.Id.Equals(ctx3.PFactory.LocalParticipantId)), Encoding.UTF8.GetBytes("hello"));
-                {
-                    var ev = new ManualResetEventSlim();
-                    room3.MessageReceived += (object o, MessageReceivedArgs args) =>
-                    {
-                        Assert.Equal(ctx2.PFactory.LocalParticipantId, args.Sender.MatchParticipant.Id);
-                        Assert.Equal("hello", Encoding.UTF8.GetString(args.Payload));
-                        ev.Set();
-                    };
-
-                    var cts = new CancellationTokenSource(TestTimeoutMs);
-                    ev.Wait(cts.Token);
-                }
-#endif
-            }
-        }
-#endif
     }
 
     public class LocalMatchmakingTestUdp : LocalMatchmakingTest
@@ -339,6 +241,20 @@ namespace Matchmaking.Local.Test
         }
 
         public LocalMatchmakingTestUdp() : base(MakeMatchmakingService) { }
+    }
+
+    public class LocalMatchmakingTestUdpMulticast : LocalMatchmakingTest
+    {
+        static private IMatchmakingService MakeMatchmakingService(int userIndex)
+        {
+            var net = new UdpPeerNetwork(
+                new IPEndPoint(0x000000e0, 45278),
+                new IPEndPoint(0x0000007f + (userIndex << 24), 45278),
+                UdpPeerNetwork.JoinMulticastGroup.Join);
+            return new PeerMatchmakingService(net);
+        }
+
+        public LocalMatchmakingTestUdpMulticast() : base(MakeMatchmakingService) { }
     }
 
     public class LocalMatchmakingTestMemory : LocalMatchmakingTest
