@@ -23,27 +23,28 @@ namespace Microsoft::MixedReality::Sharing::VersionedStorage {
 
 class AbstractKey {
  public:
-  constexpr uint64_t hash() const noexcept { return key_hash_; }
+  [[nodiscard]] constexpr uint64_t hash() const noexcept { return key_hash_; }
 
-  virtual bool IsEqualTo(KeyHandle key) const noexcept = 0;
-
-  // Must be consistent with Behavior::Less().
-  virtual bool IsLessThan(KeyHandle key) const noexcept = 0;
+  [[nodiscard]] virtual bool IsEqualTo(KeyHandle key) const noexcept = 0;
 
   // Must be consistent with Behavior::Less().
-  virtual bool IsGreaterThan(KeyHandle key) const noexcept = 0;
+  [[nodiscard]] virtual bool IsLessThan(KeyHandle key) const noexcept = 0;
+
+  // Must be consistent with Behavior::Less().
+  [[nodiscard]] virtual bool IsGreaterThan(KeyHandle key) const noexcept = 0;
 
   // No other methods will be called after this one, so if this
   // AbstractKey owns the handle already, it can just transfer the
   // ownership (possibly making this object unusable).
-  virtual KeyHandle MakeHandle() noexcept = 0;
+  [[nodiscard]] virtual KeyHandle MakeHandle() noexcept = 0;
 
   // As above, but the implementation is allowed to duplicate
   // existing_handle if it's cheaper (for example, if keys are interned
   // reference counted objects, and this AbstractKey doesn't own a
   // KeyHandle already, it may be cheaper to add a reference to
   // existing_handle).
-  virtual KeyHandle MakeHandle(KeyHandle existing_handle) noexcept = 0;
+  [[nodiscard]] virtual KeyHandle MakeHandle(
+      KeyHandle existing_handle) noexcept = 0;
 
  protected:
   AbstractKey(uint64_t key_hash) : key_hash_(key_hash) {}

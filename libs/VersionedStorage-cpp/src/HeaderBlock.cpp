@@ -21,6 +21,7 @@
 
 namespace Microsoft::MixedReality::Sharing::VersionedStorage {
 namespace {
+
 constexpr uint32_t GetSlotHash8FromHash(uint64_t hash) {
   return static_cast<uint8_t>(hash);
 }
@@ -53,6 +54,7 @@ struct HashMasks {
 };
 constexpr HashMasks kHashMasks;
 #endif  // #ifdef MS_MR_STATESYNC_PLATFORM_AMD64
+
 }  // namespace
 
 inline bool HeaderBlock::IsVersionFromThisBlock(uint64_t version) const
@@ -488,6 +490,7 @@ SubkeyBlockStateSearchResult HeaderBlock::Accessor::InsertSubkeyBlock(
 
 bool HeaderBlock::Accessor::ReserveSpaceForTransaction(
     KeyBlockStateSearchResult& search_result) noexcept {
+  assert(search_result.state_block_);
   KeyStateBlock& state_block = *search_result.state_block_;
   KeyVersionBlock* const version_block = search_result.version_block_;
   if (version_block) {
@@ -497,7 +500,7 @@ bool HeaderBlock::Accessor::ReserveSpaceForTransaction(
   } else if (state_block.HasFreeInPlaceSlots()) {
     return true;
   }
-  uint32_t available_data_blocks_count =
+  const uint32_t available_data_blocks_count =
       header_block_.available_data_blocks_count();
   if (available_data_blocks_count == 0)
     return false;
@@ -554,10 +557,9 @@ bool HeaderBlock::Accessor::ReserveSpaceForTransaction(
     SubkeyBlockStateSearchResult& search_result,
     uint64_t new_version,
     bool has_value) noexcept {
+  assert(search_result.state_block_);
   VersionedPayloadHandle current_payload =
-      search_result.version_block_
-          ? search_result.version_block_->GetLatestVersionedPayload()
-          : search_result.state_block_->GetLatestVersionedPayload();
+      search_result.GetLatestVersionedPayload();
   SubkeyStateBlock& state_block = *search_result.state_block_;
   SubkeyVersionBlock* const version_block = search_result.version_block_;
 
@@ -690,7 +692,8 @@ void HeaderBlock::RemoveSnapshotReference(uint64_t version,
       // We are doing two passes. First pass cleans up all subkeys, second
       // pass cleans up all keys. This is done in case subkeys' payloads
       // contain non-owning pointers to keys that are referenced from the
-      // destructor.
+      // destructor (and subkey blocks don't own the key handles, they just have
+      // a local copy of the key handle from the containing KeyStateBlock).
       for (uint32_t index_block_id = 0; index_block_id <= index_blocks_mask_;
            ++index_block_id) {
         const IndexBlock& index = accessor.GetIndexBlock(index_block_id);
@@ -770,9 +773,7 @@ bool HeaderBlock::CanInsertStateBlocks(size_t extra_state_blocks_count) const
   if (extra_state_blocks_count > remaining_index_slots_capacity_)
     return false;
 
-  return extra_state_blocks_count <=
-         data_blocks_capacity_ - stored_data_blocks_count_ -
-             (stored_versions_count() / VersionRefCount::kCountsPerBlock);
+  return extra_state_blocks_count <= available_data_blocks_count();
 }
 
 HeaderBlock* HeaderBlock::CreateBlob(Behavior& behavior,

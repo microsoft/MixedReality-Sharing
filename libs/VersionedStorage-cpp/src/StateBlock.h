@@ -155,6 +155,8 @@ class alignas(kBlockSize) KeyStateBlock : public StateBlockBase {
     return inplace_versions_count < 3;
   }
 
+  // Intentionally uninitialized.
+  // These variables are not accessed unless a version has been pushed.
   VersionedSubkeysCount inplace_payloads_[3];
 
   // Atomic append-only list of subkeys associated with this key.
@@ -247,6 +249,7 @@ class alignas(kBlockSize) SubkeyStateBlock : public StateBlockBase {
   // Payloads are modified at most once during the lifetime of this block,
   // and they will never be used before they are initialized, and then either
   // version_0_ or version_offset_ from the base class are published.
+  // The initial state is intentionally uninitialized.
   PayloadHandle payloads_[2];
   const uint64_t subkey_;
 };

@@ -18,10 +18,10 @@ class Behavior {
   // If the behavior is used with a replicated storage, the hash must never
   // depend on non-deterministic conditions, such as addresses of allocated
   // keys.
-  virtual uint64_t GetHash(KeyHandle handle) const noexcept = 0;
+  [[nodiscard]] virtual uint64_t GetHash(KeyHandle handle) const noexcept = 0;
 
-  virtual bool Equal(KeyHandle a, KeyHandle b) const noexcept = 0;
-  virtual bool Less(KeyHandle a, KeyHandle b) const noexcept = 0;
+  [[nodiscard]] virtual bool Equal(KeyHandle a, KeyHandle b) const noexcept = 0;
+  [[nodiscard]] virtual bool Less(KeyHandle a, KeyHandle b) const noexcept = 0;
 
   // Returns true if payloads are identical.
   // The implementation is allowed to just compare the handles if comparing the
@@ -32,7 +32,8 @@ class Behavior {
   // * Transactions may change the subkey to the same value,
   //   and then trigger subscription callbacks with identical
   //   "before" and "after" values.
-  virtual bool Equal(PayloadHandle a, PayloadHandle b) const noexcept = 0;
+  [[nodiscard]] virtual bool Equal(PayloadHandle a, PayloadHandle b) const
+      noexcept = 0;
 
   virtual void Release(KeyHandle handle) noexcept = 0;
   virtual void Release(PayloadHandle handle) noexcept = 0;
@@ -44,19 +45,22 @@ class Behavior {
   // (for example, if the handle represents the integer key).
   // Duplicating a handle must always result in a handle for which GetHash(),
   // Equal() and Less() will behave the same way as for the original handle.
-  virtual KeyHandle DuplicateHandle(KeyHandle handle) noexcept = 0;
+  [[nodiscard]] virtual KeyHandle DuplicateHandle(
+      KeyHandle handle) noexcept = 0;
 
   // The implementation is allowed to return the same handle if it can just
   // increment its reference count, or if references are irrelevant
   // (for example, if the handle represents the integer payload).
   // Duplicating a handle must always result in a handle for which Equal() will
   // behave the same way as for the original handle.
-  virtual PayloadHandle DuplicateHandle(PayloadHandle handle) noexcept = 0;
+  [[nodiscard]] virtual PayloadHandle DuplicateHandle(
+      PayloadHandle handle) noexcept = 0;
 
   // Allocates pages_count pages, each is 4096 bytes large.
   // The returned address should be page-aligned.
   // Returns nullptr if the allocation is not possible.
-  virtual void* AllocateZeroedPages(size_t pages_count) noexcept = 0;
+  [[nodiscard]] virtual void* AllocateZeroedPages(
+      size_t pages_count) noexcept = 0;
 
   // Frees pages previously allocated with AllocateZeroedPages.
   virtual void FreePages(void* address) noexcept = 0;

@@ -15,23 +15,6 @@
 
 namespace Microsoft::MixedReality::Sharing::VersionedStorage {
 namespace {
-// class EmptySubkeyEnumeratorImpl : public SubkeyEnumerator {
-//  public:
-//   bool MoveNext() noexcept override { return false; }
-//   void Reset() noexcept override {}
-// };
-
-// class EmptyKeyEnumeratorImpl : public KeyEnumerator {
-//  public:
-//   std::unique_ptr<SubkeyEnumerator> CreateSubkeyEnumerator() const
-//       noexcept override {
-//     assert(false);
-//     return {};
-//   }
-//
-//   bool MoveNext() noexcept override { return false; }
-//   void Reset() noexcept override {}
-// };
 
 class SubkeyEnumeratorImpl : public SubkeyEnumerator {
  public:

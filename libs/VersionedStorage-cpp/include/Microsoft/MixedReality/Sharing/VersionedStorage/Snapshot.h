@@ -50,8 +50,9 @@ class Snapshot : public std::enable_shared_from_this<Snapshot> {
   HeaderBlock& header_block_;
   std::shared_ptr<Behavior> behavior_;
   const uint64_t version_;
-  const size_t keys_count_ = 0;
-  const size_t subkeys_count_ = 0;
+  const size_t keys_count_{0};
+  const size_t subkeys_count_{0};
   friend class Storage;
 };
+
 }  // namespace Microsoft::MixedReality::Sharing::VersionedStorage

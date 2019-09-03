@@ -32,9 +32,10 @@ class alignas(kBlockSize) HeaderBlock {
   // Creates a new blob and returns the pointer to its HeaderBlock.
   // Both the block's reference count and the base_version's reference
   // count are 1.
-  static HeaderBlock* CreateBlob(Behavior& behavior,
-                                 uint64_t base_version,
-                                 size_t min_index_capacity) noexcept;
+  [[nodiscard]] static HeaderBlock* CreateBlob(
+      Behavior& behavior,
+      uint64_t base_version,
+      size_t min_index_capacity) noexcept;
 
   uint64_t base_version() const noexcept { return base_version_; }
 
@@ -109,28 +110,6 @@ class alignas(kBlockSize) HeaderBlock {
                                                     data_blocks_capacity_ + 1)};
   }
 
-  IndexBlock* index_begin() noexcept {
-    // Index blocks are located right after the header block.
-    return reinterpret_cast<IndexBlock*>(this + 1);
-  }
-
-  const IndexBlock* index_begin() const noexcept {
-    // Index blocks are located right after the header block.
-    return reinterpret_cast<const IndexBlock*>(this + 1);
-  }
-
-  std::byte* data_begin() noexcept {
-    // Data blocks are located right after the index blocks.
-    return reinterpret_cast<std::byte*>(
-        this + 2 + static_cast<size_t>(index_blocks_mask_));
-  }
-
-  const std::byte* data_begin() const noexcept {
-    // Data blocks are located right after the index blocks.
-    return reinterpret_cast<const std::byte*>(
-        this + 2 + static_cast<size_t>(index_blocks_mask_));
-  }
-
   bool IsVersionFromThisBlock(uint64_t version) const noexcept;
 
   class BlockInserter;
@@ -161,12 +140,16 @@ class alignas(kBlockSize) HeaderBlock {
   bool is_mutable_mode_{true};
 };
 
+static_assert(sizeof(HeaderBlock) == kBlockSize);
+
 class HeaderBlock::Accessor {
  public:
   Accessor(HeaderBlock& header_block)
       : header_block_{header_block},
-        index_begin_{header_block.index_begin()},
-        data_begin_{header_block.data_begin()} {}
+        index_begin_{reinterpret_cast<IndexBlock*>(&header_block + 1)},
+        data_begin_{reinterpret_cast<std::byte*>(
+            &header_block +
+            static_cast<size_t>(header_block_.index_blocks_mask_) + 2)} {}
 
   HeaderBlock& header_block() noexcept { return header_block_; }
 
@@ -236,5 +219,4 @@ class HeaderBlock::Accessor {
   std::byte* const data_begin_;
 };
 
-static_assert(sizeof(HeaderBlock) == kBlockSize);
 }  // namespace Microsoft::MixedReality::Sharing::VersionedStorage

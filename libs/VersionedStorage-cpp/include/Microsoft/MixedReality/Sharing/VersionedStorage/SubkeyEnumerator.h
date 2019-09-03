@@ -28,7 +28,7 @@ class SubkeyEnumerator {
     return current_payload_handle_;
   }
 
-  virtual bool MoveNext() noexcept = 0;
+  [[nodiscard]] virtual bool MoveNext() noexcept = 0;
   virtual void Reset() noexcept = 0;
 
  protected:
@@ -36,7 +36,7 @@ class SubkeyEnumerator {
   SubkeyEnumerator(const SubkeyEnumerator&) = delete;
   SubkeyEnumerator& operator=(const SubkeyEnumerator&) = delete;
 
-  bool has_current_ = false;
+  bool has_current_{false};
   uint64_t current_subkey_{0};
   PayloadHandle current_payload_handle_{0};
 };

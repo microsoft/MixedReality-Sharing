@@ -504,7 +504,7 @@ TEST_F(Storage_Test, simple_blob_reallocation) {
 
     // The index is not large enough to hold all blocks.
     // This will trigger a reallocation.
-    for (uint32_t i = 0; i < 7; ++i) {
+    for (uint64_t i = 0; i < 7; ++i) {
       transaction->Put(MakeAbstractKey(5), 100u + i, MakePayload(i));
     }
     ASSERT_EQ(storage->ApplyTransaction(std::move(transaction)),

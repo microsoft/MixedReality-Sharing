@@ -62,4 +62,5 @@ class Storage {
   std::shared_ptr<Snapshot> latest_snapshot_;
   mutable std::mutex latest_snapshot_reader_mutex_;
 };
+
 }  // namespace Microsoft::MixedReality::Sharing::VersionedStorage

@@ -34,7 +34,7 @@ class KeyEnumerator {
   virtual std::unique_ptr<SubkeyEnumerator> CreateSubkeyEnumerator() const
       noexcept = 0;
 
-  virtual bool MoveNext() noexcept = 0;
+  [[nodiscard]] virtual bool MoveNext() noexcept = 0;
   virtual void Reset() noexcept = 0;
 
  protected:
@@ -42,8 +42,9 @@ class KeyEnumerator {
   KeyEnumerator(const KeyEnumerator&) = delete;
   KeyEnumerator& operator=(const KeyEnumerator&) = delete;
 
-  bool has_current_ = false;
+  bool has_current_{false};
   KeyHandle current_key_{0};
   size_t current_subkeys_count_{0};
 };
+
 }  // namespace Microsoft::MixedReality::Sharing::VersionedStorage

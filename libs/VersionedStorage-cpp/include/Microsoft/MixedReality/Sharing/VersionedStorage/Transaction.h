@@ -80,16 +80,18 @@ class Transaction {
   };
 
   // TODO: accept an accessor
-  virtual PrepareResult Prepare(uint64_t new_version,
-                                HeaderBlock& header_block,
-                                size_t& extra_blocks_count) noexcept = 0;
+  [[nodiscard]] virtual PrepareResult Prepare(
+      uint64_t new_version,
+      HeaderBlock& header_block,
+      size_t& extra_blocks_count) noexcept = 0;
 
   virtual void Apply(uint64_t new_version,
                      HeaderBlock& header_block) noexcept = 0;
 
-  virtual HeaderBlock* CreateMergedBlob(
+  [[nodiscard]] virtual HeaderBlock* CreateMergedBlob(
       uint64_t new_version,
       HeaderBlock& existing_header_block,
       size_t extra_states_to_insert) noexcept = 0;
 };
+
 }  // namespace Microsoft::MixedReality::Sharing::VersionedStorage
