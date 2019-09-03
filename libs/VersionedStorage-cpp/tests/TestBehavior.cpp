@@ -25,14 +25,14 @@ void TestBehavior::CheckLeakingHandles() noexcept {
   }
 }
 
-KeyHandle TestBehavior::MakeKey(size_t id) noexcept {
+KeyHandle TestBehavior::MakeKey(uint64_t id) noexcept {
   assert(id < kKeysCount);
   KeyHandle handle{id};
   GetKeyState(handle).reference_count_.fetch_add(1, std::memory_order_relaxed);
   return handle;
 }
 
-PayloadHandle TestBehavior::MakePayload(size_t id) noexcept {
+PayloadHandle TestBehavior::MakePayload(uint64_t id) noexcept {
   assert(id < kPayloadsCount);
   PayloadHandle handle{id};
   GetPayloadState(handle).reference_count_.fetch_add(1,

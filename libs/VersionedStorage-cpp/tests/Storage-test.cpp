@@ -21,11 +21,11 @@ class Storage_Test : public ::testing::Test {
   }
 
  protected:
-  AbstractKeyWithHandle MakeAbstractKey(size_t id) const noexcept {
+  AbstractKeyWithHandle MakeAbstractKey(uint64_t id) const noexcept {
     return {*behavior_, behavior_->MakeKey(id), true};
   }
 
-  PayloadHandle MakePayload(size_t id) { return behavior_->MakePayload(id); }
+  PayloadHandle MakePayload(uint64_t id) { return behavior_->MakePayload(id); }
 
   std::shared_ptr<TestBehavior> behavior_{std::make_shared<TestBehavior>()};
 };

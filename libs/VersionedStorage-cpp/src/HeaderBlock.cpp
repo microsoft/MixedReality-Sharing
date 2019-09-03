@@ -30,7 +30,7 @@ constexpr uint32_t GetIndexOffsetFromHash(uint64_t hash) {
   return static_cast<uint32_t>(hash >> 8);
 }
 
-#ifdef MS_MR_SHARING_PLATFORM_AMD64
+#ifdef MS_MR_SHARING_PLATFORM_x86_OR_x64
 struct HashMasks {
   constexpr HashMasks() noexcept : masks{} {
     for (size_t i = 0; i < 256; ++i) {
@@ -53,7 +53,7 @@ struct HashMasks {
   uint8_t masks[2][256];
 };
 constexpr HashMasks kHashMasks;
-#endif  // #ifdef MS_MR_STATESYNC_PLATFORM_AMD64
+#endif  // #ifdef MS_MR_SHARING_PLATFORM_x86_OR_x64
 
 }  // namespace
 
@@ -97,7 +97,7 @@ class HeaderBlock::BlockInserter {
     for (auto offset = GetIndexOffsetFromHash(hash);; ++offset) {
       uint32_t index_block_id = offset & index_blocks_mask;
       IndexBlock& index = accessor.GetIndexBlock(index_block_id);
-      const auto counts_and_hashes = index.counts_and_hashes();
+      const auto counts_and_hashes = index.counts_and_hashes_relaxed();
       if (IndexBlock::HasFreeSlots(counts_and_hashes)) {
         counts_and_hashes_ = counts_and_hashes;
         index_block_id_ = index_block_id;
@@ -350,11 +350,11 @@ class HeaderBlock::SubkeyBlockInserter : public HeaderBlock::BlockInserter {
   const uint64_t subkey_;
 };
 
-#ifdef MS_MR_SHARING_PLATFORM_AMD64
+#ifdef MS_MR_SHARING_PLATFORM_x86_OR_x64
 template <IndexLevel kLevel, typename TSearchResult, typename TEqualPredicate>
-__forceinline TSearchResult HeaderBlock::Accessor::FindState(
-    uint64_t hash,
-    TEqualPredicate&& predicate) noexcept {
+MS_MR_SHARING_FORCEINLINE TSearchResult
+HeaderBlock::Accessor::FindState(uint64_t hash,
+                                 TEqualPredicate&& predicate) noexcept {
   const auto hash_8x8 = _mm_set1_epi8(GetSlotHash8FromHash(hash));
   // If we won't find the result in the first block, we'll check this bit to
   // see if we should keep searching.
@@ -366,13 +366,29 @@ __forceinline TSearchResult HeaderBlock::Accessor::FindState(
   for (uint32_t index_offset = GetIndexOffsetFromHash(hash);; ++index_offset) {
     const uint32_t index_block_id = index_offset & index_blocks_mask;
     const IndexBlock& index_block = index_begin_[index_block_id];
-    const auto counts_and_hashes = index_block.counts_and_hashes();
+
+    const auto counts_and_hashes =
+        index_block.counts_and_hashes_.load(std::memory_order_acquire);
     const auto counts_byte = static_cast<uint8_t>(counts_and_hashes);
+
+#ifdef MS_MR_SHARING_PLATFORM_AMD64
+    const __m128i counts_and_hashes_128 = _mm_cvtsi64_si128(counts_and_hashes);
+#else
+    // What we actually want here is this:
+    //__m128i counts_and_hashes_128 = _mm_set_epi64x(0, counts_and_hashes);
+    // Unfortunately, VS generates incorrect assembly in Release build on x32,
+    // leaving the counts_and_hashes_128 zeroed (possibly incorrectly detecting
+    // which part is used below, due to the unusual order of arguments of
+    // _mm_set_epi64x).
+
+    __m128i counts_and_hashes_128 =
+        _mm_set_epi64x(counts_and_hashes, counts_and_hashes);
+#endif  // #ifdef MS_MR_SHARING_PLATFORM_AMD64
     // Bits [1..7] are set for slots [0..6] where the hash matches the 8-bit
     // prefix, and the slot contains a SubkeyState.
-    uint32_t mask = masks[counts_byte] &
-                    _mm_movemask_epi8(_mm_cmpeq_epi8(
-                        hash_8x8, _mm_cvtsi64_si128(counts_and_hashes)));
+    uint32_t mask = masks[counts_byte] & _mm_movemask_epi8(_mm_cmpeq_epi8(
+                                             hash_8x8, counts_and_hashes_128));
+
     unsigned long first_bit_id;
     while (_BitScanForward(&first_bit_id, mask)) {
       // Here we have a mask that indicates which hash bytes match the hash we
@@ -413,7 +429,7 @@ __forceinline TSearchResult HeaderBlock::Accessor::FindState(
   // single index block, therefore the loop above should stop eventually, either
   // because the slot has been found, or because the overflow bit is missing.
 }
-#endif  // #ifdef MS_MR_STATESYNC_PLATFORM_AMD64
+#endif  // #ifdef MS_MR_SHARING_PLATFORM_x86_OR_x64
 
 KeyBlockStateSearchResult HeaderBlock::Accessor::FindKey(
     const AbstractKey& key) noexcept {
@@ -697,7 +713,7 @@ void HeaderBlock::RemoveSnapshotReference(uint64_t version,
       for (uint32_t index_block_id = 0; index_block_id <= index_blocks_mask_;
            ++index_block_id) {
         const IndexBlock& index = accessor.GetIndexBlock(index_block_id);
-        const auto counts_and_hashes = index.counts_and_hashes();
+        const auto counts_and_hashes = index.counts_and_hashes_relaxed();
         const size_t subkeys_count =
             IndexBlock::GetSubkeysCount(counts_and_hashes);
         for (size_t i = 0; i < subkeys_count; ++i) {
@@ -748,7 +764,7 @@ void HeaderBlock::RemoveSnapshotReference(uint64_t version,
       for (uint32_t index_block_id = 0; index_block_id <= index_blocks_mask_;
            ++index_block_id) {
         const IndexBlock& index = accessor.GetIndexBlock(index_block_id);
-        const auto counts_and_hashes = index.counts_and_hashes();
+        const auto counts_and_hashes = index.counts_and_hashes_relaxed();
         const size_t keys_count = IndexBlock::GetKeysCount(counts_and_hashes);
         for (size_t i = 0; i < keys_count; ++i) {
           auto& slot = index.GetSlot(i);

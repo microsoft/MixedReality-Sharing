@@ -47,7 +47,7 @@ class alignas(kBlockSize) IndexBlock {
     std::atomic<DataBlockLocation> version_block_location_;
   };
 
-  uint64_t counts_and_hashes() const noexcept {
+  uint64_t counts_and_hashes_relaxed() const noexcept {
     return counts_and_hashes_.load(std::memory_order_relaxed);
   }
 

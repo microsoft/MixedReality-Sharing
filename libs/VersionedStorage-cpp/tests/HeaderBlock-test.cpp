@@ -28,11 +28,11 @@ class HeaderBlock_Test : public ::testing::Test {
 
   std::shared_ptr<TestBehavior> behavior_{std::make_shared<TestBehavior>()};
 
-  AbstractKeyWithHandle MakeAbstractKey(size_t id) const noexcept {
+  AbstractKeyWithHandle MakeAbstractKey(uint64_t id) const noexcept {
     return {*behavior_, behavior_->MakeKey(id), true};
   }
 
-  PayloadHandle MakePayload(size_t id) const noexcept {
+  PayloadHandle MakePayload(uint64_t id) const noexcept {
     return behavior_->MakePayload(id);
   }
 
@@ -558,7 +558,7 @@ TEST_F(HeaderBlock_Test, insertion_order_fuzzing) {
   size_t kIndexCapacity = 1024;
 
   std::vector<uint64_t> subkeys(kIndexCapacity - 1);
-  for (uint64_t i = 0; i < kIndexCapacity - 1; ++i) {
+  for (size_t i = 0; i < kIndexCapacity - 1; ++i) {
     subkeys[i] = 123'000'000'000ull + i;
   }
 

@@ -7,6 +7,7 @@
 
 #include "src/pch.h"
 
+#include <Microsoft/MixedReality/Sharing/Common/Platform.h>
 #include <Microsoft/MixedReality/Sharing/Common/hash.h>
 
 #if defined(_MSC_VER) && defined(_M_X64)
@@ -23,7 +24,7 @@ constexpr uint64_t _wyp2 = 0x8ebc6af09c88c6e3ull;
 constexpr uint64_t _wyp3 = 0x589965cc75374cc3ull;
 constexpr uint64_t _wyp4 = 0x1d8e4e27c47d124full;
 
-inline uint64_t _wymum(uint64_t A, uint64_t B) {
+MS_MR_SHARING_FORCEINLINE uint64_t _wymum(uint64_t A, uint64_t B) {
 #ifdef __SIZEOF_INT128__
   __uint128_t r = A;
   r *= B;
@@ -49,39 +50,43 @@ inline uint64_t _wymum(uint64_t A, uint64_t B) {
 #endif
 }
 
-inline uint64_t _wymix0(uint64_t A, uint64_t B, uint64_t seed) {
+MS_MR_SHARING_FORCEINLINE uint64_t _wymix0(uint64_t A,
+                                           uint64_t B,
+                                           uint64_t seed) {
   return _wymum(A ^ seed ^ _wyp0, B ^ seed ^ _wyp1);
 }
 
-inline uint64_t _wymix1(uint64_t A, uint64_t B, uint64_t seed) {
+MS_MR_SHARING_FORCEINLINE uint64_t _wymix1(uint64_t A,
+                                           uint64_t B,
+                                           uint64_t seed) {
   return _wymum(A ^ seed ^ _wyp2, B ^ seed ^ _wyp3);
 }
 
-inline uint64_t _wyr08(const uint8_t* p) {
+MS_MR_SHARING_FORCEINLINE uint64_t _wyr08(const uint8_t* p) {
   uint8_t v;
   memcpy(&v, p, 1);
   return v;
 }
 
-inline uint64_t _wyr16(const uint8_t* p) {
+MS_MR_SHARING_FORCEINLINE uint64_t _wyr16(const uint8_t* p) {
   uint16_t v;
   memcpy(&v, p, 2);
   return v;
 }
 
-inline uint64_t _wyr32(const uint8_t* p) {
+MS_MR_SHARING_FORCEINLINE uint64_t _wyr32(const uint8_t* p) {
   uint32_t v;
   memcpy(&v, p, 4);
   return v;
 }
 
-inline uint64_t _wyr64(const uint8_t* p) {
+MS_MR_SHARING_FORCEINLINE uint64_t _wyr64(const uint8_t* p) {
   uint64_t v;
   memcpy(&v, p, 8);
   return v;
 }
 
-inline uint64_t __wyr64(const uint8_t* p) {
+MS_MR_SHARING_FORCEINLINE uint64_t __wyr64(const uint8_t* p) {
   return (_wyr32(p) << 32) | _wyr32(p + 4);
 }
 
@@ -91,7 +96,7 @@ uint64_t CalculateHash64(const char* data,
                          size_t size,
                          uint64_t seed) noexcept {
   const uint8_t* p = reinterpret_cast<const uint8_t*>(data);
-  size_t len1 = size;
+  uint64_t len1 = size;
   for (size_t i = 0; i + 32 <= size; i += 32, p += 32)
     seed = _wymix0(_wyr64(p), _wyr64(p + 8), seed) ^
            _wymix1(_wyr64(p + 16), _wyr64(p + 24), seed);

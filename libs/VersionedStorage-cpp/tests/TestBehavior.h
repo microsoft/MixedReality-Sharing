@@ -17,8 +17,8 @@ class TestBehavior : public Behavior {
  public:
   void CheckLeakingHandles() noexcept;
 
-  KeyHandle MakeKey(size_t id) noexcept;
-  PayloadHandle MakePayload(size_t id) noexcept;
+  KeyHandle MakeKey(uint64_t id) noexcept;
+  PayloadHandle MakePayload(uint64_t id) noexcept;
 
   uint32_t GetKeyReferenceCount(KeyHandle handle) const noexcept;
   uint32_t GetPayloadReferenceCount(PayloadHandle handle) const noexcept;
