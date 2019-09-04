@@ -7,9 +7,9 @@
 
 namespace Microsoft::MixedReality::Sharing::VersionedStorage {
 
-// Abstract key-like object that can be used to interact with other KeyHandle
-// objects without actually creating a KeyHandle (when doing so would be
-// expensive).
+// Abstract key-like object that can be passed to the storage implementation to
+// interact with other KeyHandle objects without actually creating a KeyHandle
+// (when doing so would be expensive).
 //
 // For example, if the application uses interned strings as keys, and wants to
 // look for a string_view, it can implement AbstractKey that will work with
@@ -20,7 +20,6 @@ namespace Microsoft::MixedReality::Sharing::VersionedStorage {
 // use if used with mutating operations, such as inserting a new subkey, because
 // these operations are allowed to call non-const methods, which are allowed to
 // mutate AbstractKey, rendering it unusable for any further calls.
-
 class AbstractKey {
  public:
   [[nodiscard]] constexpr uint64_t hash() const noexcept { return key_hash_; }

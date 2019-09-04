@@ -153,9 +153,6 @@ class HeaderBlock::Accessor {
 
   HeaderBlock& header_block() noexcept { return header_block_; }
 
-  template <IndexLevel kLevel, typename TSearchResult, typename TEqualPredicate>
-  TSearchResult FindState(uint64_t hash, TEqualPredicate&& predicate) noexcept;
-
   template <typename TBlock>
   TBlock& GetBlockAt(DataBlockLocation location) noexcept {
     return VersionedStorage::GetBlockAt<TBlock>(data_begin_, location);
@@ -213,7 +210,19 @@ class HeaderBlock::Accessor {
     return CreateSubkeyStateBlockEnumerator(FindKey(key));
   }
 
+  struct IndexOffsetAndSlotHashes {
+    IndexOffsetAndSlotHashes(uint64_t key_hash);
+    IndexOffsetAndSlotHashes(uint64_t key_hash, uint64_t subkey);
+
+    uint32_t index_offset_hash;
+    uint8_t slot_hash;
+  };
+
  private:
+  template <IndexLevel kLevel, typename TSearchResult, typename TEqualPredicate>
+  TSearchResult FindState(const IndexOffsetAndSlotHashes& hashes,
+                          TEqualPredicate&& predicate) noexcept;
+
   HeaderBlock& header_block_;
   IndexBlock* const index_begin_;
   std::byte* const data_begin_;

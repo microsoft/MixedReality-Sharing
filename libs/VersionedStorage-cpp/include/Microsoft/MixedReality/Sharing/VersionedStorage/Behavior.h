@@ -9,7 +9,7 @@ namespace Microsoft::MixedReality::Sharing::VersionedStorage {
 
 // A class that customizes the semantic of the storage, and hides all details
 // about the nature of keys and payloads.
-// For example, if keys and values are reference counted objects, Behavior
+// For example, if keys and values are reference counted objects, the Behavior
 // object should implement the conversion between handles and pointers where
 // necessary, and add/remove references in DuplicateHandle/Release calls.
 class Behavior {
@@ -25,13 +25,14 @@ class Behavior {
 
   // Returns true if payloads are identical.
   // The implementation is allowed to just compare the handles if comparing the
-  // payloads is impractical. Doing so will have the following effect:
+  // payloads is impractical. Doing so will have the following effects:
   // * Transactions are not allowed to use payloads as prerequisites
   //   (because they are always checked with this method, and therefore the
   //   check will fail).
-  // * Transactions may change the subkey to the same value,
-  //   and then trigger subscription callbacks with identical
-  //   "before" and "after" values.
+  // * Transactions that change the subkey to the same value it already has will
+  //   do it explicitly, triggering subscription callbacks with identical
+  //   "before" and "after" values (normally Equal() is called to filter-out
+  //   unnecessary changes).
   [[nodiscard]] virtual bool Equal(PayloadHandle a, PayloadHandle b) const
       noexcept = 0;
 

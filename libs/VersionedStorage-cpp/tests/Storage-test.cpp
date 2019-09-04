@@ -502,6 +502,8 @@ TEST_F(Storage_Test, simple_blob_reallocation) {
   {
     auto transaction = Transaction::Create(behavior_);
 
+    EXPECT_EQ(behavior_->total_allocated_pages_count(), 1);
+
     // The index is not large enough to hold all blocks.
     // This will trigger a reallocation.
     for (uint64_t i = 0; i < 7; ++i) {
@@ -509,6 +511,10 @@ TEST_F(Storage_Test, simple_blob_reallocation) {
     }
     ASSERT_EQ(storage->ApplyTransaction(std::move(transaction)),
               Storage::TransactionResult::Applied);
+
+    // Allocates a new one-page-large blob with a larger index (but the number
+    // of blocks is still small enough to reserve only one page).
+    EXPECT_EQ(behavior_->total_allocated_pages_count(), 2);
   }
 
   auto snapshot = storage->GetSnapshot();
@@ -556,6 +562,8 @@ TEST_F(Storage_Test, single_subkey_versions_reallocation) {
 
   std::vector<std::shared_ptr<Snapshot>> snapshots;
 
+  EXPECT_EQ(behavior_->total_allocated_pages_count(), 1);
+
   // The storage will be reallocated multiple times
   for (size_t i = 0; i < 1'000; ++i) {
     auto transaction = Transaction::Create(behavior_);
@@ -564,6 +572,9 @@ TEST_F(Storage_Test, single_subkey_versions_reallocation) {
               Storage::TransactionResult::Applied);
     snapshots.emplace_back(storage->GetSnapshot());
   }
+  // Reallocated multiple times
+  EXPECT_EQ(behavior_->total_allocated_pages_count(), 13);
+
   const auto key_5 = MakeAbstractKey(5);
   for (size_t i = 0; i < snapshots.size(); ++i) {
     auto& snapshot = snapshots[i];
@@ -592,6 +603,9 @@ TEST_F(Storage_Test, reallocated_with_cleanups) {
     ASSERT_EQ(storage->ApplyTransaction(std::move(transaction)),
               Storage::TransactionResult::Applied);
   }
+  // Still fits into one page
+  EXPECT_EQ(behavior_->total_allocated_pages_count(), 1);
+
   auto snapshot_1 = storage->GetSnapshot();
   ASSERT_TRUE(snapshot_1);
   {
@@ -608,6 +622,11 @@ TEST_F(Storage_Test, reallocated_with_cleanups) {
     ASSERT_EQ(storage->ApplyTransaction(std::move(transaction)),
               Storage::TransactionResult::Applied);
   }
+
+  // Had to reallocate the blob with a larger index (but the number of blocks is
+  // still small enough to fit into one page).
+  EXPECT_EQ(behavior_->total_allocated_pages_count(), 2);
+
   auto snapshot_2 = storage->GetSnapshot();
   ASSERT_TRUE(snapshot_2);
 

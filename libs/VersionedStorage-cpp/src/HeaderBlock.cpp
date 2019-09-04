@@ -22,14 +22,6 @@
 namespace Microsoft::MixedReality::Sharing::VersionedStorage {
 namespace {
 
-constexpr uint32_t GetSlotHash8FromHash(uint64_t hash) {
-  return static_cast<uint8_t>(hash);
-}
-
-constexpr uint32_t GetIndexOffsetFromHash(uint64_t hash) {
-  return static_cast<uint32_t>(hash >> 8);
-}
-
 #ifdef MS_MR_SHARING_PLATFORM_x86_OR_x64
 struct HashMasks {
   constexpr HashMasks() noexcept : masks{} {
@@ -57,6 +49,51 @@ constexpr HashMasks kHashMasks;
 
 }  // namespace
 
+MS_MR_SHARING_FORCEINLINE
+HeaderBlock::Accessor::IndexOffsetAndSlotHashes::IndexOffsetAndSlotHashes(
+    uint64_t key_hash)
+    : index_offset_hash{static_cast<uint32_t>(key_hash >> 8)},
+      slot_hash{static_cast<uint8_t>(key_hash)} {}
+
+MS_MR_SHARING_FORCEINLINE
+HeaderBlock::Accessor::IndexOffsetAndSlotHashes::IndexOffsetAndSlotHashes(
+    uint64_t key_hash,
+    uint64_t subkey)
+#ifdef MS_MR_SHARING_PLATFORM_ANY_64_BIT
+    : IndexOffsetAndSlotHashes{CalculateHash64(key_hash, subkey)} {
+}
+#else
+{
+  // This hash is not persisted anywhere, so it doesn't have to be the same for
+  // each platform. Current CalculateHash64() implementation is quite slow on
+  // x32, so we replace it with a lower quality mixer that should be good
+  // enough.
+  // Magic numbers here are just random primes. Multiplication makes the top
+  // bits of the result dependent on most of the bits of the input (like in
+  // Knuth multiplicative hash), and xoring with rotations makes low bits
+  // dependent on high bits. The proper mixing would require more
+  // multiply-rotate rounds, but all we need in the end is good enough 8-bit
+  // slot_hash (and here it will depend on all bits of the input), and decent
+  // low bits of index_offset_hash (the actual offset will be obtained by
+  // masking out low bits).
+  const uint32_t hl = static_cast<uint32_t>(key_hash);
+  const uint32_t hh = static_cast<uint32_t>(key_hash >> 32);
+  const uint32_t sl = static_cast<uint32_t>(subkey);
+  const uint32_t sh = static_cast<uint32_t>(subkey >> 32);
+
+  const uint32_t low = (hl ^ sl) * 0xB68D5595u;
+  const uint32_t high = (hh ^ sh) * 0xE3042BEBu;
+  const uint32_t a = (low ^ (high >> 13)) * 0x351C36C5u;
+  const uint32_t b = (high ^ (low >> 13)) * 0x48D01A97u;
+  uint32_t ab = a ^ b;
+  ab ^= ab >> 13;
+  ab *= 0x5E3C2AF3u;
+  slot_hash = static_cast<uint8_t>(ab >> 24);
+  ab = (ab ^ (ab >> 13)) * 0xF8C37757u;
+  index_offset_hash = ab ^ (ab >> 16);
+}
+#endif
+
 inline bool HeaderBlock::IsVersionFromThisBlock(uint64_t version) const
     noexcept {
   return (base_version_ <= version) &&
@@ -82,7 +119,7 @@ class HeaderBlock::BlockInserter {
     return accessor_.GetBlockAt<StateBlockBase>(location);
   }
 
-  BlockInserter(Accessor& accessor, uint64_t hash)
+  BlockInserter(Accessor& accessor, uint32_t index_offset_hash)
       : accessor_{accessor},
         new_block_data_location_{accessor.header_block().AllocateDataBlock()},
         new_block_{GetAt(new_block_data_location_)} {
@@ -94,7 +131,7 @@ class HeaderBlock::BlockInserter {
     // below).
     uint64_t overflow_mask = IndexBlock::kThisBlockOverflowMask;
     const auto index_blocks_mask = accessor.header_block().index_blocks_mask_;
-    for (auto offset = GetIndexOffsetFromHash(hash);; ++offset) {
+    for (auto offset = index_offset_hash;; ++offset) {
       uint32_t index_block_id = offset & index_blocks_mask;
       IndexBlock& index = accessor.GetIndexBlock(index_block_id);
       const auto counts_and_hashes = index.counts_and_hashes_relaxed();
@@ -273,8 +310,8 @@ class HeaderBlock::KeyBlockInserter : public HeaderBlock::BlockInserter {
  public:
   KeyBlockInserter(Accessor& accessor,
                    AbstractKey& abstract_key,
-                   uint64_t key_hash)
-      : HeaderBlock::BlockInserter{accessor, key_hash},
+                   const Accessor::IndexOffsetAndSlotHashes& hashes)
+      : HeaderBlock::BlockInserter{accessor, hashes.index_offset_hash},
         abstract_key_{abstract_key} {
     const auto keys_count_in_slot =
         IndexBlock::GetKeysCount(counts_and_hashes_);
@@ -290,7 +327,9 @@ class HeaderBlock::KeyBlockInserter : public HeaderBlock::BlockInserter {
     // Incrementing the keys count and writing the hash byte
     const uint64_t new_counts_and_hashes =
         counts_and_hashes_ +
-        ((key_hash & 0xffull) << ((keys_count_in_slot + 1) * 8)) + 1;
+        (static_cast<uint64_t>(hashes.slot_hash)
+         << ((keys_count_in_slot + 1) * 8)) +
+        1;
     index.counts_and_hashes_.store(new_counts_and_hashes,
                                    std::memory_order_release);
   }
@@ -313,8 +352,9 @@ class HeaderBlock::SubkeyBlockInserter : public HeaderBlock::BlockInserter {
   SubkeyBlockInserter(Accessor& accessor,
                       KeyStateBlock& key_block,
                       uint64_t subkey,
-                      uint64_t combined_hash)
-      : HeaderBlock::BlockInserter{accessor, combined_hash}, subkey_{subkey} {
+                      const Accessor::IndexOffsetAndSlotHashes& hashes)
+      : HeaderBlock::BlockInserter{accessor, hashes.index_offset_hash},
+        subkey_{subkey} {
     const auto subkeys_count_in_slot =
         IndexBlock::GetSubkeysCount(counts_and_hashes_);
     index_slot_location_ = IndexBlock::MakeIndexSlotLocation(
@@ -329,7 +369,9 @@ class HeaderBlock::SubkeyBlockInserter : public HeaderBlock::BlockInserter {
     // Incrementing the subkeys count and writing the hash byte
     const uint64_t new_counts_and_hashes =
         counts_and_hashes_ +
-        ((combined_hash & 0xffull) << ((7 - subkeys_count_in_slot) * 8)) + 8;
+        (static_cast<uint64_t>(hashes.slot_hash)
+         << ((7 - subkeys_count_in_slot) * 8)) +
+        8;
 
     assert(IndexBlock::GetSubkeysCount(new_counts_and_hashes) ==
            IndexBlock::GetSubkeysCount(counts_and_hashes_) + 1);
@@ -353,9 +395,9 @@ class HeaderBlock::SubkeyBlockInserter : public HeaderBlock::BlockInserter {
 #ifdef MS_MR_SHARING_PLATFORM_x86_OR_x64
 template <IndexLevel kLevel, typename TSearchResult, typename TEqualPredicate>
 MS_MR_SHARING_FORCEINLINE TSearchResult
-HeaderBlock::Accessor::FindState(uint64_t hash,
+HeaderBlock::Accessor::FindState(const IndexOffsetAndSlotHashes& hashes,
                                  TEqualPredicate&& predicate) noexcept {
-  const auto hash_8x8 = _mm_set1_epi8(GetSlotHash8FromHash(hash));
+  const auto hash_8x8 = _mm_set1_epi8(hashes.slot_hash);
   // If we won't find the result in the first block, we'll check this bit to
   // see if we should keep searching.
   uint8_t overflow_mask = IndexBlock::kThisBlockOverflowMask;
@@ -363,7 +405,7 @@ HeaderBlock::Accessor::FindState(uint64_t hash,
   auto& masks = kHashMasks.masks[static_cast<size_t>(kLevel)];
 
   const uint32_t index_blocks_mask = header_block_.index_blocks_mask_;
-  for (uint32_t index_offset = GetIndexOffsetFromHash(hash);; ++index_offset) {
+  for (uint32_t index_offset = hashes.index_offset_hash;; ++index_offset) {
     const uint32_t index_block_id = index_offset & index_blocks_mask;
     const IndexBlock& index_block = index_begin_[index_block_id];
 
@@ -434,7 +476,7 @@ HeaderBlock::Accessor::FindState(uint64_t hash,
 KeyBlockStateSearchResult HeaderBlock::Accessor::FindKey(
     const AbstractKey& key) noexcept {
   return FindState<IndexLevel::Key, KeyBlockStateSearchResult>(
-      key.hash(), [&key](const KeyStateBlock& candidate) -> bool {
+      {key.hash()}, [&key](const KeyStateBlock& candidate) -> bool {
         return key.IsEqualTo(candidate.key_);
       });
 }
@@ -443,7 +485,7 @@ SubkeyBlockStateSearchResult HeaderBlock::Accessor::FindSubkey(
     const AbstractKey& key,
     uint64_t subkey) noexcept {
   return FindState<IndexLevel::Subkey, SubkeyBlockStateSearchResult>(
-      CalculateHash64(key.hash(), subkey),
+      {key.hash(), subkey},
       [&key, subkey](const SubkeyStateBlock& candidate) -> bool {
         return subkey == candidate.subkey_ && key.IsEqualTo(candidate.key_);
       });
@@ -482,8 +524,7 @@ KeyBlockStateSearchResult HeaderBlock::Accessor::InsertKeyBlock(
     AbstractKey& key) noexcept {
   assert(header_block_.CanInsertStateBlocks(1));
   assert(FindKey(key).index_slot_location_ == IndexSlotLocation::kInvalid);
-
-  KeyBlockInserter inserter{*this, key, key.hash()};
+  KeyBlockInserter inserter{*this, key, {key.hash()}};
   assert(inserter.index_slot_location() != IndexSlotLocation::kInvalid);
   return {inserter.index_slot_location(), &inserter.new_block(), nullptr};
 }
@@ -497,9 +538,8 @@ SubkeyBlockStateSearchResult HeaderBlock::Accessor::InsertSubkeyBlock(
       FindSubkey(AbstractKeyWithHandle{behavior, key_block.key_, false}, subkey)
           .index_slot_location_ == IndexSlotLocation::kInvalid);
 
-  SubkeyBlockInserter inserter(
-      *this, key_block, subkey,
-      CalculateHash64(behavior.GetHash(key_block.key_), subkey));
+  SubkeyBlockInserter inserter(*this, key_block, subkey,
+                               {behavior.GetHash(key_block.key_), subkey});
   assert(inserter.index_slot_location() != IndexSlotLocation::kInvalid);
   return {inserter.index_slot_location(), &inserter.new_block(), nullptr};
 }
