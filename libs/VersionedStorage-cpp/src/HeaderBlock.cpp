@@ -72,7 +72,7 @@ HeaderBlock::Accessor::IndexOffsetAndSlotHashes::IndexOffsetAndSlotHashes(
   // bits of the result dependent on most of the bits of the input (like in
   // Knuth multiplicative hash), and xoring with rotations makes low bits
   // dependent on high bits. The proper mixing would require more
-  // multiply-rotate rounds, but all we need in the end is good enough 8-bit
+  // multiply-rotate rounds, but all we need in the end is a good enough 8-bit
   // slot_hash (and here it will depend on all bits of the input), and decent
   // low bits of index_offset_hash (the actual offset will be obtained by
   // masking out low bits).
@@ -89,7 +89,12 @@ HeaderBlock::Accessor::IndexOffsetAndSlotHashes::IndexOffsetAndSlotHashes(
   ab ^= ab >> 13;
   ab *= 0x5E3C2AF3u;
   slot_hash = static_cast<uint8_t>(ab >> 24);
-  ab = (ab ^ (ab >> 13)) * 0xF8C37757u;
+  // Low and high parts of the original key hash were not mixed in like this
+  // yet, and the previous result effectively depends only on the value of
+  // (key_hash ^ subkey). This way the dependency between slot_hash and
+  // index_offset_hash should be weaker.
+  ab ^= (ab >> 13) ^ (hl + hh);
+  ab *= 0xF8C37757u;
   index_offset_hash = ab ^ (ab >> 16);
 }
 #endif
