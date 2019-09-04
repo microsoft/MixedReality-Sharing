@@ -67,9 +67,6 @@ class alignas(kBlockSize) HeaderBlock {
   // Should only be called by the writer thread.
   uint32_t available_data_blocks_count() const noexcept;
 
-  // Can report a false positive if called before the version blocks for
-  // existing states are allocated, so it generally should be called twice:
-  // before reserving and after reserving.
   // Should only be called by the writer thread.
   [[nodiscard]] bool CanInsertStateBlocks(size_t extra_state_blocks_count) const
       noexcept;
@@ -181,15 +178,13 @@ class HeaderBlock::Accessor {
                                                  KeyStateBlock& key_block,
                                                  uint64_t subkey) noexcept;
 
+  // The provided search_result will be updated if the operation had to
+  // reallocate the version block. If search_result has no version block after
+  // the operation, that means that the new version can be stored in the state
+  // block.
   [[nodiscard]] bool ReserveSpaceForTransaction(
       KeyBlockStateSearchResult& search_result) noexcept;
 
-  // Checks the preconditions and attempts to reserve the space necessary to
-  // complete the transaction. See PrepareTransactionResult for all possible
-  // outcomes. Note that if ReadyToStartTransaction is returned, pushing a new
-  // version for the subkey later can't fail. However, we can't do it here
-  // immediately, since other keys and subkeys may have to be checked.
-  //
   // The provided search_result will be updated if the operation had to
   // reallocate the version block. If search_result has no version block after
   // the operation, that means that the new version can be stored in the state
@@ -214,7 +209,21 @@ class HeaderBlock::Accessor {
     IndexOffsetAndSlotHashes(uint64_t key_hash);
     IndexOffsetAndSlotHashes(uint64_t key_hash, uint64_t subkey);
 
+    // Offset to the first checked index block (the mask will be applied before
+    // the search, so the offset effectively wraps around).
+    // In the majority of the cases, only some lower bits will be used
+    // (depending on how large the index is).
     uint32_t index_offset_hash;
+
+    // A small hash used to quickly filter out slots that definitely don't
+    // match (each slot preserves this small hash on insertion, so it can be
+    // compared during the search).
+    // The quality requirements are not very high (the worst thing that can
+    // happen is that we'll have a lot of false positives which will trigger
+    // full key/subkey comparisons), but the search will be faster if the
+    // probability of collision here is as close to 1/256 as possible, and there
+    // is no strong dependency between slot_hash and actually used bits of
+    // index_offset_hash.
     uint8_t slot_hash;
   };
 
