@@ -93,12 +93,11 @@ class Transaction {
   //   be applied to this blob.
   //
   // TODO: accept an accessor
-  // FIXME: make sure that the behavior is correct if the transaction failed but
-  // no version was added.
   [[nodiscard]] virtual PrepareResult Prepare(
       uint64_t new_version,
       HeaderBlock& header_block,
-      size_t& extra_blocks_count) noexcept = 0;
+      size_t& extra_blocks_count,
+      bool allocation_failed) noexcept = 0;
 
   virtual void Apply(uint64_t new_version,
                      HeaderBlock& header_block) noexcept = 0;

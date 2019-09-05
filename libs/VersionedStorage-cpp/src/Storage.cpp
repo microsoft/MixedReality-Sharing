@@ -62,17 +62,40 @@ Storage::TransactionResult Storage::ApplyTransaction(
                                current_header_block.stored_versions_count();
 
   size_t extra_blocks_count = 0;
-  Transaction::PrepareResult prepare_result = transaction->Prepare(
-      new_version, current_header_block, extra_blocks_count);
+
+  bool has_added_version = current_header_block.AddVersion();
+
+  Transaction::PrepareResult prepare_result =
+      transaction->Prepare(new_version, current_header_block,
+                           extra_blocks_count, !has_added_version);
 
   if (prepare_result == Transaction::PrepareResult::ValidationFailed) {
-    auto lock = std::lock_guard{latest_snapshot_reader_mutex_};
-    latest_snapshot_ = std::make_shared<Snapshot>(
-        new_version, current_header_block, behavior_);
-    return TransactionResult::AppliedWithNoEffectDueToUnsatisfiedPrerequisites;
+    if (has_added_version) {
+      auto lock = std::lock_guard{latest_snapshot_reader_mutex_};
+      latest_snapshot_ = std::make_shared<Snapshot>(
+          new_version, current_header_block, behavior_);
+      return TransactionResult::
+          AppliedWithNoEffectDueToUnsatisfiedPrerequisites;
+    } else {
+      // Creating a new empty transaction to merge it with the current state
+      // into the new blob (we couldn't reuse the previous blob due to the lack
+      // of space there to store the new version).
+      HeaderBlock* new_header_block =
+          Transaction::Create(behavior_)->CreateMergedBlob(
+              new_version, current_header_block, 0);
+      if (!new_header_block) {
+        return Storage::TransactionResult::FailedDueToInsufficientResources;
+      }
+      auto lock = std::lock_guard{latest_snapshot_reader_mutex_};
+      latest_snapshot_ =
+          std::make_shared<Snapshot>(new_version, *new_header_block, behavior_);
+      return Storage::TransactionResult::
+          AppliedWithNoEffectDueToUnsatisfiedPrerequisites;
+    }
   }
 
-  if (prepare_result == Transaction::PrepareResult::Ready) {
+  if (prepare_result == Transaction::PrepareResult::Ready &&
+      has_added_version) {
     assert(current_header_block.CanInsertStateBlocks(extra_blocks_count));
 
     transaction->Apply(new_version, current_header_block);
@@ -81,8 +104,11 @@ Storage::TransactionResult Storage::ApplyTransaction(
         new_version, current_header_block, behavior_);
     return Storage::TransactionResult::Applied;
   }
-
   // This blob can't accept any new versions.
+  if (has_added_version) {
+    current_header_block.RemoveSnapshotReference(new_version, *behavior_);
+  }
+
   current_header_block.SetImmutableMode();
 
   HeaderBlock* new_header_block = transaction->CreateMergedBlob(

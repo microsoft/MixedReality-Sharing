@@ -288,10 +288,9 @@ class TransactionImpl : public Transaction {
  protected:
   PrepareResult Prepare(uint64_t new_version,
                         HeaderBlock& header_block,
-                        size_t& extra_blocks_count) noexcept override {
+                        size_t& extra_blocks_count,
+                        bool allocation_failed) noexcept override {
     extra_blocks_count = 0;
-    const bool is_version_added = header_block.AddVersion();
-    bool allocation_failed = !is_version_added;
     HeaderBlock::Accessor accessor{header_block};
     for (auto key_transactions_it = begin(key_transactions_map_),
               key_transactions_it_end = end(key_transactions_map_);
@@ -427,10 +426,6 @@ class TransactionImpl : public Transaction {
     }
     if (allocation_failed ||
         !header_block.CanInsertStateBlocks(extra_blocks_count)) {
-      if (is_version_added) {
-        // FIXME: document what's going on here.
-        header_block.RemoveSnapshotReference(new_version, *behavior_);
-      }
       return PrepareResult::AllocationFailed;
     }
     return PrepareResult::Ready;
