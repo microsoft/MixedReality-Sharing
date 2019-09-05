@@ -580,8 +580,8 @@ class TransactionImpl : public Transaction {
       return true;
     }
     if (subkey_block.is_scratch_buffer_mode()) {
-      // The pointer could be saved to the scratch buffer only by the loop
-      // above, so we know the type.
+      // The pointer could be saved to the scratch buffer only by the first loop
+      // block of CreateMergedBlob, so we know which type this is.
       auto* pair = reinterpret_cast<SubkeyTransactionsMap::value_type*>(
           subkey_block.GetScratchBuffer());
       if (pair->second.new_payload_handle_or_deletion_marker_

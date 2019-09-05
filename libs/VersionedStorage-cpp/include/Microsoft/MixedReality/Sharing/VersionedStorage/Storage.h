@@ -32,6 +32,13 @@ class Storage {
   // case calling GetSnapshot() will return a newer snapshot without affecting
   // the old ones). Any amount of snapshots can be alive at the same time (up to
   // the memory limit).
+  // The snapshot itself is a thin object that just marks a certain versions in
+  // the in-memory blobs as "in use," which ensures that the latest state with
+  // the version less or equal to the "in use" one stays visible to readers.
+  // For example, if a subkey had payload A on version 10, B on version 20, and
+  // C on version 30, and the snapshot for version 25 is alive, the state B will
+  // stay discoverable (because for this snapshot this is the actual state of
+  // this subkey).
   std::shared_ptr<Snapshot> GetSnapshot() const noexcept;
 
   enum class TransactionResult {

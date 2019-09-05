@@ -76,7 +76,7 @@ class StateBlockBase {
     // The memory previously used by the children locations can be used by the
     // writer thread to speed the reallocation up.
     // The writer thread will be using the tree height bits to tell which mode
-    // this node is in, see is_scratch_buffer_mode()/SetScratchBufferModer().
+    // this node is in, see is_scratch_buffer_mode()/SetScratchBuffer().
     void* writer_thread_scratch_buffer_;
   };
 

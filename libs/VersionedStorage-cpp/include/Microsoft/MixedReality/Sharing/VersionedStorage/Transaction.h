@@ -79,7 +79,22 @@ class Transaction {
     AllocationFailed,
   };
 
+  // Prepares the transaction by:
+  // * Performing the search for all mentioned keys and subkeys.
+  // * Checking the preconditions.
+  // * Removing irrelevant parts of the transaction (such deletions where the
+  //   subkey is already missing, etc.)
+  // * Pre-calculating new subkey counts.
+  //
+  // returns ValidationFailed if any of the preconditions were not satisfied.
+  // returns AllocationFailed all preconditions were satisfied, but there was
+  //   not enough space in this blob to apply the transaction.
+  // returns Ready if all preconditions are satisfied, and the transaction can
+  //   be applied to this blob.
+  //
   // TODO: accept an accessor
+  // FIXME: make sure that the behavior is correct if the transaction failed but
+  // no version was added.
   [[nodiscard]] virtual PrepareResult Prepare(
       uint64_t new_version,
       HeaderBlock& header_block,

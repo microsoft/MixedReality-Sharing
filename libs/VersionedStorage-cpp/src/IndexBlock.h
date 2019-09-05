@@ -41,9 +41,8 @@ class alignas(kBlockSize) IndexBlock {
 
     // Location of the first block of the sequence of VersionInfo blocks
     // associated with the slot.
-    // If this location is invalid
-    // Up to two versions are stored in the state
-    // block, so this can be Invalid if no extra blocks are required.
+    // Initially Invalid, because up to two first versions can be stored in the
+    // state block.
     std::atomic<DataBlockLocation> version_block_location_;
   };
 
@@ -98,13 +97,13 @@ class alignas(kBlockSize) IndexBlock {
   static constexpr uint8_t kThisBlockOverflowMask = 0x40;
   static constexpr uint8_t kPrecedingBlocksOverflowMask = 0x80;
 
-  // Bits 0..2: number of keys in the block.
+  // Bits [0..2]: number of keys in the block.
   //   Keys will be occupying slots in ascending order.
-  // Bits 3..5: number of subkeys in the block.
+  // Bits [3..5]: number of subkeys in the block.
   //   Subkeys will be occupying slots in descending order.
-  // Bit 6: indicates that there were slots that didn't fit into this index
+  // Bit [6]: indicates that there were slots that didn't fit into this index
   //        block and were inserted in one of the next blocks.
-  // Bit 7: indicates that some of the previous blocks was not able to insert
+  // Bit [7]: indicates that some of the previous blocks was not able to insert
   //        its elements into itself or this block, so the search should
   //        continue. Note that it's orthogonal to Bit 6.
   // Bytes [1..7] 8-bit hashes for 7 slots (see below).

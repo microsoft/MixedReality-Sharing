@@ -27,8 +27,6 @@ class alignas(kBlockSize) HeaderBlock {
               uint32_t index_slots_capacity,
               uint32_t data_blocks_capacity);
 
-  class Accessor;
-
   // Creates a new blob and returns the pointer to its HeaderBlock.
   // Both the block's reference count and the base_version's reference
   // count are 1.
@@ -72,7 +70,7 @@ class alignas(kBlockSize) HeaderBlock {
       noexcept;
 
   // Attempts to add a version.
-  // On success, the the new version's reference count will be 1.
+  // On success, the new version's reference count will be 1.
   // On failure (which can happen if there is not enough space to store the new
   // version), no reference counts will be changed.
   // Should only be called by the writer thread.
@@ -98,6 +96,8 @@ class alignas(kBlockSize) HeaderBlock {
     assert(is_mutable_mode_);
     is_mutable_mode_ = false;
   }
+
+  class Accessor;
 
  private:
   DataBlockLocation AllocateDataBlock() noexcept;
