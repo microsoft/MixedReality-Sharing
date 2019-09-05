@@ -88,8 +88,8 @@ VersionedPayloadHandle SubkeyVersionBlock::GetVersionedPayload(
   return {};
 }
 
-VersionedPayloadHandle SubkeyVersionBlock::GetLatestVersionedPayload() const
-    noexcept {
+VersionedPayloadHandle
+SubkeyVersionBlock::latest_versioned_payload_thread_unsafe() const noexcept {
   // memory_order_relaxed since this can only be called by the writer thread.
   const uint32_t size = size_.load(std::memory_order_relaxed);
   if (size) {
@@ -114,7 +114,8 @@ VersionedPayloadHandle SubkeyVersionBlock::GetLatestVersionedPayload() const
   return {};
 }
 
-bool SubkeyVersionBlock::CanPush(uint64_t version, bool has_payload) const
+bool SubkeyVersionBlock::CanPushFromWriterThread(uint64_t version,
+                                                 bool has_payload) const
     noexcept {
   assert(version < kSmallestInvalidVersion);
   assert(capacity_ >= 4);
@@ -142,9 +143,10 @@ bool SubkeyVersionBlock::CanPush(uint64_t version, bool has_payload) const
          kInvalidMarkedOffset;
 }
 
-void SubkeyVersionBlock::Push(uint64_t version,
-                              std::optional<PayloadHandle> payload) noexcept {
-  assert(CanPush(version, payload.has_value()));
+void SubkeyVersionBlock::PushFromWriterThread(
+    uint64_t version,
+    std::optional<PayloadHandle> payload) noexcept {
+  assert(CanPushFromWriterThread(version, payload.has_value()));
   // memory_order_relaxed since this can only be called by the writer thread.
   uint32_t size = size_.load(std::memory_order_relaxed);
   SubkeyVersionBlock* block = this + ((size + 1) / 5);

@@ -20,9 +20,11 @@ uint32_t KeyVersionBlock::GetSubkeysCount(VersionOffset version_offset) const
   return ptr == versioned_subkey_counts_ ? 0 : ptr[-1].subkeys_count;
 }
 
-void KeyVersionBlock::PushSubkeysCount(VersionOffset version_offset,
-                                       uint32_t subkeys_count) noexcept {
-  assert(HasEmptySlots() && GetLatestSubkeysCount() != subkeys_count);
+void KeyVersionBlock::PushSubkeysCountFromWriterThread(
+    VersionOffset version_offset,
+    uint32_t subkeys_count) noexcept {
+  assert(has_empty_slots_thread_unsafe() &&
+         latest_subkeys_count_thread_unsafe() != subkeys_count);
   // memory_order_relaxed since this can only be called by the writer thread.
   uint32_t size = size_.load(std::memory_order_relaxed);
   versioned_subkey_counts_[size] = {version_offset, subkeys_count};

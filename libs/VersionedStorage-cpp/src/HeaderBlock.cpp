@@ -534,10 +534,10 @@ bool MutatingBlobAccessor::ReserveSpaceForTransaction(
   KeyStateBlock& state_block = *search_result.state_block_;
   KeyVersionBlock* const version_block = search_result.version_block_;
   if (version_block) {
-    if (version_block->HasEmptySlots()) {
+    if (version_block->has_empty_slots_thread_unsafe()) {
       return true;
     }
-  } else if (state_block.HasFreeInPlaceSlots()) {
+  } else if (state_block.has_empty_slots_thread_unsafe()) {
     return true;
   }
   const uint32_t available_blocks_count = available_data_blocks_count();
@@ -597,15 +597,15 @@ bool MutatingBlobAccessor::ReserveSpaceForTransaction(
     bool has_value) noexcept {
   assert(search_result.state_block_);
   VersionedPayloadHandle current_payload =
-      search_result.GetLatestVersionedPayload();
+      search_result.latest_versioned_payload_thread_unsafe();
   SubkeyStateBlock& state_block = *search_result.state_block_;
   SubkeyVersionBlock* const version_block = search_result.version_block_;
 
   if (version_block) {
-    if (version_block->CanPush(new_version, has_value)) {
+    if (version_block->CanPushFromWriterThread(new_version, has_value)) {
       return true;
     }
-  } else if (state_block.CanPush(new_version, has_value)) {
+  } else if (state_block.CanPushFromWriterThread(new_version, has_value)) {
     return true;
   }
   // Allocating new data blocks from the free data blocks in this blob.

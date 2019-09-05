@@ -141,14 +141,12 @@ class alignas(kBlockSize) KeyStateBlock : public StateBlockBase {
   // Returns the number of subkeys in this version.
   uint32_t GetSubkeysCount(VersionOffset version_offset) const noexcept;
 
-  // Should only be called by the writer thread.
-  uint32_t GetLatestSubkeysCount() const noexcept;
+  uint32_t latest_subkeys_count_thread_unsafe() const noexcept;
 
-  void PushSubkeysCount(VersionOffset version_offset,
-                        uint32_t subkeys_count) noexcept;
+  void PushSubkeysCountFromWriterThread(VersionOffset version_offset,
+                                        uint32_t subkeys_count) noexcept;
 
-  // Called by the writer thread only.
-  bool HasFreeInPlaceSlots() const noexcept {
+  bool has_empty_slots_thread_unsafe() const noexcept {
     const auto inplace_versions_count =
         inplace_versions_count_or_version_offset_.load(
             std::memory_order_relaxed);
@@ -221,13 +219,13 @@ class alignas(kBlockSize) SubkeyStateBlock : public StateBlockBase {
 
   VersionedPayloadHandle GetVersionedPayload(uint64_t version) const noexcept;
 
-  // Should only be called by the writer thread
-  VersionedPayloadHandle GetLatestVersionedPayload() const noexcept;
+  VersionedPayloadHandle latest_versioned_payload_thread_unsafe() const
+      noexcept;
 
   std::vector<VersionedPayloadHandle> GetAllPayloads() const noexcept;
 
-  // Called by the writer thread only.
-  bool CanPush(uint64_t version, bool has_payload) const noexcept {
+  bool CanPushFromWriterThread(uint64_t version, bool has_payload) const
+      noexcept {
     const auto v0 = marked_version_0_.load(std::memory_order_relaxed);
     if (v0 == kInvalidMarkedVersion)
       return true;
@@ -240,7 +238,8 @@ class alignas(kBlockSize) SubkeyStateBlock : public StateBlockBase {
                 std::memory_order_relaxed) == kInvalidMarkedOffset);
   }
 
-  void Push(uint64_t version, std::optional<PayloadHandle> payload) noexcept;
+  void PushFromWriterThread(uint64_t version,
+                            std::optional<PayloadHandle> payload) noexcept;
 
   static constexpr uint64_t kInvalidMarkedVersion = ~0ull;
   static constexpr uint32_t kInvalidMarkedOffset = ~0u;

@@ -44,20 +44,21 @@ TEST_F(KeyVersionBlock_Test, empty) {
   for (uint32_t i = 0; i < 10; ++i)
     EXPECT_EQ(first_block_.GetSubkeysCount(VersionOffset{i}), 0);
 
-  EXPECT_EQ(first_block_.GetLatestSubkeysCount(), 0);
+  EXPECT_EQ(first_block_.latest_subkeys_count_thread_unsafe(), 0);
 
   // Has 7 empty slots after the builder is done.
 
   for (uint32_t i = 0; i < 7; ++i) {
-    EXPECT_TRUE(first_block_.HasEmptySlots());
-    first_block_.PushSubkeysCount(VersionOffset{10 + i}, 100 + i);
+    EXPECT_TRUE(first_block_.has_empty_slots_thread_unsafe());
+    first_block_.PushSubkeysCountFromWriterThread(VersionOffset{10 + i},
+                                                  100 + i);
   }
-  EXPECT_FALSE(first_block_.HasEmptySlots());
+  EXPECT_FALSE(first_block_.has_empty_slots_thread_unsafe());
 
   for (uint32_t i = 0; i < 7; ++i)
     EXPECT_EQ(first_block_.GetSubkeysCount(VersionOffset{10 + i}), 100 + i);
 
-  EXPECT_EQ(first_block_.GetLatestSubkeysCount(), 106);
+  EXPECT_EQ(first_block_.latest_subkeys_count_thread_unsafe(), 106);
 }
 
 TEST_F(KeyVersionBlock_Test, empty_pushing_zeros) {
@@ -72,20 +73,21 @@ TEST_F(KeyVersionBlock_Test, empty_pushing_zeros) {
   for (uint32_t i = 0; i < 20; ++i)
     EXPECT_EQ(first_block_.GetSubkeysCount(VersionOffset{i}), 0);
 
-  EXPECT_EQ(first_block_.GetLatestSubkeysCount(), 0);
+  EXPECT_EQ(first_block_.latest_subkeys_count_thread_unsafe(), 0);
 
   // Has 7 empty slots after the builder is done.
 
   for (uint32_t i = 0; i < 7; ++i) {
-    EXPECT_TRUE(first_block_.HasEmptySlots());
-    first_block_.PushSubkeysCount(VersionOffset{10 + i}, 100 + i);
+    EXPECT_TRUE(first_block_.has_empty_slots_thread_unsafe());
+    first_block_.PushSubkeysCountFromWriterThread(VersionOffset{10 + i},
+                                                  100 + i);
   }
-  EXPECT_FALSE(first_block_.HasEmptySlots());
+  EXPECT_FALSE(first_block_.has_empty_slots_thread_unsafe());
 
   for (uint32_t i = 0; i < 7; ++i)
     EXPECT_EQ(first_block_.GetSubkeysCount(VersionOffset{10 + i}), 100 + i);
 
-  EXPECT_EQ(first_block_.GetLatestSubkeysCount(), 106);
+  EXPECT_EQ(first_block_.latest_subkeys_count_thread_unsafe(), 106);
 }
 
 TEST_F(KeyVersionBlock_Test, pushing_3_normal) {
@@ -103,15 +105,16 @@ TEST_F(KeyVersionBlock_Test, pushing_3_normal) {
   EXPECT_EQ(first_block_.size_relaxed(), 3);
   EXPECT_EQ(first_block_.capacity(), 7);
 
-  EXPECT_EQ(first_block_.GetLatestSubkeysCount(), 103);
+  EXPECT_EQ(first_block_.latest_subkeys_count_thread_unsafe(), 103);
 
   // Has 4 empty slots after the builder is done.
 
   for (uint32_t i = 0; i < 4; ++i) {
-    EXPECT_TRUE(first_block_.HasEmptySlots());
-    first_block_.PushSubkeysCount(VersionOffset{100 + i}, 200 + i);
+    EXPECT_TRUE(first_block_.has_empty_slots_thread_unsafe());
+    first_block_.PushSubkeysCountFromWriterThread(VersionOffset{100 + i},
+                                                  200 + i);
   }
-  EXPECT_FALSE(first_block_.HasEmptySlots());
+  EXPECT_FALSE(first_block_.has_empty_slots_thread_unsafe());
 
   for (uint32_t i = 0; i < 10; ++i)
     EXPECT_EQ(first_block_.GetSubkeysCount(VersionOffset{i}), 0);
@@ -128,7 +131,7 @@ TEST_F(KeyVersionBlock_Test, pushing_3_normal) {
   for (uint32_t i = 0; i < 4; ++i)
     EXPECT_EQ(first_block_.GetSubkeysCount(VersionOffset{100 + i}), 200 + i);
 
-  EXPECT_EQ(first_block_.GetLatestSubkeysCount(), 203);
+  EXPECT_EQ(first_block_.latest_subkeys_count_thread_unsafe(), 203);
 }
 
 TEST_F(KeyVersionBlock_Test, pushing_4_normal) {
@@ -149,15 +152,16 @@ TEST_F(KeyVersionBlock_Test, pushing_4_normal) {
   EXPECT_EQ(first_block_.size_relaxed(), 4);
   EXPECT_EQ(first_block_.capacity(), 15);
 
-  EXPECT_EQ(first_block_.GetLatestSubkeysCount(), 104);
+  EXPECT_EQ(first_block_.latest_subkeys_count_thread_unsafe(), 104);
 
   // Has 11 empty slots after the builder is done.
 
   for (uint32_t i = 0; i < 11; ++i) {
-    EXPECT_TRUE(first_block_.HasEmptySlots());
-    first_block_.PushSubkeysCount(VersionOffset{100 + i}, 200 + i);
+    EXPECT_TRUE(first_block_.has_empty_slots_thread_unsafe());
+    first_block_.PushSubkeysCountFromWriterThread(VersionOffset{100 + i},
+                                                  200 + i);
   }
-  EXPECT_FALSE(first_block_.HasEmptySlots());
+  EXPECT_FALSE(first_block_.has_empty_slots_thread_unsafe());
 
   for (uint32_t i = 0; i < 10; ++i)
     EXPECT_EQ(first_block_.GetSubkeysCount(VersionOffset{i}), 0);
@@ -177,7 +181,7 @@ TEST_F(KeyVersionBlock_Test, pushing_4_normal) {
   for (uint32_t i = 0; i < 11; ++i)
     EXPECT_EQ(first_block_.GetSubkeysCount(VersionOffset{100 + i}), 200 + i);
 
-  EXPECT_EQ(first_block_.GetLatestSubkeysCount(), 210);
+  EXPECT_EQ(first_block_.latest_subkeys_count_thread_unsafe(), 210);
 }
 
 TEST_F(KeyVersionBlock_Test, pushing_36_no_gaps) {
@@ -192,10 +196,11 @@ TEST_F(KeyVersionBlock_Test, pushing_36_no_gaps) {
   // Has 43 empty slots after the builder is done.
 
   for (uint32_t i = 0; i < 43; ++i) {
-    EXPECT_TRUE(first_block_.HasEmptySlots());
-    first_block_.PushSubkeysCount(VersionOffset{100 + i}, 200 + i);
+    EXPECT_TRUE(first_block_.has_empty_slots_thread_unsafe());
+    first_block_.PushSubkeysCountFromWriterThread(VersionOffset{100 + i},
+                                                  200 + i);
   }
-  EXPECT_FALSE(first_block_.HasEmptySlots());
+  EXPECT_FALSE(first_block_.has_empty_slots_thread_unsafe());
 
   for (uint32_t i = 0; i < 10; ++i)
     EXPECT_EQ(first_block_.GetSubkeysCount(VersionOffset{i}), 0);
@@ -209,7 +214,7 @@ TEST_F(KeyVersionBlock_Test, pushing_36_no_gaps) {
   for (uint32_t i = 0; i < 43; ++i)
     EXPECT_EQ(first_block_.GetSubkeysCount(VersionOffset{100 + i}), 200 + i);
 
-  EXPECT_EQ(first_block_.GetLatestSubkeysCount(), 242);
+  EXPECT_EQ(first_block_.latest_subkeys_count_thread_unsafe(), 242);
 }
 
 TEST_F(KeyVersionBlock_Test, pushing_78_no_gaps) {
@@ -222,9 +227,9 @@ TEST_F(KeyVersionBlock_Test, pushing_78_no_gaps) {
   EXPECT_EQ(first_block_.size_relaxed(), 78);
   EXPECT_EQ(first_block_.capacity(), 79);
 
-  EXPECT_TRUE(first_block_.HasEmptySlots());
-  first_block_.PushSubkeysCount(VersionOffset{100}, 200);
-  EXPECT_FALSE(first_block_.HasEmptySlots());
+  EXPECT_TRUE(first_block_.has_empty_slots_thread_unsafe());
+  first_block_.PushSubkeysCountFromWriterThread(VersionOffset{100}, 200);
+  EXPECT_FALSE(first_block_.has_empty_slots_thread_unsafe());
 
   for (uint32_t i = 0; i < 10; ++i)
     EXPECT_EQ(first_block_.GetSubkeysCount(VersionOffset{i}), 0);
@@ -237,7 +242,7 @@ TEST_F(KeyVersionBlock_Test, pushing_78_no_gaps) {
 
   EXPECT_EQ(first_block_.GetSubkeysCount(VersionOffset{100}), 200);
 
-  EXPECT_EQ(first_block_.GetLatestSubkeysCount(), 200);
+  EXPECT_EQ(first_block_.latest_subkeys_count_thread_unsafe(), 200);
 }
 
 TEST_F(KeyVersionBlock_Test, pushing_79_fail_to_finalize) {

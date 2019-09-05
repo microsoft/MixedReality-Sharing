@@ -104,7 +104,8 @@ TEST_F(SubkeyVersionBlock_Test, starting_from_empty) {
   EXPECT_EQ(first_block_.size_relaxed(), 0);
   EXPECT_EQ(first_block_.capacity(), 4);
 
-  EXPECT_EQ(first_block_.GetLatestVersionedPayload(), VersionedPayloadHandle{});
+  EXPECT_EQ(first_block_.latest_versioned_payload_thread_unsafe(),
+            VersionedPayloadHandle{});
   EXPECT_TRUE(IsMissingPayloadsBetween(0, 123'000'000'000ull));
   EXPECT_TRUE(GatherHandles().empty());
 
@@ -114,8 +115,9 @@ TEST_F(SubkeyVersionBlock_Test, starting_from_empty) {
   {
     // The first push should succeed even for a very large version,
     // since the first version of each block is not compressed and saved as is.
-    ASSERT_TRUE(first_block_.CanPush(123'000'000'000ull, true));
-    first_block_.Push(123'000'000'000ull, PayloadHandle{123'000'000});
+    ASSERT_TRUE(first_block_.CanPushFromWriterThread(123'000'000'000ull, true));
+    first_block_.PushFromWriterThread(123'000'000'000ull,
+                                      PayloadHandle{123'000'000});
 
     EXPECT_TRUE(IsMissingPayloadsBetween(0, 122'999'999'999ull));
 
@@ -130,20 +132,21 @@ TEST_F(SubkeyVersionBlock_Test, starting_from_empty) {
   // This version can be compressed into the same block because because the
   // difference between marked versions (which are versions with a bit
   // indicating a deletion marker) is small enough.
-  ASSERT_TRUE(first_block_.CanPush(125'147'483'647ull, true));
+  ASSERT_TRUE(first_block_.CanPushFromWriterThread(125'147'483'647ull, true));
 
   // This one can't (it's the same version as above, but the deletion marker
   // makes the offset too large).
-  EXPECT_FALSE(first_block_.CanPush(125'147'483'647ull, false));
+  EXPECT_FALSE(first_block_.CanPushFromWriterThread(125'147'483'647ull, false));
 
   {
     // Pushing the second version.
     EXPECT_EQ(first_block_.size_relaxed(), 1);
-    ASSERT_TRUE(first_block_.CanPush(123'000'000'100ull, true));
-    first_block_.Push(123'000'000'100ull, PayloadHandle{123'000'100});
+    ASSERT_TRUE(first_block_.CanPushFromWriterThread(123'000'000'100ull, true));
+    first_block_.PushFromWriterThread(123'000'000'100ull,
+                                      PayloadHandle{123'000'100});
     EXPECT_EQ(first_block_.size_relaxed(), 2);
     // Still fits (it's compressible and there are empty slots).
-    ASSERT_TRUE(first_block_.CanPush(125'147'483'647ull, true));
+    ASSERT_TRUE(first_block_.CanPushFromWriterThread(125'147'483'647ull, true));
 
     EXPECT_TRUE(IsMissingPayloadsBetween(0, 122'999'999'999ull));
     EXPECT_TRUE(
@@ -160,11 +163,12 @@ TEST_F(SubkeyVersionBlock_Test, starting_from_empty) {
   {
     // Adding a deletion marker.
     EXPECT_EQ(first_block_.size_relaxed(), 2);
-    ASSERT_TRUE(first_block_.CanPush(123'000'000'200ull, false));
-    first_block_.Push(123'000'000'200ull, {});
+    ASSERT_TRUE(
+        first_block_.CanPushFromWriterThread(123'000'000'200ull, false));
+    first_block_.PushFromWriterThread(123'000'000'200ull, {});
     EXPECT_EQ(first_block_.size_relaxed(), 3);
     // Still fits (it's compressible and there are empty slots).
-    ASSERT_TRUE(first_block_.CanPush(125'147'483'647ull, true));
+    ASSERT_TRUE(first_block_.CanPushFromWriterThread(125'147'483'647ull, true));
 
     EXPECT_TRUE(IsMissingPayloadsBetween(0, 122'999'999'999ull));
     EXPECT_TRUE(
@@ -184,14 +188,17 @@ TEST_F(SubkeyVersionBlock_Test, starting_from_empty) {
   {
     // Adding the last version.
     EXPECT_EQ(first_block_.size_relaxed(), 3);
-    ASSERT_TRUE(first_block_.CanPush(123'000'000'300ull, true));
-    first_block_.Push(123'000'000'300ull, PayloadHandle{123'000'300});
+    ASSERT_TRUE(first_block_.CanPushFromWriterThread(123'000'000'300ull, true));
+    first_block_.PushFromWriterThread(123'000'000'300ull,
+                                      PayloadHandle{123'000'300});
     EXPECT_EQ(first_block_.size_relaxed(), 4);
     // The code above validated that this version is compressible, but now it
     // doesn't fit due to capacity limitations.
-    EXPECT_FALSE(first_block_.CanPush(125'147'483'647ull, true));
+    EXPECT_FALSE(
+        first_block_.CanPushFromWriterThread(125'147'483'647ull, true));
     // Even smaller versions won't fit.
-    EXPECT_FALSE(first_block_.CanPush(123'000'000'301ull, true));
+    EXPECT_FALSE(
+        first_block_.CanPushFromWriterThread(123'000'000'301ull, true));
 
     EXPECT_TRUE(IsMissingPayloadsBetween(0, 122'999'999'999ull));
     EXPECT_TRUE(
@@ -230,7 +237,8 @@ TEST_F(SubkeyVersionBlock_Test, big_gaps) {
   EXPECT_EQ(stored_data_blocks_count(), 3);
   EXPECT_EQ(first_block_.size_relaxed(), 5);
   EXPECT_EQ(first_block_.capacity(), 14);
-  EXPECT_EQ(first_block_.GetLatestVersionedPayload(), VersionedPayloadHandle{});
+  EXPECT_EQ(first_block_.latest_versioned_payload_thread_unsafe(),
+            VersionedPayloadHandle{});
 
   EXPECT_TRUE(IsMissingPayloadsBetween(0, 122'999'999'999ull));
   EXPECT_TRUE(
@@ -240,8 +248,8 @@ TEST_F(SubkeyVersionBlock_Test, big_gaps) {
   {
     // Adding one version to the second block (the version should be
     // compressible relative to the first version of the block).
-    ASSERT_TRUE(first_block_.CanPush(126'000'000'000ull, true));
-    first_block_.Push(126'000'000'000ull, PayloadHandle{126});
+    ASSERT_TRUE(first_block_.CanPushFromWriterThread(126'000'000'000ull, true));
+    first_block_.PushFromWriterThread(126'000'000'000ull, PayloadHandle{126});
     EXPECT_EQ(first_block_.size_relaxed(), 6);
 
     EXPECT_TRUE(IsMissingPayloadsBetween(0, 122'999'999'999ull));
@@ -264,20 +272,21 @@ TEST_F(SubkeyVersionBlock_Test, big_gaps) {
     // Like in a similar situation above (when the builder tried to do the
     // same),  the new version should be pushed into the new block, and the
     // wasted slots filled with invalid offsets.
-    ASSERT_TRUE(first_block_.CanPush(127'294'967'295ull, true));
-    first_block_.Push(127'294'967'295ull, PayloadHandle{127});
+    ASSERT_TRUE(first_block_.CanPushFromWriterThread(127'294'967'295ull, true));
+    first_block_.PushFromWriterThread(127'294'967'295ull, PayloadHandle{127});
     // This bumps the size to 10 (4 elements in the first block, 5 elements in
     // the second, 1 element in the third).
     EXPECT_EQ(first_block_.size_relaxed(), 10);
 
     // Adding the largest possible version that is still compressible as
     // an offset in the 3rd block.
-    ASSERT_TRUE(first_block_.CanPush(129'442'450'942ull, true));
+    ASSERT_TRUE(first_block_.CanPushFromWriterThread(129'442'450'942ull, true));
     // Validating that the next one wouldn't fit (and it can't migrate to
     // the next block since the builder allocated only 3 blocks).
-    EXPECT_FALSE(first_block_.CanPush(129'442'450'943ull, true));
+    EXPECT_FALSE(
+        first_block_.CanPushFromWriterThread(129'442'450'943ull, true));
 
-    first_block_.Push(129'442'450'942ull, PayloadHandle{129});
+    first_block_.PushFromWriterThread(129'442'450'942ull, PayloadHandle{129});
     EXPECT_EQ(first_block_.size_relaxed(), 11);
 
     EXPECT_TRUE(IsMissingPayloadsBetween(0, 122'999'999'999ull));

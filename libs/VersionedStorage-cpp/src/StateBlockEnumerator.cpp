@@ -52,12 +52,13 @@ VersionedPayloadHandle SubkeyStateBlockEnumerator::GetPayload(
              : current_state_block_->GetVersionedPayload(version);
 }
 
-VersionedPayloadHandle SubkeyStateBlockEnumerator::GetLatestPayload() const
+VersionedPayloadHandle
+SubkeyStateBlockEnumerator::latest_versioned_payload_thread_unsafe() const
     noexcept {
   assert(current_state_block_);
   return current_version_block_
-             ? current_version_block_->GetLatestVersionedPayload()
-             : current_state_block_->GetLatestVersionedPayload();
+             ? current_version_block_->latest_versioned_payload_thread_unsafe()
+             : current_state_block_->latest_versioned_payload_thread_unsafe();
 }
 
 SubkeyStateBlockEnumerator
@@ -80,10 +81,11 @@ uint32_t KeyStateBlockEnumerator::GetSubkeysCount(uint64_t version) const
   return 0;
 }
 
-uint32_t KeyStateBlockEnumerator::GetLatestSubkeysCount() const noexcept {
+uint32_t KeyStateBlockEnumerator::latest_subkeys_count_thread_unsafe() const
+    noexcept {
   return current_version_block_
-             ? current_version_block_->GetLatestSubkeysCount()
-             : current_state_block_->GetLatestSubkeysCount();
+             ? current_version_block_->latest_subkeys_count_thread_unsafe()
+             : current_state_block_->latest_subkeys_count_thread_unsafe();
 }
 
 }  // namespace Microsoft::MixedReality::Sharing::VersionedStorage

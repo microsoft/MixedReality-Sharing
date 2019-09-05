@@ -67,12 +67,11 @@ class KeyBlockStateSearchResult
     return 0;
   }
 
-  // Should only be called by the writer thread
-  uint32_t GetLatestSubkeysCount() const noexcept {
+  uint32_t latest_subkeys_count_thread_unsafe() const noexcept {
     if (version_block_)
-      return version_block_->GetLatestSubkeysCount();
+      return version_block_->latest_subkeys_count_thread_unsafe();
     if (state_block_)
-      return state_block_->GetLatestSubkeysCount();
+      return state_block_->latest_subkeys_count_thread_unsafe();
     return 0;
   }
 };
@@ -90,12 +89,12 @@ class SubkeyBlockStateSearchResult
     return {};
   }
 
-  // Should only be called by the writer thread
-  VersionedPayloadHandle GetLatestVersionedPayload() const noexcept {
+  VersionedPayloadHandle latest_versioned_payload_thread_unsafe() const
+      noexcept {
     if (version_block_)
-      return version_block_->GetLatestVersionedPayload();
+      return version_block_->latest_versioned_payload_thread_unsafe();
     if (state_block_)
-      return state_block_->GetLatestVersionedPayload();
+      return state_block_->latest_versioned_payload_thread_unsafe();
     return {};
   }
 };

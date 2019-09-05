@@ -100,7 +100,8 @@ struct KeyTransaction {
   // unnecessary cleanups.
   bool InitializeAndValidate(KeyBlockStateSearchResult search_result) noexcept {
     search_result_ = search_result;
-    current_subkeys_count_ = search_result_.GetLatestSubkeysCount();
+    current_subkeys_count_ =
+        search_result_.latest_subkeys_count_thread_unsafe();
     if (required_subkeys_count_) {
       if (*required_subkeys_count_ != current_subkeys_count_)
         return false;
@@ -129,7 +130,7 @@ inline bool SubkeyTransaction::InitializeAndValidate(
     Behavior& behavior,
     KeyTransaction& key_transaction) noexcept {
   const VersionedPayloadHandle latest_payload =
-      search_result_.GetLatestVersionedPayload();
+      search_result_.latest_versioned_payload_thread_unsafe();
   if (required_payload_handle_or_deletion_marker_) {
     if (required_payload_handle_or_deletion_marker_.is_specific_handle()) {
       if (!latest_payload.has_payload() ||
@@ -360,7 +361,8 @@ class TransactionImpl : public Transaction {
           if (!already_handled) {
             // This subkey block is no mentioned in the transaction,
             // but already exists in the blob.
-            if (enumerator.GetLatestPayload().has_payload()) {
+            if (enumerator.latest_versioned_payload_thread_unsafe()
+                    .has_payload()) {
               if (!allocation_failed) {
                 SubkeyBlockStateSearchResult current = enumerator.Current();
                 allocation_failed = !accessor.ReserveSpaceForTransaction(
@@ -464,9 +466,11 @@ class TransactionImpl : public Transaction {
                                    new_subkeys_count -
                                    key_transaction.current_subkeys_count_;
         if (KeyVersionBlock* block = key_transaction.version_block()) {
-          block->PushSubkeysCount(version_offset, new_subkeys_count);
+          block->PushSubkeysCountFromWriterThread(version_offset,
+                                                  new_subkeys_count);
         } else {
-          key_block.PushSubkeysCount(version_offset, new_subkeys_count);
+          key_block.PushSubkeysCountFromWriterThread(version_offset,
+                                                     new_subkeys_count);
         }
       }
 
@@ -493,7 +497,7 @@ class TransactionImpl : public Transaction {
                       .release();
               if (SubkeyVersionBlock* block =
                       subkey_transaction.version_block()) {
-                block->Push(new_version, new_payload);
+                block->PushFromWriterThread(new_version, new_payload);
               } else {
                 if (!subkey_transaction.state_block()) {
                   subkey_transaction.search_result_ =
@@ -501,17 +505,21 @@ class TransactionImpl : public Transaction {
                                                  it->first);
                   assert(subkey_transaction.state_block());
                 }
-                subkey_transaction.state_block()->Push(new_version,
-                                                       new_payload);
+                subkey_transaction.state_block()->PushFromWriterThread(
+                    new_version, new_payload);
               }
             }
             ++it;
           }
-          if (!already_handled && enumerator.GetLatestPayload().has_payload()) {
+          if (!already_handled &&
+              enumerator.latest_versioned_payload_thread_unsafe()
+                  .has_payload()) {
             if (enumerator.CurrentVersionBlock()) {
-              enumerator.CurrentVersionBlock()->Push(new_version, {});
+              enumerator.CurrentVersionBlock()->PushFromWriterThread(
+                  new_version, {});
             } else {
-              enumerator.CurrentStateBlock().Push(new_version, {});
+              enumerator.CurrentStateBlock().PushFromWriterThread(new_version,
+                                                                  {});
             }
           }
         }
@@ -521,14 +529,15 @@ class TransactionImpl : public Transaction {
         std::optional<PayloadHandle> new_payload =
             subkey_transaction.new_payload_handle_or_deletion_marker_.release();
         if (SubkeyVersionBlock* block = subkey_transaction.version_block()) {
-          block->Push(new_version, new_payload);
+          block->PushFromWriterThread(new_version, new_payload);
         } else {
           if (!subkey_transaction.state_block()) {
             subkey_transaction.search_result_ =
                 accessor.InsertSubkeyBlock(*behavior_, key_block, it->first);
             assert(subkey_transaction.state_block());
           }
-          subkey_transaction.state_block()->Push(new_version, new_payload);
+          subkey_transaction.state_block()->PushFromWriterThread(new_version,
+                                                                 new_payload);
         }
         ++it;
       }
@@ -557,7 +566,7 @@ class TransactionImpl : public Transaction {
       if (pair->second.clear_before_transaction_) {
         is_clear_before_transaction_mode = true;
       }
-    } else if (enumerator.GetLatestSubkeysCount() != 0) {
+    } else if (enumerator.latest_subkeys_count_thread_unsafe() != 0) {
       should_survive = true;
     }
     return {should_survive, is_clear_before_transaction_mode};
@@ -591,7 +600,8 @@ class TransactionImpl : public Transaction {
         return true;
       }
     } else if (!is_clear_before_transaction_mode &&
-               subkey_block.GetLatestVersionedPayload().has_payload()) {
+               subkey_block.latest_versioned_payload_thread_unsafe()
+                   .has_payload()) {
       return true;
     }
     return false;
@@ -678,11 +688,12 @@ class TransactionImpl : public Transaction {
             new_subkeys_count =
                 static_cast<uint32_t>(key_transaction.new_subkeys_count());
           } else {
-            new_subkeys_count = key_enumerator.GetLatestSubkeysCount();
+            new_subkeys_count =
+                key_enumerator.latest_subkeys_count_thread_unsafe();
           }
           if (new_subkeys_count) {
-            new_key_state_block->PushSubkeysCount(VersionOffset{0},
-                                                  new_subkeys_count);
+            new_key_state_block->PushSubkeysCountFromWriterThread(
+                VersionOffset{0}, new_subkeys_count);
             ++new_accessor.keys_count();
           }
         }
@@ -720,7 +731,7 @@ class TransactionImpl : public Transaction {
 
             if (pair->second.new_payload_handle_or_deletion_marker_
                     .is_specific_handle()) {
-              new_subkey_state_block->Push(
+              new_subkey_state_block->PushFromWriterThread(
                   new_version,
                   pair->second.new_payload_handle_or_deletion_marker_
                       .release());
@@ -741,9 +752,10 @@ class TransactionImpl : public Transaction {
             preserve_old_payload = true;
           }
           if (preserve_old_payload) {
-            auto old_payload = subkey_enumerator.GetLatestPayload();
+            auto old_payload =
+                subkey_enumerator.latest_versioned_payload_thread_unsafe();
             if (old_payload.has_payload()) {
-              new_subkey_state_block->Push(
+              new_subkey_state_block->PushFromWriterThread(
                   new_version,
                   behavior_->DuplicateHandle(old_payload.payload()));
               ++new_accessor.subkeys_count();
@@ -772,8 +784,8 @@ class TransactionImpl : public Transaction {
           if (auto count = key_transaction.new_subkeys_count()) {
             // FIXME: check in the validation pass that it's not a narrowing
             // conversion.
-            new_key_state_block->PushSubkeysCount(VersionOffset{0},
-                                                  static_cast<uint32_t>(count));
+            new_key_state_block->PushSubkeysCountFromWriterThread(
+                VersionOffset{0}, static_cast<uint32_t>(count));
             ++new_accessor.keys_count();
           }
         }
@@ -790,7 +802,7 @@ class TransactionImpl : public Transaction {
           subkey_transaction.search_result_ = new_accessor.InsertSubkeyBlock(
               *behavior_, *new_key_state_block, subkey);
 
-          subkey_transaction.state_block()->Push(
+          subkey_transaction.state_block()->PushFromWriterThread(
               new_version,
               subkey_transaction.new_payload_handle_or_deletion_marker_
                   .release());

@@ -70,8 +70,8 @@ class SubkeyStateBlockEnumerator
 
   VersionedPayloadHandle GetPayload(uint64_t version) const noexcept;
 
-  // Should only be called by the writer thread
-  VersionedPayloadHandle GetLatestPayload() const noexcept;
+  VersionedPayloadHandle latest_versioned_payload_thread_unsafe() const
+      noexcept;
 };
 
 class KeyStateBlockEnumerator
@@ -88,8 +88,7 @@ class KeyStateBlockEnumerator
 
   uint32_t GetSubkeysCount(uint64_t version) const noexcept;
 
-  // Should only be called by the writer thread.
-  uint32_t GetLatestSubkeysCount() const noexcept;
+  uint32_t latest_subkeys_count_thread_unsafe() const noexcept;
 
  private:
   uint64_t versions_begin_;

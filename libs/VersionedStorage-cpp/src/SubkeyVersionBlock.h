@@ -36,19 +36,20 @@ class alignas(kBlockSize) SubkeyVersionBlock {
   // without a payload if it doesn't exist in the version.
   VersionedPayloadHandle GetVersionedPayload(uint64_t version) const noexcept;
 
-  // Should only be called by the writer thread.
-  VersionedPayloadHandle GetLatestVersionedPayload() const noexcept;
+  VersionedPayloadHandle latest_versioned_payload_thread_unsafe() const
+      noexcept;
 
   // Returns true if either the payload or the deletion marker of the
   // specified version can be published. Should only be called by the
   // writer thread, and only if the version is greater than all versions
   // pushed before that (the behavior is undefined if the provided version
   // is not greater than existing versions).
-  bool CanPush(uint64_t version, bool has_payload) const noexcept;
+  bool CanPushFromWriterThread(uint64_t version, bool has_payload) const
+      noexcept;
 
-  // Should only be called by the writer thread, and only if the payload
-  // doesn't match the latest payload.
-  void Push(uint64_t version, std::optional<PayloadHandle> payload) noexcept;
+  // Should only be called if the payload doesn't match the latest payload.
+  void PushFromWriterThread(uint64_t version,
+                            std::optional<PayloadHandle> payload) noexcept;
 
   class Builder {
    public:

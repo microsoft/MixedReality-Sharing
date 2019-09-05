@@ -26,7 +26,7 @@ uint32_t KeyStateBlock::GetSubkeysCount(VersionOffset version_offset) const
   return 0;
 }
 
-uint32_t KeyStateBlock::GetLatestSubkeysCount() const noexcept {
+uint32_t KeyStateBlock::latest_subkeys_count_thread_unsafe() const noexcept {
   const uint32_t inplace_versions_count =
       inplace_versions_count_or_version_offset_.load(std::memory_order_relaxed);
   return inplace_versions_count
@@ -34,8 +34,9 @@ uint32_t KeyStateBlock::GetLatestSubkeysCount() const noexcept {
              : 0;
 }
 
-void KeyStateBlock::PushSubkeysCount(VersionOffset version_offset,
-                                     uint32_t subkeys_count) noexcept {
+void KeyStateBlock::PushSubkeysCountFromWriterThread(
+    VersionOffset version_offset,
+    uint32_t subkeys_count) noexcept {
   const uint32_t inplace_versions_count =
       inplace_versions_count_or_version_offset_.load(std::memory_order_relaxed);
   assert(inplace_versions_count < 3);
@@ -69,8 +70,8 @@ VersionedPayloadHandle SubkeyStateBlock::GetVersionedPayload(
   return {};
 }
 
-VersionedPayloadHandle SubkeyStateBlock::GetLatestVersionedPayload() const
-    noexcept {
+VersionedPayloadHandle
+SubkeyStateBlock::latest_versioned_payload_thread_unsafe() const noexcept {
   const uint64_t v0 = marked_version_0_.load(std::memory_order_relaxed);
   if (v0 < kInvalidMarkedVersion) {
     const uint32_t offset = inplace_versions_count_or_version_offset_.load(
@@ -108,9 +109,9 @@ std::vector<VersionedPayloadHandle> SubkeyStateBlock::GetAllPayloads() const
   return {};
 }
 
-void SubkeyStateBlock::Push(uint64_t version,
+void SubkeyStateBlock::PushFromWriterThread(uint64_t version,
                             std::optional<PayloadHandle> payload) noexcept {
-  assert(CanPush(version, payload.has_value()));
+  assert(CanPushFromWriterThread(version, payload.has_value()));
   const auto v0 = marked_version_0_.load(std::memory_order_relaxed);
 
   // The deletion marker bit (in case there is no payload) is set below.

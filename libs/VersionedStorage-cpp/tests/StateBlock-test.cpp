@@ -19,27 +19,27 @@ TEST(StateBlock, KeyStateBlock) {
 
   EXPECT_EQ(block.GetSubkeysCount(VersionOffset(0)), 0);
   EXPECT_EQ(block.GetSubkeysCount(VersionOffset{~1u}), 0);
-  EXPECT_TRUE(block.HasFreeInPlaceSlots());
+  EXPECT_TRUE(block.has_empty_slots_thread_unsafe());
 
   // All versions before the published one should observe the absence of
   // subkeys.
-  block.PushSubkeysCount(VersionOffset{1000}, 2000);
+  block.PushSubkeysCountFromWriterThread(VersionOffset{1000}, 2000);
   EXPECT_EQ(block.GetSubkeysCount(VersionOffset(0)), 0);
   EXPECT_EQ(block.GetSubkeysCount(VersionOffset(999)), 0);
   EXPECT_EQ(block.GetSubkeysCount(VersionOffset(1000)), 2000);
   EXPECT_EQ(block.GetSubkeysCount(VersionOffset{~1u}), 2000);
-  EXPECT_TRUE(block.HasFreeInPlaceSlots());
+  EXPECT_TRUE(block.has_empty_slots_thread_unsafe());
 
-  block.PushSubkeysCount(VersionOffset{1005}, 0);
+  block.PushSubkeysCountFromWriterThread(VersionOffset{1005}, 0);
   EXPECT_EQ(block.GetSubkeysCount(VersionOffset(0)), 0);
   EXPECT_EQ(block.GetSubkeysCount(VersionOffset(999)), 0);
   EXPECT_EQ(block.GetSubkeysCount(VersionOffset(1000)), 2000);
   EXPECT_EQ(block.GetSubkeysCount(VersionOffset(1004)), 2000);
   EXPECT_EQ(block.GetSubkeysCount(VersionOffset(1005)), 0);
   EXPECT_EQ(block.GetSubkeysCount(VersionOffset{~1u}), 0);
-  EXPECT_TRUE(block.HasFreeInPlaceSlots());
+  EXPECT_TRUE(block.has_empty_slots_thread_unsafe());
 
-  block.PushSubkeysCount(VersionOffset{1010}, 2010);
+  block.PushSubkeysCountFromWriterThread(VersionOffset{1010}, 2010);
   EXPECT_EQ(block.GetSubkeysCount(VersionOffset(0)), 0);
   EXPECT_EQ(block.GetSubkeysCount(VersionOffset(999)), 0);
   EXPECT_EQ(block.GetSubkeysCount(VersionOffset(1000)), 2000);
@@ -48,7 +48,7 @@ TEST(StateBlock, KeyStateBlock) {
   EXPECT_EQ(block.GetSubkeysCount(VersionOffset(1009)), 0);
   EXPECT_EQ(block.GetSubkeysCount(VersionOffset(1010)), 2010);
   EXPECT_EQ(block.GetSubkeysCount(VersionOffset{~1u}), 2010);
-  EXPECT_FALSE(block.HasFreeInPlaceSlots());
+  EXPECT_FALSE(block.has_empty_slots_thread_unsafe());
 
   // The writes above should not overwrite the other properties.
   EXPECT_EQ(block.key_, KeyHandle{42});
@@ -90,14 +90,14 @@ TEST(StateBlock, SubkeyStateBlock_payload_and_deletion_marker) {
       block.GetVersionedPayload(kSmallestInvalidVersion - 1).has_payload());
 
   // Can store any version at first, since it's not compressed.
-  EXPECT_TRUE(block.CanPush(0, true));
-  EXPECT_TRUE(block.CanPush(0, false));
-  EXPECT_TRUE(block.CanPush(123'000'000'000ull, true));
-  EXPECT_TRUE(block.CanPush(123'000'000'000ull, false));
-  EXPECT_TRUE(block.CanPush(223'000'000'000ull, true));
-  EXPECT_TRUE(block.CanPush(223'000'000'000ull, false));
+  EXPECT_TRUE(block.CanPushFromWriterThread(0, true));
+  EXPECT_TRUE(block.CanPushFromWriterThread(0, false));
+  EXPECT_TRUE(block.CanPushFromWriterThread(123'000'000'000ull, true));
+  EXPECT_TRUE(block.CanPushFromWriterThread(123'000'000'000ull, false));
+  EXPECT_TRUE(block.CanPushFromWriterThread(223'000'000'000ull, true));
+  EXPECT_TRUE(block.CanPushFromWriterThread(223'000'000'000ull, false));
 
-  block.Push(123'000'000'000ull, PayloadHandle{123'123'000});
+  block.PushFromWriterThread(123'000'000'000ull, PayloadHandle{123'123'000});
   EXPECT_FALSE(block.GetVersionedPayload(0).has_payload());
   EXPECT_FALSE(block.GetVersionedPayload(122'999'999'999ull).has_payload());
   EXPECT_TRUE(block.GetVersionedPayload(123'000'000'000ull).has_payload());
@@ -109,11 +109,11 @@ TEST(StateBlock, SubkeyStateBlock_payload_and_deletion_marker) {
   EXPECT_EQ(block.GetVersionedPayload(223'000'000'000ull), v0);
   EXPECT_EQ(block.GetVersionedPayload(kSmallestInvalidVersion - 1), v0);
 
-  EXPECT_TRUE(block.CanPush(124'000'000'000ull, false));
-  block.Push(124'000'000'000ull, {});
+  EXPECT_TRUE(block.CanPushFromWriterThread(124'000'000'000ull, false));
+  block.PushFromWriterThread(124'000'000'000ull, {});
 
   // Previously returned true while there was still free space.
-  EXPECT_FALSE(block.CanPush(223'000'000'000ull, true));
+  EXPECT_FALSE(block.CanPushFromWriterThread(223'000'000'000ull, true));
 
   EXPECT_FALSE(block.GetVersionedPayload(0).has_payload());
   EXPECT_FALSE(block.GetVersionedPayload(122'999'999'999ull).has_payload());
@@ -162,16 +162,17 @@ TEST(StateBlock, SubkeyStateBlock_2_payloads_largest_offset) {
       block.GetVersionedPayload(kSmallestInvalidVersion - 1).has_payload());
 
   // Can store any version at first, since it's not compressed.
-  EXPECT_TRUE(block.CanPush(0, true));
-  EXPECT_TRUE(block.CanPush(0, false));
-  EXPECT_TRUE(block.CanPush(123'000'000'000ull, true));
-  EXPECT_TRUE(block.CanPush(123'000'000'000ull, false));
-  EXPECT_TRUE(block.CanPush(223'000'000'000ull, true));
-  EXPECT_TRUE(block.CanPush(223'000'000'000ull, false));
-  EXPECT_TRUE(block.CanPush(kSmallestInvalidVersion - 1, true));
-  EXPECT_TRUE(block.CanPush(kSmallestInvalidVersion - 1, false));
+  EXPECT_TRUE(block.CanPushFromWriterThread(0, true));
+  EXPECT_TRUE(block.CanPushFromWriterThread(0, false));
+  EXPECT_TRUE(block.CanPushFromWriterThread(123'000'000'000ull, true));
+  EXPECT_TRUE(block.CanPushFromWriterThread(123'000'000'000ull, false));
+  EXPECT_TRUE(block.CanPushFromWriterThread(223'000'000'000ull, true));
+  EXPECT_TRUE(block.CanPushFromWriterThread(223'000'000'000ull, false));
+  EXPECT_TRUE(block.CanPushFromWriterThread(kSmallestInvalidVersion - 1, true));
+  EXPECT_TRUE(
+      block.CanPushFromWriterThread(kSmallestInvalidVersion - 1, false));
 
-  block.Push(123'000'000'000ull, PayloadHandle{123'123'000});
+  block.PushFromWriterThread(123'000'000'000ull, PayloadHandle{123'123'000});
   EXPECT_FALSE(block.GetVersionedPayload(0).has_payload());
   EXPECT_FALSE(block.GetVersionedPayload(122'999'999'999ull).has_payload());
   EXPECT_TRUE(block.GetVersionedPayload(123'000'000'000ull).has_payload());
@@ -183,19 +184,19 @@ TEST(StateBlock, SubkeyStateBlock_2_payloads_largest_offset) {
   EXPECT_EQ(block.GetVersionedPayload(223'000'000'000ull), v0);
   EXPECT_EQ(block.GetVersionedPayload(kSmallestInvalidVersion - 1), v0);
 
-  EXPECT_TRUE(block.CanPush(124'000'000'000ull, true));
-  EXPECT_TRUE(block.CanPush(124'000'000'000ull, false));
+  EXPECT_TRUE(block.CanPushFromWriterThread(124'000'000'000ull, true));
+  EXPECT_TRUE(block.CanPushFromWriterThread(124'000'000'000ull, false));
 
   // This version can be compressed into the same block because because the
   // difference between marked versions (which are versions with a bit
   // indicating a deletion marker) is small enough.
-  EXPECT_TRUE(block.CanPush(125'147'483'647ull, true));
+  EXPECT_TRUE(block.CanPushFromWriterThread(125'147'483'647ull, true));
 
   // This one can't (it's the same version as above, but the deletion marker
   // makes the offset too large).
-  EXPECT_FALSE(block.CanPush(125'147'483'647ull, false));
+  EXPECT_FALSE(block.CanPushFromWriterThread(125'147'483'647ull, false));
 
-  block.Push(125'147'483'647ull, PayloadHandle{125'125'000});
+  block.PushFromWriterThread(125'147'483'647ull, PayloadHandle{125'125'000});
   EXPECT_FALSE(block.GetVersionedPayload(0).has_payload());
   EXPECT_FALSE(block.GetVersionedPayload(122'999'999'999ull).has_payload());
   EXPECT_TRUE(block.GetVersionedPayload(123'000'000'000ull).has_payload());

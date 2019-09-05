@@ -20,22 +20,19 @@ class alignas(kBlockSize) KeyVersionBlock {
   // Returns the number of subkeys of a key for a given version_offset.
   uint32_t GetSubkeysCount(VersionOffset version_offset) const noexcept;
 
-  // Should only be called by the writer thread.
-  uint32_t GetLatestSubkeysCount() const noexcept {
-    // memory_order_relaxed since this can only be called by the writer thread.
+  uint32_t latest_subkeys_count_thread_unsafe() const noexcept {
     uint32_t size = size_.load(std::memory_order_relaxed);
     return size == 0 ? 0 : versioned_subkey_counts_[size - 1].subkeys_count;
   }
 
-  // Should only be called by the writer thread.
-  bool HasEmptySlots() const noexcept {
+  bool has_empty_slots_thread_unsafe() const noexcept {
     return size_.load(std::memory_order_relaxed) < capacity_;
   }
 
-  // Should only be called by the writer thread, and only if the subkeys count
-  // doesn't match the latest subkeys count.
-  void PushSubkeysCount(VersionOffset version_offset,
-                        uint32_t subkeys_count) noexcept;
+  // Should only be called if the subkeys count doesn't match the latest subkeys
+  // count.
+  void PushSubkeysCountFromWriterThread(VersionOffset version_offset,
+                                        uint32_t subkeys_count) noexcept;
 
   class Builder {
    public:

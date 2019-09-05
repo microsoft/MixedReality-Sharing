@@ -834,7 +834,8 @@ TEST_F(PrepareTransaction_Test, inserting_subkey_version) {
 
   // This takes the ownership of the payload, and the reference should be
   // released when the block is destroyed.
-  search_result.state_block_->Push(kBaseVersion, MakePayload(42));
+  search_result.state_block_->PushFromWriterThread(kBaseVersion,
+                                                   MakePayload(42));
 
   // The subkey doesn't exist before this version
   EXPECT_FALSE(HasPayload(0, subkey));
@@ -855,7 +856,7 @@ TEST_F(PrepareTransaction_Test, inserting_subkey_version) {
                                                    kBaseVersion + 1, false));
   // The operation didn't consume any version blocks
   EXPECT_EQ(accessor_.available_data_blocks_count(), 54);
-  search_result.state_block_->Push(kBaseVersion + 1, {});
+  search_result.state_block_->PushFromWriterThread(kBaseVersion + 1, {});
 
   // The subkey doesn't exist before the first version
   EXPECT_FALSE(HasPayload(kBaseVersion - 1, subkey));
@@ -876,7 +877,8 @@ TEST_F(PrepareTransaction_Test, inserting_subkey_version) {
 
   EXPECT_TRUE(search_result.version_block_);
 
-  search_result.version_block_->Push(kBaseVersion + 2, MakePayload(43));
+  search_result.version_block_->PushFromWriterThread(kBaseVersion + 2,
+                                                     MakePayload(43));
 
   // The subkey doesn't exist before the first version.
   EXPECT_FALSE(HasPayload(kBaseVersion - 1, subkey));
@@ -899,7 +901,7 @@ TEST_F(PrepareTransaction_Test, inserting_subkey_version) {
 
   EXPECT_TRUE(search_result.version_block_);
 
-  search_result.version_block_->Push(kBaseVersion + 3, {});
+  search_result.version_block_->PushFromWriterThread(kBaseVersion + 3, {});
 
   EXPECT_FALSE(HasPayload(kBaseVersion - 1, subkey));
   ASSERT_TRUE(HasPayload(kBaseVersion, subkey));
@@ -922,7 +924,8 @@ TEST_F(PrepareTransaction_Test, inserting_subkey_version) {
 
   EXPECT_TRUE(search_result.version_block_);
 
-  search_result.version_block_->Push(kBaseVersion + 4, MakePayload(44));
+  search_result.version_block_->PushFromWriterThread(kBaseVersion + 4,
+                                                     MakePayload(44));
 
   EXPECT_FALSE(HasPayload(kBaseVersion - 1, subkey));
   ASSERT_TRUE(HasPayload(kBaseVersion, subkey));
@@ -963,8 +966,9 @@ TEST_F(PrepareTransaction_Test, inserting_key_versions) {
     // The operation didn't consume any version blocks
     EXPECT_EQ(accessor_.available_data_blocks_count(), 54);
 
-    ASSERT_TRUE(search_result.state_block_->HasFreeInPlaceSlots());
-    search_result.state_block_->PushSubkeysCount(VersionOffset{i}, new_count);
+    ASSERT_TRUE(search_result.state_block_->has_empty_slots_thread_unsafe());
+    search_result.state_block_->PushSubkeysCountFromWriterThread(
+        VersionOffset{i}, new_count);
 
     // There are no subkeys before the first published version
     EXPECT_EQ(GetSubkeyCountForVersion(kBaseVersion - 1), 0);
@@ -989,8 +993,9 @@ TEST_F(PrepareTransaction_Test, inserting_key_versions) {
     // All versions are in the same version block.
     EXPECT_EQ(accessor_.available_data_blocks_count(), 53);
 
-    ASSERT_TRUE(search_result.version_block_->HasEmptySlots());
-    search_result.version_block_->PushSubkeysCount(VersionOffset{i}, new_count);
+    ASSERT_TRUE(search_result.version_block_->has_empty_slots_thread_unsafe());
+    search_result.version_block_->PushSubkeysCountFromWriterThread(
+        VersionOffset{i}, new_count);
 
     // There are no subkeys before the first published version
     EXPECT_EQ(GetSubkeyCountForVersion(kBaseVersion - 1), 0);
@@ -1017,7 +1022,8 @@ TEST_F(PrepareTransaction_Test, inserting_key_versions) {
 
   EXPECT_EQ(search_result.version_block_->capacity(), 15);
   EXPECT_EQ(search_result.version_block_->size_relaxed(), 6);
-  search_result.version_block_->PushSubkeysCount(VersionOffset{7}, 9007);
+  search_result.version_block_->PushSubkeysCountFromWriterThread(
+      VersionOffset{7}, 9007);
   EXPECT_EQ(search_result.version_block_->size_relaxed(), 7);
 
   // There are no subkeys before the first published version
