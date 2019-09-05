@@ -66,7 +66,8 @@ class Behavior {
   // Frees pages previously allocated with AllocateZeroedPages.
   virtual void FreePages(void* address) noexcept = 0;
 
-  // Locks the mutex that restricts all modifications of the storage.
+  // Locks the mutex that restricts concurrent modifications of the storage
+  // where necessary.
   // This is customizable for the cases where the storage blobs are located in
   // shared memory and modified by multiple processes (in which case the
   // implementation can use a cross-process OS mutex).

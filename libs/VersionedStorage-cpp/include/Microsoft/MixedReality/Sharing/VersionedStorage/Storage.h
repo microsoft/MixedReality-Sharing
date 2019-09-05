@@ -61,6 +61,8 @@ class Storage {
   // Applies the provided transaction and increments the version of the storage
   // (unless it failed to allocate memory for the transaction, see all possible
   // outcomes above).
+  // The operation may call LockWriterMutex()/UnlockWriterMutex() on the
+  // Behavior object, but the callers should not rely on this.
   TransactionResult ApplyTransaction(
       std::unique_ptr<Transaction> transaction) noexcept;
 
