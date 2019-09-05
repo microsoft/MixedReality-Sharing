@@ -9,9 +9,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\AbstractKey.h">
-      <Filter>include/Microsoft/MixedReality/Sharing/VersionedStorage</Filter>
-    </ClInclude>
     <ClInclude Include="src\pch.h">
       <Filter>src</Filter>
     </ClInclude>
@@ -51,9 +48,6 @@
     <ClInclude Include="src\SubkeyVersionBlock.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\AbstractKeyWithHandle.h">
-      <Filter>include/Microsoft/MixedReality/Sharing/VersionedStorage</Filter>
-    </ClInclude>
     <ClInclude Include="src\StateBlockEnumerator.h">
       <Filter>src</Filter>
     </ClInclude>
@@ -65,6 +59,12 @@
     </ClInclude>
     <ClInclude Include="src\VersionRefCount.h">
       <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\KeyDescriptor.h">
+      <Filter>include/Microsoft/MixedReality/Sharing/VersionedStorage</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\KeyDescriptorWithHandle.h">
+      <Filter>include/Microsoft/MixedReality/Sharing/VersionedStorage</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -92,10 +92,10 @@
     <ClCompile Include="src\KeyVersionBlock.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\AbstractKeyWithHandle.cpp">
+    <ClCompile Include="src\StateBlockEnumerator.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\StateBlockEnumerator.cpp">
+    <ClCompile Include="src\KeyDescriptorWithHandle.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

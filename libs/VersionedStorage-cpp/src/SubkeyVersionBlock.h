@@ -42,8 +42,8 @@ class alignas(kBlockSize) SubkeyVersionBlock {
   // Returns true if either the payload or the deletion marker of the
   // specified version can be published. Should only be called by the
   // writer thread, and only if the version is greater than all versions
-  // pushed before that (this situation is not handled since it's not a
-  // normal use case).
+  // pushed before that (the behavior is undefined if the provided version
+  // is not greater than existing versions).
   bool CanPush(uint64_t version, bool has_payload) const noexcept;
 
   // Should only be called by the writer thread, and only if the payload
@@ -183,7 +183,7 @@ class alignas(kBlockSize) SubkeyVersionBlock {
 
       // Index of the first unused payload in this sequence of blocks.
       // Note that it doesn't have to be equal to the number of actually
-      // stored payloads), since certain payloads could be skipped (and
+      // stored payloads, since certain payloads could be skipped (and
       // corresponding VersionOffset for them would be kInvalid).
       std::atomic_uint32_t size_;
     };

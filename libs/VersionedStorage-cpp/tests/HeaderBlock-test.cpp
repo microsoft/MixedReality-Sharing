@@ -6,7 +6,7 @@
 
 #include "src/HeaderBlock.h"
 
-#include <Microsoft/MixedReality/Sharing/VersionedStorage/AbstractKeyWithHandle.h>
+#include <Microsoft/MixedReality/Sharing/VersionedStorage/KeyDescriptorWithHandle.h>
 
 #include "TestBehavior.h"
 #include "src/StateBlock.h"
@@ -28,7 +28,7 @@ class HeaderBlock_Test : public ::testing::Test {
 
   std::shared_ptr<TestBehavior> behavior_{std::make_shared<TestBehavior>()};
 
-  AbstractKeyWithHandle MakeAbstractKey(uint64_t id) const noexcept {
+  KeyDescriptorWithHandle MakeKeyDescriptor(uint64_t id) const noexcept {
     return {*behavior_, behavior_->MakeKey(id), true};
   }
 
@@ -182,17 +182,17 @@ TEST_F(HeaderBlock_Test, populate_block_index_with_keys) {
     return accessor.GetBlockAt<KeyStateBlock>(right).key_;
   };
 
-  EXPECT_EQ(accessor.FindKey(MakeAbstractKey(20)).index_slot_location_,
+  EXPECT_EQ(accessor.FindKey(MakeKeyDescriptor(20)).index_slot_location_,
             IndexSlotLocation::kInvalid);
-  EXPECT_EQ(accessor.FindKey(MakeAbstractKey(20)).state_block_, nullptr);
-  EXPECT_EQ(accessor.FindKey(MakeAbstractKey(20)).version_block_, nullptr);
+  EXPECT_EQ(accessor.FindKey(MakeKeyDescriptor(20)).state_block_, nullptr);
+  EXPECT_EQ(accessor.FindKey(MakeKeyDescriptor(20)).version_block_, nullptr);
 
   // Inserting key 20. This is the simplest case, since there is no other keys,
   // and thus the key will be inserted as a head of the list and the root of the
   // tree (of keys).
-  accessor.InsertKeyBlock(MakeAbstractKey(20));
+  accessor.InsertKeyBlock(MakeKeyDescriptor(20));
   EXPECT_EQ(behavior_->GetKeyReferenceCount(KeyHandle{20}), 1);
-  KeyBlockStateSearchResult result_20 = accessor.FindKey(MakeAbstractKey(20));
+  KeyBlockStateSearchResult result_20 = accessor.FindKey(MakeKeyDescriptor(20));
   ASSERT_NE(result_20.state_block_, nullptr);
   EXPECT_EQ(result_20.state_block_->key_, KeyHandle{20});
   EXPECT_TRUE(IsLeaf(result_20));
@@ -222,9 +222,9 @@ TEST_F(HeaderBlock_Test, populate_block_index_with_keys) {
   // as a left child of the key 20. Then the AA-tree invariant should become
   // broken, and the skew operation will be performed, repairing the tree.
   // The new node (10) will become the new root.
-  accessor.InsertKeyBlock(MakeAbstractKey(10));
+  accessor.InsertKeyBlock(MakeKeyDescriptor(10));
   EXPECT_EQ(behavior_->GetKeyReferenceCount(KeyHandle{10}), 1);
-  KeyBlockStateSearchResult result_10 = accessor.FindKey(MakeAbstractKey(10));
+  KeyBlockStateSearchResult result_10 = accessor.FindKey(MakeKeyDescriptor(10));
   ASSERT_NE(result_10.state_block_, nullptr);
   EXPECT_EQ(result_10.state_block_->key_, KeyHandle{10});
 
@@ -255,9 +255,9 @@ TEST_F(HeaderBlock_Test, populate_block_index_with_keys) {
   // the root has the right child, the invariant can't be repaired by
   // skewing the tree. Instead, the level of the root will be
   // incremented.
-  accessor.InsertKeyBlock(MakeAbstractKey(5));
+  accessor.InsertKeyBlock(MakeKeyDescriptor(5));
   EXPECT_EQ(behavior_->GetKeyReferenceCount(KeyHandle{5}), 1);
-  KeyBlockStateSearchResult result_5 = accessor.FindKey(MakeAbstractKey(5));
+  KeyBlockStateSearchResult result_5 = accessor.FindKey(MakeKeyDescriptor(5));
   ASSERT_NE(result_5.state_block_, nullptr);
   EXPECT_EQ(result_5.state_block_->key_, KeyHandle{5});
 
@@ -289,9 +289,9 @@ TEST_F(HeaderBlock_Test, populate_block_index_with_keys) {
   // already present. Therefore the insertion should recurse into adding
   // it as a child to 5. But then the invariant will become broken, and
   // the subtree will become skewed.
-  accessor.InsertKeyBlock(MakeAbstractKey(4));
+  accessor.InsertKeyBlock(MakeKeyDescriptor(4));
   EXPECT_EQ(behavior_->GetKeyReferenceCount(KeyHandle{4}), 1);
-  KeyBlockStateSearchResult result_4 = accessor.FindKey(MakeAbstractKey(4));
+  KeyBlockStateSearchResult result_4 = accessor.FindKey(MakeKeyDescriptor(4));
   ASSERT_NE(result_4.state_block_, nullptr);
   EXPECT_EQ(result_4.state_block_->key_, KeyHandle{4});
 
@@ -328,9 +328,9 @@ TEST_F(HeaderBlock_Test, populate_block_index_with_keys) {
   // time it will be repaired by incrementing the level, the second time
   // the skew operation will be performed. This test should validate
   // that children are properly preserved during the skew operation.
-  accessor.InsertKeyBlock(MakeAbstractKey(3));
+  accessor.InsertKeyBlock(MakeKeyDescriptor(3));
   EXPECT_EQ(behavior_->GetKeyReferenceCount(KeyHandle{3}), 1);
-  KeyBlockStateSearchResult result_3 = accessor.FindKey(MakeAbstractKey(3));
+  KeyBlockStateSearchResult result_3 = accessor.FindKey(MakeKeyDescriptor(3));
   ASSERT_NE(result_3.state_block_, nullptr);
   EXPECT_EQ(result_3.state_block_->key_, KeyHandle{3});
 
@@ -372,9 +372,9 @@ TEST_F(HeaderBlock_Test, populate_block_index_with_keys) {
 
   // Inserting key 15. It should recurse into the right subtree and be inserted
   // with one skew.
-  accessor.InsertKeyBlock(MakeAbstractKey(15));
+  accessor.InsertKeyBlock(MakeKeyDescriptor(15));
   EXPECT_EQ(behavior_->GetKeyReferenceCount(KeyHandle{15}), 1);
-  KeyBlockStateSearchResult result_15 = accessor.FindKey(MakeAbstractKey(15));
+  KeyBlockStateSearchResult result_15 = accessor.FindKey(MakeKeyDescriptor(15));
   ASSERT_NE(result_15.state_block_, nullptr);
   EXPECT_EQ(result_15.state_block_->key_, KeyHandle{15});
 
@@ -425,9 +425,9 @@ TEST_F(HeaderBlock_Test, populate_block_index_with_keys) {
   // the level of the key 15, but then the level of the node 4(1) will be the
   // same as the level of its right grandchild (key 15). This will be repaired
   // with a split operation.
-  accessor.InsertKeyBlock(MakeAbstractKey(12));
+  accessor.InsertKeyBlock(MakeKeyDescriptor(12));
   EXPECT_EQ(behavior_->GetKeyReferenceCount(KeyHandle{12}), 1);
-  KeyBlockStateSearchResult result_12 = accessor.FindKey(MakeAbstractKey(12));
+  KeyBlockStateSearchResult result_12 = accessor.FindKey(MakeKeyDescriptor(12));
   ASSERT_NE(result_12.state_block_, nullptr);
   EXPECT_EQ(result_12.state_block_->key_, KeyHandle{12});
 
@@ -499,9 +499,9 @@ TEST_F(HeaderBlock_Test, populate_block_index_with_keys_and_subkeys) {
   // Each key will have 9 subkeys
 
   for (uint64_t key = 0; key < 3; ++key) {
-    accessor.InsertKeyBlock(MakeAbstractKey(key));
+    accessor.InsertKeyBlock(MakeKeyDescriptor(key));
     KeyBlockStateSearchResult key_block_state_search_result =
-        accessor.FindKey(MakeAbstractKey(key));
+        accessor.FindKey(MakeKeyDescriptor(key));
     ASSERT_TRUE(key_block_state_search_result.state_block_);
     EXPECT_EQ(key_block_state_search_result.state_block_->key_, KeyHandle{key});
     for (uint64_t i = 0; i < 9; ++i) {
@@ -510,7 +510,7 @@ TEST_F(HeaderBlock_Test, populate_block_index_with_keys_and_subkeys) {
           *behavior_, *key_block_state_search_result.state_block_, subkey);
 
       SubkeyBlockStateSearchResult subkey_block_state_search_result =
-          accessor.FindSubkey(MakeAbstractKey(key), subkey);
+          accessor.FindSubkey(MakeKeyDescriptor(key), subkey);
 
       SubkeyStateBlock* block = subkey_block_state_search_result.state_block_;
       ASSERT_TRUE(block);
@@ -574,9 +574,9 @@ TEST_F(HeaderBlock_Test, insertion_order_fuzzing) {
 
     HeaderBlock::Accessor accessor(*header_block);
 
-    accessor.InsertKeyBlock(MakeAbstractKey(5));
+    accessor.InsertKeyBlock(MakeKeyDescriptor(5));
     KeyBlockStateSearchResult key_block_state_search_result =
-        accessor.FindKey(MakeAbstractKey(5));
+        accessor.FindKey(MakeKeyDescriptor(5));
     ASSERT_TRUE(key_block_state_search_result.state_block_);
     EXPECT_EQ(key_block_state_search_result.state_block_->key_, KeyHandle{5});
 
@@ -600,7 +600,7 @@ TEST_F(HeaderBlock_Test, insertion_order_fuzzing) {
     SubkeyStateBlockEnumerator subkey_e =
         key_e.CreateSubkeyStateBlockEnumerator();
 
-    const auto search_key = MakeAbstractKey(5);
+    const auto search_key = MakeKeyDescriptor(5);
 
     // Enumerator traverses through subkeys in sorted order.
     for (size_t i = 0; i < subkeys.size(); ++i) {
@@ -660,9 +660,9 @@ TEST_F(HeaderBlock_Test, subkey_hashes_fuzzing) {
 
     HeaderBlock::Accessor accessor(*header_block);
 
-    accessor.InsertKeyBlock(MakeAbstractKey(5));
+    accessor.InsertKeyBlock(MakeKeyDescriptor(5));
     KeyBlockStateSearchResult key_block_state_search_result =
-        accessor.FindKey(MakeAbstractKey(5));
+        accessor.FindKey(MakeKeyDescriptor(5));
     ASSERT_TRUE(key_block_state_search_result.state_block_);
     EXPECT_EQ(key_block_state_search_result.state_block_->key_, KeyHandle{5});
 
@@ -688,7 +688,7 @@ TEST_F(HeaderBlock_Test, subkey_hashes_fuzzing) {
     SubkeyStateBlockEnumerator subkey_e =
         key_e.CreateSubkeyStateBlockEnumerator();
 
-    const auto search_key = MakeAbstractKey(5);
+    const auto search_key = MakeKeyDescriptor(5);
 
     // Enumerator traverses through subkeys in sorted order.
     for (size_t i = 0; i < sorted_subkeys.size(); ++i) {
@@ -762,9 +762,9 @@ class PrepareTransaction_Test : public HeaderBlock_Test {
     EXPECT_EQ(header_block_->available_data_blocks_count(), 61);
 
     // Adding a key and a few subkeys
-    accessor_.InsertKeyBlock(MakeAbstractKey(5));
+    accessor_.InsertKeyBlock(MakeKeyDescriptor(5));
     KeyBlockStateSearchResult key_block_state_search_result =
-        accessor_.FindKey(MakeAbstractKey(5));
+        accessor_.FindKey(MakeKeyDescriptor(5));
     for (uint64_t subkey = 0; subkey < 6; ++subkey) {
       accessor_.InsertSubkeyBlock(
           *behavior_, *key_block_state_search_result.state_block_, subkey);
@@ -780,7 +780,7 @@ class PrepareTransaction_Test : public HeaderBlock_Test {
   }
 
   uint32_t GetSubkeyCountForVersion(uint64_t version) noexcept {
-    return accessor_.FindKey(version, MakeAbstractKey(5)).value();
+    return accessor_.FindKey(version, MakeKeyDescriptor(5)).value();
   }
 
   static bool KeySubkeyMatch(const SubkeyBlockStateSearchResult& search_result,
@@ -792,13 +792,13 @@ class PrepareTransaction_Test : public HeaderBlock_Test {
   }
 
   bool HasPayload(uint64_t version, uint64_t subkey) noexcept {
-    return accessor_.FindSubkey(version, MakeAbstractKey(5), subkey)
+    return accessor_.FindSubkey(version, MakeKeyDescriptor(5), subkey)
         .value()
         .has_payload();
   }
 
   VersionedPayloadHandle GetPayload(uint64_t version, uint64_t subkey) {
-    return accessor_.FindSubkey(version, MakeAbstractKey(5), subkey).value();
+    return accessor_.FindSubkey(version, MakeKeyDescriptor(5), subkey).value();
   }
 
   HeaderBlock* header_block_;
@@ -808,7 +808,7 @@ class PrepareTransaction_Test : public HeaderBlock_Test {
 TEST_F(PrepareTransaction_Test, inserting_subkey_version) {
   uint64_t subkey = 2;
   SubkeyBlockStateSearchResult search_result =
-      accessor_.FindSubkey(MakeAbstractKey(5), subkey);
+      accessor_.FindSubkey(MakeKeyDescriptor(5), subkey);
 
   ASSERT_TRUE(
       accessor_.ReserveSpaceForTransaction(search_result, kBaseVersion, true));
@@ -940,7 +940,7 @@ TEST_F(PrepareTransaction_Test, inserting_key_versions) {
   // storage within the state block)
   for (uint32_t i = 0; i < 3; ++i) {
     KeyBlockStateSearchResult search_result =
-        accessor_.FindKey(MakeAbstractKey(5));
+        accessor_.FindKey(MakeKeyDescriptor(5));
     uint32_t new_count = 9000 + i;
     ASSERT_TRUE(accessor_.ReserveSpaceForTransaction(search_result));
     EXPECT_TRUE(KeyMatches(search_result, 5));
@@ -966,7 +966,7 @@ TEST_F(PrepareTransaction_Test, inserting_key_versions) {
   // (the existing 3 versions will be copied there since they are referenced).
   for (uint32_t i = 3; i < 7; ++i) {
     KeyBlockStateSearchResult search_result =
-        accessor_.FindKey(MakeAbstractKey(5));
+        accessor_.FindKey(MakeKeyDescriptor(5));
     const uint32_t new_count = 9000 + i;
     ASSERT_TRUE(accessor_.ReserveSpaceForTransaction(search_result));
     EXPECT_TRUE(KeyMatches(search_result, 5));
@@ -992,7 +992,7 @@ TEST_F(PrepareTransaction_Test, inserting_key_versions) {
   header_block_->RemoveSnapshotReference(kBaseVersion + 2, *behavior_);
 
   KeyBlockStateSearchResult search_result =
-      accessor_.FindKey(MakeAbstractKey(5));
+      accessor_.FindKey(MakeKeyDescriptor(5));
   ASSERT_TRUE(accessor_.ReserveSpaceForTransaction(search_result));
   EXPECT_TRUE(KeyMatches(search_result, 5));
   ASSERT_TRUE(search_result.version_block_);

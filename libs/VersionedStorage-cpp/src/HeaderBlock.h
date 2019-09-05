@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <Microsoft/MixedReality/Sharing/VersionedStorage/AbstractKey.h>
+#include <Microsoft/MixedReality/Sharing/VersionedStorage/KeyDescriptor.h>
 
 #include "src/IndexBlock.h"
 #include "src/SearchResult.h"
@@ -159,19 +159,19 @@ class HeaderBlock::Accessor {
     return index_begin_[index_block_id];
   }
 
-  KeyBlockStateSearchResult FindKey(const AbstractKey& key) noexcept;
+  KeyBlockStateSearchResult FindKey(const KeyDescriptor& key) noexcept;
 
-  SubkeyBlockStateSearchResult FindSubkey(const AbstractKey& key,
+  SubkeyBlockStateSearchResult FindSubkey(const KeyDescriptor& key,
                                           uint64_t subkey) noexcept;
 
-  KeySearchResult FindKey(uint64_t version, const AbstractKey& key) noexcept;
+  KeySearchResult FindKey(uint64_t version, const KeyDescriptor& key) noexcept;
 
   SubkeySearchResult FindSubkey(uint64_t version,
-                                const AbstractKey& key,
+                                const KeyDescriptor& key,
                                 uint64_t subkey) noexcept;
 
   // The key must be missing and there must be enough capacity.
-  KeyBlockStateSearchResult InsertKeyBlock(AbstractKey& key) noexcept;
+  KeyBlockStateSearchResult InsertKeyBlock(KeyDescriptor& key) noexcept;
 
   // The subkey must be missing and there must be enough capacity.
   SubkeyBlockStateSearchResult InsertSubkeyBlock(Behavior& behavior,
@@ -201,7 +201,7 @@ class HeaderBlock::Accessor {
       const KeyBlockStateSearchResult& search_result) noexcept;
 
   [[nodiscard]] SubkeyStateBlockEnumerator CreateSubkeyStateBlockEnumerator(
-      const AbstractKey& key) noexcept {
+      const KeyDescriptor& key) noexcept {
     return CreateSubkeyStateBlockEnumerator(FindKey(key));
   }
 

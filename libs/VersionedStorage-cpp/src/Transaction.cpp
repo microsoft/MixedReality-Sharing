@@ -6,7 +6,7 @@
 
 #include <Microsoft/MixedReality/Sharing/VersionedStorage/Transaction.h>
 
-#include <Microsoft/MixedReality/Sharing/VersionedStorage/AbstractKeyWithHandle.h>
+#include <Microsoft/MixedReality/Sharing/VersionedStorage/KeyDescriptorWithHandle.h>
 
 #include "src/HeaderBlock.h"
 #include "src/StateBlock.h"
@@ -182,11 +182,11 @@ struct KeyComparator {
     return behavior_->Less(a, b);
   }
 
-  bool operator()(const AbstractKey& a, KeyHandle b) const noexcept {
+  bool operator()(const KeyDescriptor& a, KeyHandle b) const noexcept {
     return a.IsLessThan(b);
   }
 
-  bool operator()(KeyHandle a, const AbstractKey& b) const noexcept {
+  bool operator()(KeyHandle a, const KeyDescriptor& b) const noexcept {
     return b.IsGreaterThan(a);
   }
 
@@ -209,7 +209,7 @@ class TransactionImpl : public Transaction {
     }
   }
 
-  void Put(AbstractKey& key,
+  void Put(KeyDescriptor& key,
            uint64_t subkey,
            PayloadHandle new_payload) noexcept override {
     SubkeyTransaction& subkey_transaction =
@@ -218,7 +218,7 @@ class TransactionImpl : public Transaction {
     subkey_transaction.new_payload_handle_or_deletion_marker_ = new_payload;
   }
 
-  void Delete(AbstractKey& key, uint64_t subkey) noexcept override {
+  void Delete(KeyDescriptor& key, uint64_t subkey) noexcept override {
     KeyTransaction& key_transaction = GetKeyTransaction(key);
     if (key_transaction.clear_before_transaction_) {
       // In this mode we will only have the node associated with this subkey if
@@ -241,7 +241,7 @@ class TransactionImpl : public Transaction {
     }
   }
 
-  void ClearBeforeTransaction(AbstractKey& key) noexcept override {
+  void ClearBeforeTransaction(KeyDescriptor& key) noexcept override {
     KeyTransaction& key_transaction = GetKeyTransaction(key);
     if (!key_transaction.clear_before_transaction_) {
       key_transaction.clear_before_transaction_ = true;
@@ -261,7 +261,7 @@ class TransactionImpl : public Transaction {
     }
   }
 
-  void RequirePayload(AbstractKey& key,
+  void RequirePayload(KeyDescriptor& key,
                       uint64_t subkey,
                       PayloadHandle required_payload) noexcept override {
     SubkeyTransaction& subkey_transaction =
@@ -271,7 +271,7 @@ class TransactionImpl : public Transaction {
         required_payload;
   }
 
-  void RequireMissingSubkey(AbstractKey& key,
+  void RequireMissingSubkey(KeyDescriptor& key,
                             uint64_t subkey) noexcept override {
     SubkeyTransaction& subkey_transaction =
         GetKeyTransaction(key).subkey_transactions_map_[subkey];
@@ -279,7 +279,7 @@ class TransactionImpl : public Transaction {
     subkey_transaction.required_payload_handle_or_deletion_marker_ = nullptr;
   }
 
-  void RequireSubkeysCount(AbstractKey& key,
+  void RequireSubkeysCount(KeyDescriptor& key,
                            size_t required_subkeys_count) noexcept override {
     KeyTransaction& key_transaction = GetKeyTransaction(key);
     key_transaction.required_subkeys_count_.emplace(required_subkeys_count);
@@ -295,14 +295,14 @@ class TransactionImpl : public Transaction {
     for (auto key_transactions_it = begin(key_transactions_map_),
               key_transactions_it_end = end(key_transactions_map_);
          key_transactions_it != key_transactions_it_end;) {
-      const AbstractKeyWithHandle abstract_key{
+      const KeyDescriptorWithHandle key_descriptor{
           *behavior_, key_transactions_it->first, false};
       KeyTransaction& key_transaction = key_transactions_it->second;
       SubkeyTransactionsMap& subkey_transactions =
           key_transaction.subkey_transactions_map_;
 
       if (!key_transaction.InitializeAndValidate(
-              accessor.FindKey(abstract_key)))
+              accessor.FindKey(key_descriptor)))
         return PrepareResult::ValidationFailed;
 
       const bool is_key_state_found =
@@ -382,7 +382,7 @@ class TransactionImpl : public Transaction {
         SubkeyTransaction& subkey_transaction = it->second;
         if (should_search_subkeys) {
           subkey_transaction.search_result_ =
-              accessor.FindSubkey(abstract_key, it->first);
+              accessor.FindSubkey(key_descriptor, it->first);
         }
         if (!subkey_transaction.InitializeAndValidate(*behavior_,
                                                       key_transaction)) {
@@ -440,8 +440,8 @@ class TransactionImpl : public Transaction {
 
     for (auto&& [key_handle, key_transaction] : key_transactions_map_) {
       if (!key_transaction.state_block()) {
-        AbstractKeyWithHandle key{*behavior_, key_handle, true};
-        // The key handle is now owned by AbstractKeyWithHandle,
+        KeyDescriptorWithHandle key{*behavior_, key_handle, true};
+        // The key handle is now owned by KeyDescriptorWithHandle,
         // which will then transfer the ownership to the newly inserted
         // block.
         key_transaction.owns_key_handle_ = false;
@@ -660,7 +660,7 @@ class TransactionImpl : public Transaction {
       auto EnsureNewKeyBlockExists = [&] {
         if (!new_key_state_block) {
           auto& old_key_block = key_enumerator.CurrentStateBlock();
-          AbstractKeyWithHandle key{
+          KeyDescriptorWithHandle key{
               *behavior_, key_enumerator.CurrentStateBlock().key_, false};
           KeyBlockStateSearchResult result = new_accessor.InsertKeyBlock(key);
           new_key_state_block = result.state_block_;
@@ -769,9 +769,9 @@ class TransactionImpl : public Transaction {
           // Transferring the ownership
           assert(key_transaction.owns_key_handle_);
           key_transaction.owns_key_handle_ = false;
-          AbstractKeyWithHandle abstract_key{*behavior_, key, true};
+          KeyDescriptorWithHandle key_descriptor{*behavior_, key, true};
           KeyBlockStateSearchResult result =
-              new_accessor.InsertKeyBlock(abstract_key);
+              new_accessor.InsertKeyBlock(key_descriptor);
           new_key_state_block = result.state_block_;
           if (auto count = key_transaction.new_subkeys_count()) {
             // FIXME: check in the validation pass that it's not a narrowing
@@ -805,7 +805,7 @@ class TransactionImpl : public Transaction {
     return new_header_block;
   }
 
-  KeyTransaction& GetKeyTransaction(AbstractKey& key) noexcept {
+  KeyTransaction& GetKeyTransaction(KeyDescriptor& key) noexcept {
     auto it = key_transactions_map_.lower_bound(key);
     if (it != key_transactions_map_.end() && key.IsEqualTo(it->first))
       return it->second;

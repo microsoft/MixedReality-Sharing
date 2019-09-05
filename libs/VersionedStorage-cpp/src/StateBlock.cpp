@@ -72,7 +72,7 @@ VersionedPayloadHandle SubkeyStateBlock::GetVersionedPayload(
 VersionedPayloadHandle SubkeyStateBlock::GetLatestVersionedPayload() const
     noexcept {
   const uint64_t v0 = marked_version_0_.load(std::memory_order_relaxed);
-  if (v0 < kInvalidMakredVersion) {
+  if (v0 < kInvalidMarkedVersion) {
     const uint32_t offset = inplace_versions_count_or_version_offset_.load(
         std::memory_order_relaxed);
     if (offset != static_cast<uint32_t>(VersionOffset::kInvalid)) {
@@ -90,7 +90,7 @@ std::vector<VersionedPayloadHandle> SubkeyStateBlock::GetAllPayloads() const
   // This method is called by the writer thread under the lock, so
   // memory_order_relaxed is enough.
   auto v0 = marked_version_0_.load(std::memory_order_relaxed);
-  if (v0 != kInvalidMakredVersion) {
+  if (v0 != kInvalidMarkedVersion) {
     std::vector<VersionedPayloadHandle> result;
     result.reserve(16);
     result.emplace_back(v0 >> 1, payloads_[0]);
@@ -116,7 +116,7 @@ void SubkeyStateBlock::Push(uint64_t version,
   // The deletion marker bit (in case there is no payload) is set below.
   uint64_t marked_version = version << 1;
 
-  if (v0 == kInvalidMakredVersion) {
+  if (v0 == kInvalidMarkedVersion) {
     if (payload.has_value()) {
       payloads_[0] = *payload;
     } else {

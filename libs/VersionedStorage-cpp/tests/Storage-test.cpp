@@ -4,7 +4,7 @@
 
 #include "pch.h"
 
-#include <Microsoft/MixedReality/Sharing/VersionedStorage/AbstractKeyWithHandle.h>
+#include <Microsoft/MixedReality/Sharing/VersionedStorage/KeyDescriptorWithHandle.h>
 #include <Microsoft/MixedReality/Sharing/VersionedStorage/KeyEnumerator.h>
 #include <Microsoft/MixedReality/Sharing/VersionedStorage/Storage.h>
 #include <Microsoft/MixedReality/Sharing/VersionedStorage/SubkeyEnumerator.h>
@@ -21,7 +21,7 @@ class Storage_Test : public ::testing::Test {
   }
 
  protected:
-  AbstractKeyWithHandle MakeAbstractKey(uint64_t id) const noexcept {
+  KeyDescriptorWithHandle MakeKeyDescriptor(uint64_t id) const noexcept {
     return {*behavior_, behavior_->MakeKey(id), true};
   }
 
@@ -40,7 +40,7 @@ TEST_F(Storage_Test, initial_state_is_empty) {
   EXPECT_EQ(snapshot->keys_count(), 0);
   EXPECT_EQ(snapshot->subkeys_count(), 0);
 
-  const auto key_0 = MakeAbstractKey(0);
+  const auto key_0 = MakeKeyDescriptor(0);
 
   EXPECT_EQ(snapshot->GetSubkeysCount(key_0), 0);
   EXPECT_FALSE(snapshot->Get(key_0, 0).has_value());
@@ -57,25 +57,25 @@ TEST_F(Storage_Test, initial_state_is_empty) {
 TEST_F(Storage_Test, unused_transaction_cleans_after_itself) {
   auto transaction = Transaction::Create(behavior_);
 
-  transaction->Put(MakeAbstractKey(5), 9000, MakePayload(13));
+  transaction->Put(MakeKeyDescriptor(5), 9000, MakePayload(13));
 
-  transaction->Put(MakeAbstractKey(2), 731, MakePayload(11));
-  transaction->Put(MakeAbstractKey(2), 731,
+  transaction->Put(MakeKeyDescriptor(2), 731, MakePayload(11));
+  transaction->Put(MakeKeyDescriptor(2), 731,
                    MakePayload(12));  // Overwrites the one above
 
-  transaction->Put(MakeAbstractKey(3), 981, MakePayload(3));
-  transaction->Delete(MakeAbstractKey(3), 981);  // Deletes the one above
+  transaction->Put(MakeKeyDescriptor(3), 981, MakePayload(3));
+  transaction->Delete(MakeKeyDescriptor(3), 981);  // Deletes the one above
 
-  transaction->RequirePayload(MakeAbstractKey(7), 111, MakePayload(3));
-  transaction->RequireMissingSubkey(MakeAbstractKey(7), 112);
-  transaction->RequireSubkeysCount(MakeAbstractKey(7), 6);
+  transaction->RequirePayload(MakeKeyDescriptor(7), 111, MakePayload(3));
+  transaction->RequireMissingSubkey(MakeKeyDescriptor(7), 112);
+  transaction->RequireSubkeysCount(MakeKeyDescriptor(7), 6);
 }
 
 TEST_F(Storage_Test, unsatisfied_subkeys_count_prerequisite) {
   auto storage = std::make_shared<Storage>(behavior_);
   auto transaction = Transaction::Create(behavior_);
 
-  transaction->RequireSubkeysCount(MakeAbstractKey(7), 6);
+  transaction->RequireSubkeysCount(MakeKeyDescriptor(7), 6);
   EXPECT_EQ(storage->ApplyTransaction(std::move(transaction)),
             Storage::TransactionResult::
                 AppliedWithNoEffectDueToUnsatisfiedPrerequisites);
@@ -91,7 +91,7 @@ TEST_F(Storage_Test, unsatisfied_payload_prerequisite) {
   auto storage = std::make_shared<Storage>(behavior_);
   auto transaction = Transaction::Create(behavior_);
 
-  transaction->RequirePayload(MakeAbstractKey(7), 111, MakePayload(3));
+  transaction->RequirePayload(MakeKeyDescriptor(7), 111, MakePayload(3));
   EXPECT_EQ(storage->ApplyTransaction(std::move(transaction)),
             Storage::TransactionResult::
                 AppliedWithNoEffectDueToUnsatisfiedPrerequisites);
@@ -107,9 +107,9 @@ TEST_F(Storage_Test, transaction_with_no_effect) {
   auto storage = std::make_shared<Storage>(behavior_);
   auto transaction = Transaction::Create(behavior_);
 
-  transaction->RequireMissingSubkey(MakeAbstractKey(7), 111);
-  transaction->ClearBeforeTransaction(MakeAbstractKey(3));
-  transaction->Delete(MakeAbstractKey(5), 111);
+  transaction->RequireMissingSubkey(MakeKeyDescriptor(7), 111);
+  transaction->ClearBeforeTransaction(MakeKeyDescriptor(3));
+  transaction->Delete(MakeKeyDescriptor(5), 111);
 
   ASSERT_EQ(storage->ApplyTransaction(std::move(transaction)),
             Storage::TransactionResult::Applied);
@@ -126,7 +126,7 @@ TEST_F(Storage_Test, simple_transactions) {
 
   {
     auto transaction = Transaction::Create(behavior_);
-    transaction->Put(MakeAbstractKey(5), 111, MakePayload(1));
+    transaction->Put(MakeKeyDescriptor(5), 111, MakePayload(1));
     ASSERT_EQ(storage->ApplyTransaction(std::move(transaction)),
               Storage::TransactionResult::Applied);
   }
@@ -137,9 +137,9 @@ TEST_F(Storage_Test, simple_transactions) {
   EXPECT_EQ(snapshot_1->keys_count(), 1);
   EXPECT_EQ(snapshot_1->subkeys_count(), 1);
 
-  EXPECT_EQ(snapshot_1->GetSubkeysCount(MakeAbstractKey(5)), 1);
-  ASSERT_TRUE(snapshot_1->Get(MakeAbstractKey(5), 111).has_value());
-  EXPECT_EQ(snapshot_1->Get(MakeAbstractKey(5), 111), PayloadHandle{1});
+  EXPECT_EQ(snapshot_1->GetSubkeysCount(MakeKeyDescriptor(5)), 1);
+  ASSERT_TRUE(snapshot_1->Get(MakeKeyDescriptor(5), 111).has_value());
+  EXPECT_EQ(snapshot_1->Get(MakeKeyDescriptor(5), 111), PayloadHandle{1});
 
   {
     auto key_enumerator = snapshot_1->CreateKeyEnumerator();
@@ -157,7 +157,7 @@ TEST_F(Storage_Test, simple_transactions) {
   }
   {
     auto subkey_enumerator =
-        snapshot_1->CreateSubkeyEnumerator(MakeAbstractKey(5));
+        snapshot_1->CreateSubkeyEnumerator(MakeKeyDescriptor(5));
     ASSERT_TRUE(subkey_enumerator->MoveNext());
     EXPECT_EQ(subkey_enumerator->current_subkey(), 111);
     EXPECT_EQ(subkey_enumerator->current_payload_handle(), PayloadHandle{1});
@@ -167,9 +167,9 @@ TEST_F(Storage_Test, simple_transactions) {
   // Deleting the only subkey of key 5, and adding two subkeys to key 6
   {
     auto transaction = Transaction::Create(behavior_);
-    transaction->Put(MakeAbstractKey(6), 222, MakePayload(2));
-    transaction->Put(MakeAbstractKey(6), 333, MakePayload(3));
-    transaction->Delete(MakeAbstractKey(5), 111);
+    transaction->Put(MakeKeyDescriptor(6), 222, MakePayload(2));
+    transaction->Put(MakeKeyDescriptor(6), 333, MakePayload(3));
+    transaction->Delete(MakeKeyDescriptor(5), 111);
     ASSERT_EQ(storage->ApplyTransaction(std::move(transaction)),
               Storage::TransactionResult::Applied);
   }
@@ -181,15 +181,15 @@ TEST_F(Storage_Test, simple_transactions) {
   EXPECT_EQ(snapshot_2->subkeys_count(), 2);
 
   // The subkey of key 5 was successfully deleted
-  EXPECT_EQ(snapshot_2->GetSubkeysCount(MakeAbstractKey(5)), 0);
-  EXPECT_FALSE(snapshot_2->Get(MakeAbstractKey(5), 111).has_value());
+  EXPECT_EQ(snapshot_2->GetSubkeysCount(MakeKeyDescriptor(5)), 0);
+  EXPECT_FALSE(snapshot_2->Get(MakeKeyDescriptor(5), 111).has_value());
 
   // Both subkeys of the new key 6 are visible
-  EXPECT_EQ(snapshot_2->GetSubkeysCount(MakeAbstractKey(6)), 2);
-  ASSERT_TRUE(snapshot_2->Get(MakeAbstractKey(6), 222).has_value());
-  EXPECT_EQ(snapshot_2->Get(MakeAbstractKey(6), 222), PayloadHandle{2});
-  ASSERT_TRUE(snapshot_2->Get(MakeAbstractKey(6), 333).has_value());
-  EXPECT_EQ(snapshot_2->Get(MakeAbstractKey(6), 333), PayloadHandle{3});
+  EXPECT_EQ(snapshot_2->GetSubkeysCount(MakeKeyDescriptor(6)), 2);
+  ASSERT_TRUE(snapshot_2->Get(MakeKeyDescriptor(6), 222).has_value());
+  EXPECT_EQ(snapshot_2->Get(MakeKeyDescriptor(6), 222), PayloadHandle{2});
+  ASSERT_TRUE(snapshot_2->Get(MakeKeyDescriptor(6), 333).has_value());
+  EXPECT_EQ(snapshot_2->Get(MakeKeyDescriptor(6), 333), PayloadHandle{3});
 
   {
     auto key_enumerator = snapshot_2->CreateKeyEnumerator();
@@ -210,7 +210,7 @@ TEST_F(Storage_Test, simple_transactions) {
   }
   {
     auto subkey_enumerator =
-        snapshot_2->CreateSubkeyEnumerator(MakeAbstractKey(6));
+        snapshot_2->CreateSubkeyEnumerator(MakeKeyDescriptor(6));
     ASSERT_TRUE(subkey_enumerator->MoveNext());
     EXPECT_EQ(subkey_enumerator->current_subkey(), 222);
     EXPECT_EQ(subkey_enumerator->current_payload_handle(), PayloadHandle{2});
@@ -224,9 +224,9 @@ TEST_F(Storage_Test, simple_transactions) {
   EXPECT_EQ(snapshot_1->keys_count(), 1);
   EXPECT_EQ(snapshot_1->subkeys_count(), 1);
 
-  EXPECT_EQ(snapshot_1->GetSubkeysCount(MakeAbstractKey(5)), 1);
-  ASSERT_TRUE(snapshot_1->Get(MakeAbstractKey(5), 111).has_value());
-  EXPECT_EQ(snapshot_1->Get(MakeAbstractKey(5), 111), PayloadHandle{1});
+  EXPECT_EQ(snapshot_1->GetSubkeysCount(MakeKeyDescriptor(5)), 1);
+  ASSERT_TRUE(snapshot_1->Get(MakeKeyDescriptor(5), 111).has_value());
+  EXPECT_EQ(snapshot_1->Get(MakeKeyDescriptor(5), 111), PayloadHandle{1});
 
   {
     auto key_enumerator = snapshot_1->CreateKeyEnumerator();
@@ -244,7 +244,7 @@ TEST_F(Storage_Test, simple_transactions) {
   }
   {
     auto subkey_enumerator =
-        snapshot_1->CreateSubkeyEnumerator(MakeAbstractKey(5));
+        snapshot_1->CreateSubkeyEnumerator(MakeKeyDescriptor(5));
     ASSERT_TRUE(subkey_enumerator->MoveNext());
     EXPECT_EQ(subkey_enumerator->current_subkey(), 111);
     EXPECT_EQ(subkey_enumerator->current_payload_handle(), PayloadHandle{1});
@@ -257,9 +257,9 @@ TEST_F(Storage_Test, ClearBeforeTransaction) {
 
   {
     auto transaction = Transaction::Create(behavior_);
-    transaction->Put(MakeAbstractKey(5), 111, MakePayload(1));
-    transaction->Put(MakeAbstractKey(5), 222, MakePayload(2));
-    transaction->Put(MakeAbstractKey(5), 333, MakePayload(3));
+    transaction->Put(MakeKeyDescriptor(5), 111, MakePayload(1));
+    transaction->Put(MakeKeyDescriptor(5), 222, MakePayload(2));
+    transaction->Put(MakeKeyDescriptor(5), 333, MakePayload(3));
     ASSERT_EQ(storage->ApplyTransaction(std::move(transaction)),
               Storage::TransactionResult::Applied);
   }
@@ -269,22 +269,22 @@ TEST_F(Storage_Test, ClearBeforeTransaction) {
     auto transaction = Transaction::Create(behavior_);
 
     // This subkey already exists (and the current payload is 2).
-    transaction->Put(MakeAbstractKey(5), 222, MakePayload(22));
+    transaction->Put(MakeKeyDescriptor(5), 222, MakePayload(22));
 
     // This subkey already exists (and currently has payload 3).
     // The transaction shouldn't change the payload, regardless of the
     // ClearBeforeTransaction() call below.
-    transaction->Put(MakeAbstractKey(5), 333, MakePayload(3));
+    transaction->Put(MakeKeyDescriptor(5), 333, MakePayload(3));
 
     // These two subkeys are new.
-    transaction->Put(MakeAbstractKey(5), 444, MakePayload(4));
-    transaction->Put(MakeAbstractKey(5), 555, MakePayload(5));
+    transaction->Put(MakeKeyDescriptor(5), 444, MakePayload(4));
+    transaction->Put(MakeKeyDescriptor(5), 555, MakePayload(5));
 
     // This shouldn't affect the Put operations above, but should delete the
     // subkey 111.
-    transaction->ClearBeforeTransaction(MakeAbstractKey(5));
+    transaction->ClearBeforeTransaction(MakeKeyDescriptor(5));
 
-    transaction->RequireMissingSubkey(MakeAbstractKey(5), 777);
+    transaction->RequireMissingSubkey(MakeKeyDescriptor(5), 777);
 
     ASSERT_EQ(storage->ApplyTransaction(std::move(transaction)),
               Storage::TransactionResult::Applied);
@@ -297,15 +297,15 @@ TEST_F(Storage_Test, ClearBeforeTransaction) {
   EXPECT_EQ(snapshot_1->keys_count(), 1);
   EXPECT_EQ(snapshot_1->subkeys_count(), 3);
 
-  EXPECT_EQ(snapshot_1->GetSubkeysCount(MakeAbstractKey(5)), 3);
-  ASSERT_TRUE(snapshot_1->Get(MakeAbstractKey(5), 111).has_value());
-  ASSERT_TRUE(snapshot_1->Get(MakeAbstractKey(5), 222).has_value());
-  ASSERT_TRUE(snapshot_1->Get(MakeAbstractKey(5), 333).has_value());
-  EXPECT_FALSE(snapshot_1->Get(MakeAbstractKey(5), 444).has_value());
-  EXPECT_FALSE(snapshot_1->Get(MakeAbstractKey(5), 555).has_value());
-  EXPECT_EQ(snapshot_1->Get(MakeAbstractKey(5), 111), PayloadHandle{1});
-  EXPECT_EQ(snapshot_1->Get(MakeAbstractKey(5), 222), PayloadHandle{2});
-  EXPECT_EQ(snapshot_1->Get(MakeAbstractKey(5), 333), PayloadHandle{3});
+  EXPECT_EQ(snapshot_1->GetSubkeysCount(MakeKeyDescriptor(5)), 3);
+  ASSERT_TRUE(snapshot_1->Get(MakeKeyDescriptor(5), 111).has_value());
+  ASSERT_TRUE(snapshot_1->Get(MakeKeyDescriptor(5), 222).has_value());
+  ASSERT_TRUE(snapshot_1->Get(MakeKeyDescriptor(5), 333).has_value());
+  EXPECT_FALSE(snapshot_1->Get(MakeKeyDescriptor(5), 444).has_value());
+  EXPECT_FALSE(snapshot_1->Get(MakeKeyDescriptor(5), 555).has_value());
+  EXPECT_EQ(snapshot_1->Get(MakeKeyDescriptor(5), 111), PayloadHandle{1});
+  EXPECT_EQ(snapshot_1->Get(MakeKeyDescriptor(5), 222), PayloadHandle{2});
+  EXPECT_EQ(snapshot_1->Get(MakeKeyDescriptor(5), 333), PayloadHandle{3});
 
   {
     auto key_enumerator = snapshot_1->CreateKeyEnumerator();
@@ -329,7 +329,7 @@ TEST_F(Storage_Test, ClearBeforeTransaction) {
   }
   {
     auto subkey_enumerator =
-        snapshot_1->CreateSubkeyEnumerator(MakeAbstractKey(5));
+        snapshot_1->CreateSubkeyEnumerator(MakeKeyDescriptor(5));
     ASSERT_TRUE(subkey_enumerator->MoveNext());
     EXPECT_EQ(subkey_enumerator->current_subkey(), 111);
     EXPECT_EQ(subkey_enumerator->current_payload_handle(), PayloadHandle{1});
@@ -346,20 +346,20 @@ TEST_F(Storage_Test, ClearBeforeTransaction) {
   EXPECT_EQ(snapshot_2->keys_count(), 1);
   EXPECT_EQ(snapshot_2->subkeys_count(), 4);
 
-  EXPECT_EQ(snapshot_2->GetSubkeysCount(MakeAbstractKey(5)), 4);
+  EXPECT_EQ(snapshot_2->GetSubkeysCount(MakeKeyDescriptor(5)), 4);
 
   // This one was implicitly deleted due to the ClearBeforeTransaction() call.
-  EXPECT_FALSE(snapshot_2->Get(MakeAbstractKey(5), 111).has_value());
-  ASSERT_TRUE(snapshot_2->Get(MakeAbstractKey(5), 222).has_value());
-  ASSERT_TRUE(snapshot_2->Get(MakeAbstractKey(5), 333).has_value());
-  ASSERT_TRUE(snapshot_2->Get(MakeAbstractKey(5), 444).has_value());
-  ASSERT_TRUE(snapshot_2->Get(MakeAbstractKey(5), 555).has_value());
-  EXPECT_EQ(snapshot_2->Get(MakeAbstractKey(5), 222), PayloadHandle{22});
+  EXPECT_FALSE(snapshot_2->Get(MakeKeyDescriptor(5), 111).has_value());
+  ASSERT_TRUE(snapshot_2->Get(MakeKeyDescriptor(5), 222).has_value());
+  ASSERT_TRUE(snapshot_2->Get(MakeKeyDescriptor(5), 333).has_value());
+  ASSERT_TRUE(snapshot_2->Get(MakeKeyDescriptor(5), 444).has_value());
+  ASSERT_TRUE(snapshot_2->Get(MakeKeyDescriptor(5), 555).has_value());
+  EXPECT_EQ(snapshot_2->Get(MakeKeyDescriptor(5), 222), PayloadHandle{22});
   // The transaction tried to overwrite the subkey with the same value here,
   // so it should stay unchanged (and not touched by ClearBeforeTransaction()).
-  EXPECT_EQ(snapshot_2->Get(MakeAbstractKey(5), 333), PayloadHandle{3});
-  EXPECT_EQ(snapshot_2->Get(MakeAbstractKey(5), 444), PayloadHandle{4});
-  EXPECT_EQ(snapshot_2->Get(MakeAbstractKey(5), 555), PayloadHandle{5});
+  EXPECT_EQ(snapshot_2->Get(MakeKeyDescriptor(5), 333), PayloadHandle{3});
+  EXPECT_EQ(snapshot_2->Get(MakeKeyDescriptor(5), 444), PayloadHandle{4});
+  EXPECT_EQ(snapshot_2->Get(MakeKeyDescriptor(5), 555), PayloadHandle{5});
 
   {
     auto key_enumerator = snapshot_2->CreateKeyEnumerator();
@@ -386,7 +386,7 @@ TEST_F(Storage_Test, ClearBeforeTransaction) {
   }
   {
     auto subkey_enumerator =
-        snapshot_2->CreateSubkeyEnumerator(MakeAbstractKey(5));
+        snapshot_2->CreateSubkeyEnumerator(MakeKeyDescriptor(5));
     ASSERT_TRUE(subkey_enumerator->MoveNext());
     EXPECT_EQ(subkey_enumerator->current_subkey(), 222);
     EXPECT_EQ(subkey_enumerator->current_payload_handle(), PayloadHandle{22});
@@ -408,9 +408,9 @@ TEST_F(Storage_Test, ClearBeforeTransaction_entire_key) {
 
   {
     auto transaction = Transaction::Create(behavior_);
-    transaction->Put(MakeAbstractKey(5), 111, MakePayload(1));
-    transaction->Put(MakeAbstractKey(5), 222, MakePayload(2));
-    transaction->Put(MakeAbstractKey(5), 333, MakePayload(3));
+    transaction->Put(MakeKeyDescriptor(5), 111, MakePayload(1));
+    transaction->Put(MakeKeyDescriptor(5), 222, MakePayload(2));
+    transaction->Put(MakeKeyDescriptor(5), 333, MakePayload(3));
     ASSERT_EQ(storage->ApplyTransaction(std::move(transaction)),
               Storage::TransactionResult::Applied);
   }
@@ -418,7 +418,7 @@ TEST_F(Storage_Test, ClearBeforeTransaction_entire_key) {
   ASSERT_TRUE(snapshot_1);
   {
     auto transaction = Transaction::Create(behavior_);
-    transaction->ClearBeforeTransaction(MakeAbstractKey(5));
+    transaction->ClearBeforeTransaction(MakeKeyDescriptor(5));
     ASSERT_EQ(storage->ApplyTransaction(std::move(transaction)),
               Storage::TransactionResult::Applied);
   }
@@ -430,15 +430,15 @@ TEST_F(Storage_Test, ClearBeforeTransaction_entire_key) {
   EXPECT_EQ(snapshot_1->keys_count(), 1);
   EXPECT_EQ(snapshot_1->subkeys_count(), 3);
 
-  EXPECT_EQ(snapshot_1->GetSubkeysCount(MakeAbstractKey(5)), 3);
-  ASSERT_TRUE(snapshot_1->Get(MakeAbstractKey(5), 111).has_value());
-  ASSERT_TRUE(snapshot_1->Get(MakeAbstractKey(5), 222).has_value());
-  ASSERT_TRUE(snapshot_1->Get(MakeAbstractKey(5), 333).has_value());
-  EXPECT_FALSE(snapshot_1->Get(MakeAbstractKey(5), 444).has_value());
-  EXPECT_FALSE(snapshot_1->Get(MakeAbstractKey(5), 555).has_value());
-  EXPECT_EQ(snapshot_1->Get(MakeAbstractKey(5), 111), PayloadHandle{1});
-  EXPECT_EQ(snapshot_1->Get(MakeAbstractKey(5), 222), PayloadHandle{2});
-  EXPECT_EQ(snapshot_1->Get(MakeAbstractKey(5), 333), PayloadHandle{3});
+  EXPECT_EQ(snapshot_1->GetSubkeysCount(MakeKeyDescriptor(5)), 3);
+  ASSERT_TRUE(snapshot_1->Get(MakeKeyDescriptor(5), 111).has_value());
+  ASSERT_TRUE(snapshot_1->Get(MakeKeyDescriptor(5), 222).has_value());
+  ASSERT_TRUE(snapshot_1->Get(MakeKeyDescriptor(5), 333).has_value());
+  EXPECT_FALSE(snapshot_1->Get(MakeKeyDescriptor(5), 444).has_value());
+  EXPECT_FALSE(snapshot_1->Get(MakeKeyDescriptor(5), 555).has_value());
+  EXPECT_EQ(snapshot_1->Get(MakeKeyDescriptor(5), 111), PayloadHandle{1});
+  EXPECT_EQ(snapshot_1->Get(MakeKeyDescriptor(5), 222), PayloadHandle{2});
+  EXPECT_EQ(snapshot_1->Get(MakeKeyDescriptor(5), 333), PayloadHandle{3});
 
   {
     auto key_enumerator = snapshot_1->CreateKeyEnumerator();
@@ -462,7 +462,7 @@ TEST_F(Storage_Test, ClearBeforeTransaction_entire_key) {
   }
   {
     auto subkey_enumerator =
-        snapshot_1->CreateSubkeyEnumerator(MakeAbstractKey(5));
+        snapshot_1->CreateSubkeyEnumerator(MakeKeyDescriptor(5));
     ASSERT_TRUE(subkey_enumerator->MoveNext());
     EXPECT_EQ(subkey_enumerator->current_subkey(), 111);
     EXPECT_EQ(subkey_enumerator->current_payload_handle(), PayloadHandle{1});
@@ -478,12 +478,12 @@ TEST_F(Storage_Test, ClearBeforeTransaction_entire_key) {
   EXPECT_EQ(snapshot_2->version(), 2);
   EXPECT_EQ(snapshot_2->keys_count(), 0);
   EXPECT_EQ(snapshot_2->subkeys_count(), 0);
-  EXPECT_EQ(snapshot_2->GetSubkeysCount(MakeAbstractKey(5)), 0);
+  EXPECT_EQ(snapshot_2->GetSubkeysCount(MakeKeyDescriptor(5)), 0);
 
   // This one was implicitly deleted due to the ClearBeforeTransaction() call.
-  EXPECT_FALSE(snapshot_2->Get(MakeAbstractKey(5), 111).has_value());
-  EXPECT_FALSE(snapshot_2->Get(MakeAbstractKey(5), 222).has_value());
-  EXPECT_FALSE(snapshot_2->Get(MakeAbstractKey(5), 333).has_value());
+  EXPECT_FALSE(snapshot_2->Get(MakeKeyDescriptor(5), 111).has_value());
+  EXPECT_FALSE(snapshot_2->Get(MakeKeyDescriptor(5), 222).has_value());
+  EXPECT_FALSE(snapshot_2->Get(MakeKeyDescriptor(5), 333).has_value());
   {
     auto key_enumerator = snapshot_2->CreateKeyEnumerator();
     ASSERT_TRUE(key_enumerator);
@@ -491,7 +491,7 @@ TEST_F(Storage_Test, ClearBeforeTransaction_entire_key) {
   }
   {
     auto subkey_enumerator =
-        snapshot_2->CreateSubkeyEnumerator(MakeAbstractKey(5));
+        snapshot_2->CreateSubkeyEnumerator(MakeKeyDescriptor(5));
     EXPECT_FALSE(subkey_enumerator->MoveNext());
   }
 }
@@ -507,7 +507,7 @@ TEST_F(Storage_Test, simple_blob_reallocation) {
     // The index is not large enough to hold all blocks.
     // This will trigger a reallocation.
     for (uint64_t i = 0; i < 7; ++i) {
-      transaction->Put(MakeAbstractKey(5), 100u + i, MakePayload(i));
+      transaction->Put(MakeKeyDescriptor(5), 100u + i, MakePayload(i));
     }
     ASSERT_EQ(storage->ApplyTransaction(std::move(transaction)),
               Storage::TransactionResult::Applied);
@@ -522,10 +522,10 @@ TEST_F(Storage_Test, simple_blob_reallocation) {
   EXPECT_EQ(snapshot->version(), 1);
   EXPECT_EQ(snapshot->keys_count(), 1);
   EXPECT_EQ(snapshot->subkeys_count(), 7);
-  EXPECT_EQ(snapshot->GetSubkeysCount(MakeAbstractKey(5)), 7);
+  EXPECT_EQ(snapshot->GetSubkeysCount(MakeKeyDescriptor(5)), 7);
   for (uint32_t i = 0; i < 7; ++i) {
-    ASSERT_TRUE(snapshot->Get(MakeAbstractKey(5), 100u + i).has_value());
-    EXPECT_EQ(snapshot->Get(MakeAbstractKey(5), 100u + i), PayloadHandle{i});
+    ASSERT_TRUE(snapshot->Get(MakeKeyDescriptor(5), 100u + i).has_value());
+    EXPECT_EQ(snapshot->Get(MakeKeyDescriptor(5), 100u + i), PayloadHandle{i});
   }
 
   {
@@ -546,7 +546,7 @@ TEST_F(Storage_Test, simple_blob_reallocation) {
   }
   {
     auto subkey_enumerator =
-        snapshot->CreateSubkeyEnumerator(MakeAbstractKey(5));
+        snapshot->CreateSubkeyEnumerator(MakeKeyDescriptor(5));
     ASSERT_TRUE(subkey_enumerator);
     for (uint32_t i = 0; i < 7; ++i) {
       ASSERT_TRUE(subkey_enumerator->MoveNext());
@@ -567,7 +567,7 @@ TEST_F(Storage_Test, single_subkey_versions_reallocation) {
   // The storage will be reallocated multiple times
   for (size_t i = 0; i < 1'000; ++i) {
     auto transaction = Transaction::Create(behavior_);
-    transaction->Put(MakeAbstractKey(5), 42, MakePayload(i % 10));
+    transaction->Put(MakeKeyDescriptor(5), 42, MakePayload(i % 10));
     ASSERT_EQ(storage->ApplyTransaction(std::move(transaction)),
               Storage::TransactionResult::Applied);
     snapshots.emplace_back(storage->GetSnapshot());
@@ -575,7 +575,7 @@ TEST_F(Storage_Test, single_subkey_versions_reallocation) {
   // Reallocated multiple times
   EXPECT_EQ(behavior_->total_allocated_pages_count(), 13);
 
-  const auto key_5 = MakeAbstractKey(5);
+  const auto key_5 = MakeKeyDescriptor(5);
   for (size_t i = 0; i < snapshots.size(); ++i) {
     auto& snapshot = snapshots[i];
     ASSERT_TRUE(snapshot);
@@ -594,12 +594,12 @@ TEST_F(Storage_Test, reallocated_with_cleanups) {
 
   {
     auto transaction = Transaction::Create(behavior_);
-    transaction->Put(MakeAbstractKey(5), 100, MakePayload(1));
-    transaction->Put(MakeAbstractKey(5), 200, MakePayload(2));
+    transaction->Put(MakeKeyDescriptor(5), 100, MakePayload(1));
+    transaction->Put(MakeKeyDescriptor(5), 200, MakePayload(2));
 
-    transaction->Put(MakeAbstractKey(6), 100, MakePayload(10));
-    transaction->Put(MakeAbstractKey(6), 200, MakePayload(20));
-    transaction->Put(MakeAbstractKey(6), 300, MakePayload(30));
+    transaction->Put(MakeKeyDescriptor(6), 100, MakePayload(10));
+    transaction->Put(MakeKeyDescriptor(6), 200, MakePayload(20));
+    transaction->Put(MakeKeyDescriptor(6), 300, MakePayload(30));
     ASSERT_EQ(storage->ApplyTransaction(std::move(transaction)),
               Storage::TransactionResult::Applied);
   }
@@ -611,14 +611,14 @@ TEST_F(Storage_Test, reallocated_with_cleanups) {
   {
     auto transaction = Transaction::Create(behavior_);
 
-    transaction->ClearBeforeTransaction(MakeAbstractKey(5));
-    transaction->ClearBeforeTransaction(MakeAbstractKey(6));
+    transaction->ClearBeforeTransaction(MakeKeyDescriptor(5));
+    transaction->ClearBeforeTransaction(MakeKeyDescriptor(6));
 
     // New subkey
-    transaction->Put(MakeAbstractKey(5), 300, MakePayload(3));
+    transaction->Put(MakeKeyDescriptor(5), 300, MakePayload(3));
 
     // Same as before (should prevent the cleanup)
-    transaction->Put(MakeAbstractKey(6), 200, MakePayload(20));
+    transaction->Put(MakeKeyDescriptor(6), 200, MakePayload(20));
     ASSERT_EQ(storage->ApplyTransaction(std::move(transaction)),
               Storage::TransactionResult::Applied);
   }
@@ -630,8 +630,8 @@ TEST_F(Storage_Test, reallocated_with_cleanups) {
   auto snapshot_2 = storage->GetSnapshot();
   ASSERT_TRUE(snapshot_2);
 
-  const auto key_5 = MakeAbstractKey(5);
-  const auto key_6 = MakeAbstractKey(6);
+  const auto key_5 = MakeKeyDescriptor(5);
+  const auto key_6 = MakeKeyDescriptor(6);
 
   // Checking the old snapshot
   EXPECT_EQ(snapshot_1->version(), 1);

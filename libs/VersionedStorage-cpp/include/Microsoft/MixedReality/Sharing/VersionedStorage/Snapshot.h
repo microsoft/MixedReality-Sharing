@@ -11,7 +11,7 @@
 
 namespace Microsoft::MixedReality::Sharing::VersionedStorage {
 
-class AbstractKey;
+class KeyDescriptor;
 class Behavior;
 class HeaderBlock;
 class KeyEnumerator;
@@ -35,13 +35,13 @@ class Snapshot : public std::enable_shared_from_this<Snapshot> {
   constexpr uint64_t version() const noexcept { return version_; }
   constexpr size_t keys_count() const noexcept { return keys_count_; }
   constexpr size_t subkeys_count() const noexcept { return subkeys_count_; }
-  size_t GetSubkeysCount(const AbstractKey& key) const noexcept;
-  std::optional<PayloadHandle> Get(const AbstractKey& key,
+  size_t GetSubkeysCount(const KeyDescriptor& key) const noexcept;
+  std::optional<PayloadHandle> Get(const KeyDescriptor& key,
                                    uint64_t subkey) const noexcept;
 
   std::unique_ptr<KeyEnumerator> CreateKeyEnumerator() const noexcept;
   std::unique_ptr<SubkeyEnumerator> CreateSubkeyEnumerator(
-      const AbstractKey& key) const noexcept;
+      const KeyDescriptor& key) const noexcept;
 
  private:
   Snapshot(const Snapshot&) = delete;

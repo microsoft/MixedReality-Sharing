@@ -99,13 +99,13 @@ Snapshot::~Snapshot() noexcept {
   header_block_.RemoveSnapshotReference(version_, *behavior_);
 }
 
-size_t Snapshot::GetSubkeysCount(const AbstractKey& key) const noexcept {
+size_t Snapshot::GetSubkeysCount(const KeyDescriptor& key) const noexcept {
   return HeaderBlock::Accessor{const_cast<HeaderBlock&>(header_block_)}
       .FindKey(version_, key)
       .value();
 }
 
-std::optional<PayloadHandle> Snapshot::Get(const AbstractKey& key,
+std::optional<PayloadHandle> Snapshot::Get(const KeyDescriptor& key,
                                            uint64_t subkey) const noexcept {
   VersionedPayloadHandle handle =
       HeaderBlock::Accessor{const_cast<HeaderBlock&>(header_block_)}
@@ -124,7 +124,7 @@ std::unique_ptr<KeyEnumerator> Snapshot::CreateKeyEnumerator() const noexcept {
 }
 
 std::unique_ptr<SubkeyEnumerator> Snapshot::CreateSubkeyEnumerator(
-    const AbstractKey& key) const noexcept {
+    const KeyDescriptor& key) const noexcept {
   return std::make_unique<SubkeyEnumeratorImpl>(
       shared_from_this(), HeaderBlock::Accessor(header_block_)
                               .CreateSubkeyStateBlockEnumerator(key));

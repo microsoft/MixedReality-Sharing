@@ -4,7 +4,7 @@
 
 #include "src/pch.h"
 
-#include <Microsoft/MixedReality/Sharing/VersionedStorage/AbstractKeyWithHandle.h>
+#include <Microsoft/MixedReality/Sharing/VersionedStorage/KeyDescriptorWithHandle.h>
 
 #include <Microsoft/MixedReality/Sharing/VersionedStorage/Behavior.h>
 
@@ -12,44 +12,46 @@
 
 namespace Microsoft::MixedReality::Sharing::VersionedStorage {
 
-AbstractKeyWithHandle::AbstractKeyWithHandle(Behavior& behavior,
-                                             KeyHandle key_handle,
-                                             bool has_handle_ownership) noexcept
-    : AbstractKey{behavior.GetHash(key_handle)},
+KeyDescriptorWithHandle::KeyDescriptorWithHandle(
+    Behavior& behavior,
+    KeyHandle key_handle,
+    bool has_handle_ownership) noexcept
+    : KeyDescriptor{behavior.GetHash(key_handle)},
       behavior_{behavior},
       key_handle_{key_handle},
       has_handle_ownership_{has_handle_ownership} {}
 
-AbstractKeyWithHandle::AbstractKeyWithHandle(Behavior& behavior,
-                                             KeyHandle key_handle,
-                                             uint64_t key_hash,
-                                             bool has_handle_ownership) noexcept
-    : AbstractKey{key_hash},
+KeyDescriptorWithHandle::KeyDescriptorWithHandle(
+    Behavior& behavior,
+    KeyHandle key_handle,
+    uint64_t key_hash,
+    bool has_handle_ownership) noexcept
+    : KeyDescriptor{key_hash},
       behavior_{behavior},
       key_handle_{key_handle},
       has_handle_ownership_{has_handle_ownership} {
   assert(behavior.GetHash(key_handle) == key_hash);
 }
 
-AbstractKeyWithHandle::~AbstractKeyWithHandle() {
+KeyDescriptorWithHandle::~KeyDescriptorWithHandle() {
   if (has_handle_ownership_) {
     behavior_.Release(key_handle_);
   }
 }
 
-bool AbstractKeyWithHandle::IsEqualTo(KeyHandle key) const noexcept {
+bool KeyDescriptorWithHandle::IsEqualTo(KeyHandle key) const noexcept {
   return behavior_.Equal(key_handle_, key);
 }
 
-bool AbstractKeyWithHandle::IsLessThan(KeyHandle key) const noexcept {
+bool KeyDescriptorWithHandle::IsLessThan(KeyHandle key) const noexcept {
   return behavior_.Less(key_handle_, key);
 }
 
-bool AbstractKeyWithHandle::IsGreaterThan(KeyHandle key) const noexcept {
+bool KeyDescriptorWithHandle::IsGreaterThan(KeyHandle key) const noexcept {
   return behavior_.Less(key, key_handle_);
 }
 
-KeyHandle AbstractKeyWithHandle::MakeHandle() noexcept {
+KeyHandle KeyDescriptorWithHandle::MakeHandle() noexcept {
   if (has_handle_ownership_) {
     has_handle_ownership_ = false;
     return key_handle_;
@@ -57,7 +59,7 @@ KeyHandle AbstractKeyWithHandle::MakeHandle() noexcept {
   return behavior_.DuplicateHandle(key_handle_);
 }
 
-KeyHandle AbstractKeyWithHandle::MakeHandle(KeyHandle) noexcept {
+KeyHandle KeyDescriptorWithHandle::MakeHandle(KeyHandle) noexcept {
   // The provided handle is ignored since this implementation already has a
   // handle.
   return MakeHandle();

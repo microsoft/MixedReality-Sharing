@@ -13,8 +13,8 @@
 
 #include <Microsoft/MixedReality/Sharing/Common/Platform.h>
 #include <Microsoft/MixedReality/Sharing/Common/hash.h>
-#include <Microsoft/MixedReality/Sharing/VersionedStorage/AbstractKeyWithHandle.h>
 #include <Microsoft/MixedReality/Sharing/VersionedStorage/Behavior.h>
+#include <Microsoft/MixedReality/Sharing/VersionedStorage/KeyDescriptorWithHandle.h>
 
 #include <algorithm>
 #include <cassert>
@@ -314,10 +314,10 @@ class HeaderBlock::BlockInserter {
 class HeaderBlock::KeyBlockInserter : public HeaderBlock::BlockInserter {
  public:
   KeyBlockInserter(Accessor& accessor,
-                   AbstractKey& abstract_key,
+                   KeyDescriptor& key_descriptor,
                    const Accessor::IndexOffsetAndSlotHashes& hashes)
       : HeaderBlock::BlockInserter{accessor, hashes.index_offset_hash},
-        abstract_key_{abstract_key} {
+        key_descriptor_{key_descriptor} {
     const auto keys_count_in_slot =
         IndexBlock::GetKeysCount(counts_and_hashes_);
     index_slot_location_ = IndexBlock::MakeIndexSlotLocation(
@@ -325,7 +325,7 @@ class HeaderBlock::KeyBlockInserter : public HeaderBlock::BlockInserter {
     IndexBlock& index = accessor_.GetIndexBlock(index_block_id_);
     index.InitSlot(keys_count_in_slot, new_block_data_location_);
 
-    new (&new_block_) KeyStateBlock{abstract_key.MakeHandle(),
+    new (&new_block_) KeyStateBlock{key_descriptor.MakeHandle(),
                                     KeySubscriptionHandle::kInvalid};
     PublishToSortedList(accessor.header_block().keys_tree_root_,
                         accessor.header_block().keys_list_head_);
@@ -345,11 +345,11 @@ class HeaderBlock::KeyBlockInserter : public HeaderBlock::BlockInserter {
 
  protected:
   bool IsNewBlockLessThan(const StateBlockBase& other) const noexcept override {
-    return abstract_key_.IsLessThan(other.key_);
+    return key_descriptor_.IsLessThan(other.key_);
   }
 
  private:
-  const AbstractKey& abstract_key_;
+  const KeyDescriptor& key_descriptor_;
 };
 
 class HeaderBlock::SubkeyBlockInserter : public HeaderBlock::BlockInserter {
@@ -479,7 +479,7 @@ HeaderBlock::Accessor::FindState(const IndexOffsetAndSlotHashes& hashes,
 #endif  // #ifdef MS_MR_SHARING_PLATFORM_x86_OR_x64
 
 KeyBlockStateSearchResult HeaderBlock::Accessor::FindKey(
-    const AbstractKey& key) noexcept {
+    const KeyDescriptor& key) noexcept {
   return FindState<IndexLevel::Key, KeyBlockStateSearchResult>(
       {key.hash()}, [&key](const KeyStateBlock& candidate) -> bool {
         return key.IsEqualTo(candidate.key_);
@@ -487,7 +487,7 @@ KeyBlockStateSearchResult HeaderBlock::Accessor::FindKey(
 }
 
 SubkeyBlockStateSearchResult HeaderBlock::Accessor::FindSubkey(
-    const AbstractKey& key,
+    const KeyDescriptor& key,
     uint64_t subkey) noexcept {
   return FindState<IndexLevel::Subkey, SubkeyBlockStateSearchResult>(
       {key.hash(), subkey},
@@ -498,7 +498,7 @@ SubkeyBlockStateSearchResult HeaderBlock::Accessor::FindSubkey(
 
 KeySearchResult HeaderBlock::Accessor::FindKey(
     uint64_t version,
-    const AbstractKey& key) noexcept {
+    const KeyDescriptor& key) noexcept {
   if (version >= header_block_.base_version_) {
     KeyBlockStateSearchResult search_result = FindKey(key);
     if (search_result.version_block_) {
@@ -515,7 +515,7 @@ KeySearchResult HeaderBlock::Accessor::FindKey(
 }
 
 SubkeySearchResult HeaderBlock::Accessor::FindSubkey(uint64_t version,
-                                                     const AbstractKey& key,
+                                                     const KeyDescriptor& key,
                                                      uint64_t subkey) noexcept {
   if (version >= header_block_.base_version_) {
     SubkeyBlockStateSearchResult search_result = FindSubkey(key, subkey);
@@ -526,7 +526,7 @@ SubkeySearchResult HeaderBlock::Accessor::FindSubkey(uint64_t version,
 }
 
 KeyBlockStateSearchResult HeaderBlock::Accessor::InsertKeyBlock(
-    AbstractKey& key) noexcept {
+    KeyDescriptor& key) noexcept {
   assert(header_block_.CanInsertStateBlocks(1));
   assert(FindKey(key).index_slot_location_ == IndexSlotLocation::kInvalid);
   KeyBlockInserter inserter{*this, key, {key.hash()}};
@@ -539,9 +539,9 @@ SubkeyBlockStateSearchResult HeaderBlock::Accessor::InsertSubkeyBlock(
     KeyStateBlock& key_block,
     uint64_t subkey) noexcept {
   assert(header_block_.CanInsertStateBlocks(1));
-  assert(
-      FindSubkey(AbstractKeyWithHandle{behavior, key_block.key_, false}, subkey)
-          .index_slot_location_ == IndexSlotLocation::kInvalid);
+  assert(FindSubkey(KeyDescriptorWithHandle{behavior, key_block.key_, false},
+                    subkey)
+             .index_slot_location_ == IndexSlotLocation::kInvalid);
 
   SubkeyBlockInserter inserter(*this, key_block, subkey,
                                {behavior.GetHash(key_block.key_), subkey});

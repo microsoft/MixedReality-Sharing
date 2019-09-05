@@ -19,8 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\AbstractKey.h" />
-    <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\AbstractKeyWithHandle.h" />
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\KeyDescriptor.h" />
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\KeyDescriptorWithHandle.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\Behavior.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\enums.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\KeyEnumerator.h" />
@@ -40,7 +40,7 @@
     <ClInclude Include="src\VersionRefCount.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\AbstractKeyWithHandle.cpp" />
+    <ClCompile Include="src\KeyDescriptorWithHandle.cpp" />
     <ClCompile Include="src\HeaderBlock.cpp" />
     <ClCompile Include="src\KeyVersionBlock.cpp" />
     <ClCompile Include="src\Snapshot.cpp" />

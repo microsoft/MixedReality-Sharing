@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include <Microsoft/MixedReality/Sharing/VersionedStorage/AbstractKey.h>
 #include <Microsoft/MixedReality/Sharing/VersionedStorage/Behavior.h>
+#include <Microsoft/MixedReality/Sharing/VersionedStorage/KeyDescriptor.h>
 
 #include <memory>
 #include <optional>
@@ -27,7 +27,7 @@ class Transaction {
   // (inserting it if it was missing).
   // The effect of any previous Delete call on the same subkey within this
   // transaction is canceled.
-  virtual void Put(AbstractKey& key,
+  virtual void Put(KeyDescriptor& key,
                    uint64_t subkey,
                    PayloadHandle new_payload) noexcept = 0;
 
@@ -35,31 +35,31 @@ class Transaction {
   // of application.
   // The effect of any previous Put call on the same subkey within this
   // transaction is canceled.
-  virtual void Delete(AbstractKey& key, uint64_t subkey) noexcept = 0;
+  virtual void Delete(KeyDescriptor& key, uint64_t subkey) noexcept = 0;
 
   // All existing subkeys will be deleted before inserting any subkeys specified
   // by Put calls.
   // Note that the deletion will happen after checking the prerequisites
   // specified with Require calls.
-  virtual void ClearBeforeTransaction(AbstractKey& key) noexcept = 0;
+  virtual void ClearBeforeTransaction(KeyDescriptor& key) noexcept = 0;
 
   // Applying the transaction will fail unless the value of the subkey is equal
   // to the required_payload.
-  virtual void RequirePayload(AbstractKey& key,
+  virtual void RequirePayload(KeyDescriptor& key,
                               uint64_t subkey,
                               PayloadHandle required_payload) noexcept = 0;
 
   // Applying the transaction will fail unless the subkey is missing.
   // The effect of any previous RequirePayload call on the same subkey within
   // this transaction is canceled.
-  virtual void RequireMissingSubkey(AbstractKey& key,
+  virtual void RequireMissingSubkey(KeyDescriptor& key,
                                     uint64_t subkey) noexcept = 0;
 
   // Applying the transaction will fail unless the number of subkeys is equal to
   // required_subkeys_count.
   // The effect of any previous RequireMissingSubkey call on the same subkey
   // within this transaction is canceled.
-  virtual void RequireSubkeysCount(AbstractKey& key,
+  virtual void RequireSubkeysCount(KeyDescriptor& key,
                                    size_t required_subkeys_count) noexcept = 0;
 
   static std::unique_ptr<Transaction> Create(

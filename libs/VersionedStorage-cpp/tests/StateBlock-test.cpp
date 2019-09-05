@@ -122,12 +122,6 @@ TEST(StateBlock, SubkeyStateBlock_payload_and_deletion_marker) {
   EXPECT_FALSE(
       block.GetVersionedPayload(kSmallestInvalidVersion - 1).has_payload());
 
-  EXPECT_EQ(block.key_, KeyHandle{42});
-  ASSERT_TRUE(block.has_subscription());
-  EXPECT_EQ(block.subscription(), SubkeySubscriptionHandle{1234});
-  EXPECT_EQ(block.tree_level(), 0);
-  ASSERT_FALSE(block.is_scratch_buffer_mode());
-
   // The writes above should not overwrite the other properties.
   EXPECT_EQ(block.key_, KeyHandle{42});
   ASSERT_TRUE(block.has_subscription());

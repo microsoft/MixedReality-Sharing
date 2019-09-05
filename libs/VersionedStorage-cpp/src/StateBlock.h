@@ -229,7 +229,7 @@ class alignas(kBlockSize) SubkeyStateBlock : public StateBlockBase {
   // Called by the writer thread only.
   bool CanPush(uint64_t version, bool has_payload) const noexcept {
     const auto v0 = marked_version_0_.load(std::memory_order_relaxed);
-    if (v0 == kInvalidMakredVersion)
+    if (v0 == kInvalidMarkedVersion)
       return true;
 
     const uint64_t marked_version =
@@ -242,10 +242,10 @@ class alignas(kBlockSize) SubkeyStateBlock : public StateBlockBase {
 
   void Push(uint64_t version, std::optional<PayloadHandle> payload) noexcept;
 
-  static constexpr uint64_t kInvalidMakredVersion = ~0ull;
+  static constexpr uint64_t kInvalidMarkedVersion = ~0ull;
   static constexpr uint32_t kInvalidMarkedOffset = ~0u;
 
-  std::atomic<uint64_t> marked_version_0_{kInvalidMakredVersion};
+  std::atomic<uint64_t> marked_version_0_{kInvalidMarkedVersion};
   // Payloads are modified at most once during the lifetime of this block,
   // and they will never be used before they are initialized, and then either
   // version_0_ or version_offset_ from the base class are published.
