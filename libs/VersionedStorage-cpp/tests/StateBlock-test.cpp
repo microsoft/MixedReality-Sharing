@@ -112,6 +112,9 @@ TEST(StateBlock, SubkeyStateBlock_payload_and_deletion_marker) {
   EXPECT_TRUE(block.CanPush(124'000'000'000ull, false));
   block.Push(124'000'000'000ull, {});
 
+  // Previously returned true while there was still free space.
+  EXPECT_FALSE(block.CanPush(223'000'000'000ull, true));
+
   EXPECT_FALSE(block.GetVersionedPayload(0).has_payload());
   EXPECT_FALSE(block.GetVersionedPayload(122'999'999'999ull).has_payload());
   EXPECT_TRUE(block.GetVersionedPayload(123'000'000'000ull).has_payload());

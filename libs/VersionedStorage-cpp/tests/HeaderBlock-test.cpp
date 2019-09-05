@@ -57,30 +57,33 @@ class HeaderBlock_Test : public ::testing::Test {
 
 TEST_F(HeaderBlock_Test, CreateBlob_0_min_index_capacity) {
   HeaderBlock* header_block = HeaderBlock::CreateBlob(*behavior_, 12345, 0);
+
   ASSERT_NE(header_block, nullptr);
   EXPECT_EQ(header_block->base_version(), 12345);
   EXPECT_EQ(behavior_->total_allocated_pages_count(), 1);
+
+  MutatingBlobAccessor accessor(*header_block);
 
   // The header_block is always created together with its base version; the
   // caller is responsible for populating it with the correct state before
   // presenting it to other threads.
   EXPECT_EQ(header_block->stored_versions_count(), 1);
-  EXPECT_EQ(header_block->keys_count(), 0);
-  EXPECT_EQ(header_block->subkeys_count(), 0);
+  EXPECT_EQ(accessor.keys_count(), 0);
+  EXPECT_EQ(accessor.subkeys_count(), 0);
   // One index block (mask is 1 less).
   EXPECT_EQ(header_block->index_blocks_mask(), 0);
   // When there is only one index slot, it's allowed to be overpopulated.
-  EXPECT_EQ(header_block->remaining_index_slots_capacity(), 7);
+  EXPECT_EQ(accessor.remaining_index_slots_capacity(), 7);
 
   // There are 64 blocks total; 1 is occupied by the header, and 1 is occupied
   // by the index. Note that the trailing data block is already used by the
   // base version's reference count.
   EXPECT_EQ(header_block->data_blocks_capacity(), 62);
 
-  EXPECT_EQ(header_block->available_data_blocks_count(), 61);
+  EXPECT_EQ(accessor.available_data_blocks_count(), 61);
 
-  EXPECT_TRUE(header_block->CanInsertStateBlocks(7));
-  EXPECT_FALSE(header_block->CanInsertStateBlocks(8));
+  EXPECT_TRUE(accessor.CanInsertStateBlocks(7));
+  EXPECT_FALSE(accessor.CanInsertStateBlocks(8));
 
   header_block->RemoveSnapshotReference(12345, *behavior_);
 }
@@ -91,27 +94,29 @@ TEST_F(HeaderBlock_Test, CreateBlob_8_min_index_capacity) {
   EXPECT_EQ(header_block->base_version(), 12345);
   EXPECT_EQ(behavior_->total_allocated_pages_count(), 1);
 
+  MutatingBlobAccessor accessor(*header_block);
+
   // The header_block is always created together with its base version; the
   // caller is responsible for populating it with the correct state before
   // presenting it to other threads.
   EXPECT_EQ(header_block->stored_versions_count(), 1);
-  EXPECT_EQ(header_block->keys_count(), 0);
-  EXPECT_EQ(header_block->subkeys_count(), 0);
+  EXPECT_EQ(accessor.keys_count(), 0);
+  EXPECT_EQ(accessor.subkeys_count(), 0);
   // Two index blocks (mask is 1 less).
   EXPECT_EQ(header_block->index_blocks_mask(), 1);
   // Since there is more than one index block, we only allow up to 4 slots per
   // block.
-  EXPECT_EQ(header_block->remaining_index_slots_capacity(), 8);
+  EXPECT_EQ(accessor.remaining_index_slots_capacity(), 8);
 
   // There are 64 blocks total; 1 is occupied by the header, and 2 are occupied
   // by the index. Note that the trailing data block is already used by the
   // base version's reference count.
   EXPECT_EQ(header_block->data_blocks_capacity(), 61);
 
-  EXPECT_EQ(header_block->available_data_blocks_count(), 60);
+  EXPECT_EQ(accessor.available_data_blocks_count(), 60);
 
-  EXPECT_TRUE(header_block->CanInsertStateBlocks(8));
-  EXPECT_FALSE(header_block->CanInsertStateBlocks(9));
+  EXPECT_TRUE(accessor.CanInsertStateBlocks(8));
+  EXPECT_FALSE(accessor.CanInsertStateBlocks(9));
 
   header_block->RemoveSnapshotReference(12345, *behavior_);
 }
@@ -122,27 +127,29 @@ TEST_F(HeaderBlock_Test, CreateBlob_32_min_index_capacity) {
   EXPECT_EQ(header_block->base_version(), 12345);
   EXPECT_EQ(behavior_->total_allocated_pages_count(), 2);
 
+  MutatingBlobAccessor accessor(*header_block);
+
   // The header_block is always created together with its base version; the
   // caller is responsible for populating it with the correct state before
   // presenting it to other threads.
   EXPECT_EQ(header_block->stored_versions_count(), 1);
-  EXPECT_EQ(header_block->keys_count(), 0);
-  EXPECT_EQ(header_block->subkeys_count(), 0);
+  EXPECT_EQ(accessor.keys_count(), 0);
+  EXPECT_EQ(accessor.subkeys_count(), 0);
   // 8 index blocks (mask is 1 less).
   EXPECT_EQ(header_block->index_blocks_mask(), 7);
   // Since there is more than one index block, we only allow up to 4 slots per
   // block.
-  EXPECT_EQ(header_block->remaining_index_slots_capacity(), 32);
+  EXPECT_EQ(accessor.remaining_index_slots_capacity(), 32);
 
   // There are 128 blocks total; 1 is occupied by the header, and 8 are occupied
   // by the index. Note that the trailing data block is already used by the
   // base version's reference count.
   EXPECT_EQ(header_block->data_blocks_capacity(), 119);
 
-  EXPECT_EQ(header_block->available_data_blocks_count(), 118);
+  EXPECT_EQ(accessor.available_data_blocks_count(), 118);
 
-  EXPECT_TRUE(header_block->CanInsertStateBlocks(32));
-  EXPECT_FALSE(header_block->CanInsertStateBlocks(33));
+  EXPECT_TRUE(accessor.CanInsertStateBlocks(32));
+  EXPECT_FALSE(accessor.CanInsertStateBlocks(33));
 
   header_block->RemoveSnapshotReference(12345, *behavior_);
 }
@@ -160,11 +167,12 @@ TEST_F(HeaderBlock_Test, populate_block_index_with_keys) {
       HeaderBlock::CreateBlob(*behavior_, kBaseVersion, 7);
   ASSERT_NE(header_block, nullptr);
   EXPECT_EQ(behavior_->total_allocated_pages_count(), 1);
-  EXPECT_EQ(header_block->remaining_index_slots_capacity(), 7);
-  EXPECT_TRUE(header_block->CanInsertStateBlocks(7));
-  EXPECT_FALSE(header_block->CanInsertStateBlocks(8));
 
-  HeaderBlock::Accessor accessor(*header_block);
+  MutatingBlobAccessor accessor(*header_block);
+
+  EXPECT_EQ(accessor.remaining_index_slots_capacity(), 7);
+  EXPECT_TRUE(accessor.CanInsertStateBlocks(7));
+  EXPECT_FALSE(accessor.CanInsertStateBlocks(8));
 
   // Returns KeyHandle{~0ull} if the child is missing, which would normally be a
   // valid handle, but here it's used as a marker.
@@ -476,7 +484,7 @@ TEST_F(HeaderBlock_Test, populate_block_index_with_keys) {
   }
 
   // Can't insert any extra blocks.
-  EXPECT_FALSE(header_block->CanInsertStateBlocks(1));
+  EXPECT_FALSE(accessor.CanInsertStateBlocks(1));
 
   header_block->RemoveSnapshotReference(kBaseVersion, *behavior_);
 }
@@ -490,11 +498,13 @@ TEST_F(HeaderBlock_Test, populate_block_index_with_keys_and_subkeys) {
       HeaderBlock::CreateBlob(*behavior_, kBaseVersion, 32);
   ASSERT_NE(header_block, nullptr);
   EXPECT_EQ(behavior_->total_allocated_pages_count(), 2);
-  EXPECT_EQ(header_block->remaining_index_slots_capacity(), 32);
-  ASSERT_TRUE(header_block->CanInsertStateBlocks(32));
-  EXPECT_FALSE(header_block->CanInsertStateBlocks(33));
 
-  HeaderBlock::Accessor accessor(*header_block);
+  MutatingBlobAccessor accessor(*header_block);
+
+  EXPECT_EQ(accessor.remaining_index_slots_capacity(), 32);
+
+  ASSERT_TRUE(accessor.CanInsertStateBlocks(32));
+  EXPECT_FALSE(accessor.CanInsertStateBlocks(33));
 
   // Each key will have 9 subkeys
 
@@ -545,8 +555,8 @@ TEST_F(HeaderBlock_Test, populate_block_index_with_keys_and_subkeys) {
     EXPECT_FALSE(key_e.MoveNext());
     key_e.Reset();
   }
-  EXPECT_TRUE(header_block->CanInsertStateBlocks(2));
-  EXPECT_FALSE(header_block->CanInsertStateBlocks(3));
+  EXPECT_TRUE(accessor.CanInsertStateBlocks(2));
+  EXPECT_FALSE(accessor.CanInsertStateBlocks(3));
 
   header_block->RemoveSnapshotReference(kBaseVersion, *behavior_);
 }
@@ -568,11 +578,12 @@ TEST_F(HeaderBlock_Test, insertion_order_fuzzing) {
     HeaderBlock* header_block =
         HeaderBlock::CreateBlob(*behavior_, kBaseVersion, kIndexCapacity);
     ASSERT_NE(header_block, nullptr);
-    EXPECT_EQ(header_block->remaining_index_slots_capacity(), kIndexCapacity);
-    EXPECT_TRUE(header_block->CanInsertStateBlocks(kIndexCapacity));
-    EXPECT_FALSE(header_block->CanInsertStateBlocks(kIndexCapacity + 1));
 
-    HeaderBlock::Accessor accessor(*header_block);
+    MutatingBlobAccessor accessor(*header_block);
+
+    EXPECT_EQ(accessor.remaining_index_slots_capacity(), kIndexCapacity);
+    EXPECT_TRUE(accessor.CanInsertStateBlocks(kIndexCapacity));
+    EXPECT_FALSE(accessor.CanInsertStateBlocks(kIndexCapacity + 1));
 
     accessor.InsertKeyBlock(MakeKeyDescriptor(5));
     KeyBlockStateSearchResult key_block_state_search_result =
@@ -582,8 +593,8 @@ TEST_F(HeaderBlock_Test, insertion_order_fuzzing) {
 
     std::shuffle(begin(subkeys), end(subkeys), rng);
 
-    EXPECT_TRUE(header_block->CanInsertStateBlocks(subkeys.size()));
-    EXPECT_FALSE(header_block->CanInsertStateBlocks(subkeys.size() + 1));
+    EXPECT_TRUE(accessor.CanInsertStateBlocks(subkeys.size()));
+    EXPECT_FALSE(accessor.CanInsertStateBlocks(subkeys.size() + 1));
 
     for (size_t i = 0; i < subkeys.size(); ++i) {
       uint64_t subkey = subkeys[i];
@@ -591,7 +602,7 @@ TEST_F(HeaderBlock_Test, insertion_order_fuzzing) {
           *behavior_, *key_block_state_search_result.state_block_, subkey);
     }
     // The index is full
-    EXPECT_FALSE(header_block->CanInsertStateBlocks(1));
+    EXPECT_FALSE(accessor.CanInsertStateBlocks(1));
 
     KeyStateBlockEnumerator key_e = accessor.CreateKeyStateBlockEnumerator();
     EXPECT_TRUE(key_e.MoveNext());
@@ -654,11 +665,12 @@ TEST_F(HeaderBlock_Test, subkey_hashes_fuzzing) {
     HeaderBlock* header_block =
         HeaderBlock::CreateBlob(*behavior_, kBaseVersion, kIndexCapacity);
     ASSERT_NE(header_block, nullptr);
-    EXPECT_EQ(header_block->remaining_index_slots_capacity(), kIndexCapacity);
-    EXPECT_TRUE(header_block->CanInsertStateBlocks(kIndexCapacity));
-    EXPECT_FALSE(header_block->CanInsertStateBlocks(kIndexCapacity + 1));
 
-    HeaderBlock::Accessor accessor(*header_block);
+    MutatingBlobAccessor accessor(*header_block);
+
+    EXPECT_EQ(accessor.remaining_index_slots_capacity(), kIndexCapacity);
+    EXPECT_TRUE(accessor.CanInsertStateBlocks(kIndexCapacity));
+    EXPECT_FALSE(accessor.CanInsertStateBlocks(kIndexCapacity + 1));
 
     accessor.InsertKeyBlock(MakeKeyDescriptor(5));
     KeyBlockStateSearchResult key_block_state_search_result =
@@ -669,9 +681,8 @@ TEST_F(HeaderBlock_Test, subkey_hashes_fuzzing) {
     shuffled_subkeys = sorted_subkeys;
     std::shuffle(begin(shuffled_subkeys), end(shuffled_subkeys), rng);
 
-    ASSERT_TRUE(header_block->CanInsertStateBlocks(shuffled_subkeys.size()));
-    EXPECT_FALSE(
-        header_block->CanInsertStateBlocks(shuffled_subkeys.size() + 1));
+    ASSERT_TRUE(accessor.CanInsertStateBlocks(shuffled_subkeys.size()));
+    EXPECT_FALSE(accessor.CanInsertStateBlocks(shuffled_subkeys.size() + 1));
 
     for (size_t i = 0; i < shuffled_subkeys.size(); ++i) {
       uint64_t subkey = shuffled_subkeys[i];
@@ -679,7 +690,7 @@ TEST_F(HeaderBlock_Test, subkey_hashes_fuzzing) {
           *behavior_, *key_block_state_search_result.state_block_, subkey);
     }
     // The index is full
-    EXPECT_FALSE(header_block->CanInsertStateBlocks(1));
+    EXPECT_FALSE(accessor.CanInsertStateBlocks(1));
 
     KeyStateBlockEnumerator key_e = accessor.CreateKeyStateBlockEnumerator();
     EXPECT_TRUE(key_e.MoveNext());
@@ -720,30 +731,33 @@ TEST_F(HeaderBlock_Test, empty_versions) {
       HeaderBlock::CreateBlob(*behavior_, kBaseVersion, 7);
   ASSERT_NE(header_block, nullptr);
   EXPECT_EQ(behavior_->total_allocated_pages_count(), 1);
-  EXPECT_EQ(header_block->remaining_index_slots_capacity(), 7);
+
+  MutatingBlobAccessor accessor(*header_block);
+
+  EXPECT_EQ(accessor.remaining_index_slots_capacity(), 7);
 
   // There are 64 blocks total; 1 is occupied by the header, and 1 is occupied
   // by the index. An extra block stores the refcount for the base version.
   EXPECT_EQ(header_block->data_blocks_capacity(), 62);
-  EXPECT_EQ(header_block->available_data_blocks_count(), 61);
+  EXPECT_EQ(accessor.available_data_blocks_count(), 61);
 
   for (int i = 0; i < 15; ++i) {
-    ASSERT_TRUE(header_block->AddVersion());
+    ASSERT_TRUE(accessor.AddVersion());
   }
 
   // All 16 versions (including the base one, that was created by CreateBlob()
   // call) should fit into one block.
-  EXPECT_EQ(header_block->available_data_blocks_count(), 61);
+  EXPECT_EQ(accessor.available_data_blocks_count(), 61);
 
   // Each group of 16 versions consumes an extra block
   for (uint32_t group_id = 0; group_id < 61; ++group_id) {
     for (int i = 0; i < 16; ++i) {
-      ASSERT_TRUE(header_block->AddVersion());
-      EXPECT_EQ(header_block->available_data_blocks_count(), 60 - group_id);
+      ASSERT_TRUE(accessor.AddVersion());
+      EXPECT_EQ(accessor.available_data_blocks_count(), 60 - group_id);
     }
   }
   // No more versions can be added.
-  EXPECT_FALSE(header_block->AddVersion());
+  EXPECT_FALSE(accessor.AddVersion());
 
   for (uint64_t i = 0; i < 16 * 62; ++i) {
     header_block->RemoveSnapshotReference(kBaseVersion + i, *behavior_);
@@ -759,7 +773,7 @@ class PrepareTransaction_Test : public HeaderBlock_Test {
     // There are 64 blocks total; 1 is occupied by the header, and 1 is occupied
     // by the index. An extra block stores the refcount for the base version.
     EXPECT_EQ(header_block_->data_blocks_capacity(), 62);
-    EXPECT_EQ(header_block_->available_data_blocks_count(), 61);
+    EXPECT_EQ(accessor_.available_data_blocks_count(), 61);
 
     // Adding a key and a few subkeys
     accessor_.InsertKeyBlock(MakeKeyDescriptor(5));
@@ -769,7 +783,7 @@ class PrepareTransaction_Test : public HeaderBlock_Test {
       accessor_.InsertSubkeyBlock(
           *behavior_, *key_block_state_search_result.state_block_, subkey);
     }
-    EXPECT_EQ(header_block_->available_data_blocks_count(), 54);
+    EXPECT_EQ(accessor_.available_data_blocks_count(), 54);
   }
 
  protected:
@@ -802,7 +816,7 @@ class PrepareTransaction_Test : public HeaderBlock_Test {
   }
 
   HeaderBlock* header_block_;
-  HeaderBlock::Accessor accessor_;
+  MutatingBlobAccessor accessor_;
 };
 
 TEST_F(PrepareTransaction_Test, inserting_subkey_version) {
@@ -816,7 +830,7 @@ TEST_F(PrepareTransaction_Test, inserting_subkey_version) {
   EXPECT_FALSE(search_result.version_block_);
 
   // The operation didn't consume any version blocks
-  EXPECT_EQ(header_block_->available_data_blocks_count(), 54);
+  EXPECT_EQ(accessor_.available_data_blocks_count(), 54);
 
   // This takes the ownership of the payload, and the reference should be
   // released when the block is destroyed.
@@ -833,14 +847,14 @@ TEST_F(PrepareTransaction_Test, inserting_subkey_version) {
               PayloadHandle{42});
   }
 
-  ASSERT_TRUE(header_block_->AddVersion());
+  ASSERT_TRUE(accessor_.AddVersion());
 
   // Now trying without a precondition, but attempting to write the payload that
   // is already there.
   EXPECT_TRUE(accessor_.ReserveSpaceForTransaction(search_result,
                                                    kBaseVersion + 1, false));
   // The operation didn't consume any version blocks
-  EXPECT_EQ(header_block_->available_data_blocks_count(), 54);
+  EXPECT_EQ(accessor_.available_data_blocks_count(), 54);
   search_result.state_block_->Push(kBaseVersion + 1, {});
 
   // The subkey doesn't exist before the first version
@@ -853,12 +867,12 @@ TEST_F(PrepareTransaction_Test, inserting_subkey_version) {
 
   // This version should allocate a new version block (with both existing
   // versions and enough space for one more version).
-  ASSERT_TRUE(header_block_->AddVersion());
-  EXPECT_EQ(header_block_->available_data_blocks_count(), 54);
+  ASSERT_TRUE(accessor_.AddVersion());
+  EXPECT_EQ(accessor_.available_data_blocks_count(), 54);
   ASSERT_TRUE(accessor_.ReserveSpaceForTransaction(search_result,
                                                    kBaseVersion + 2, true));
   // The operation consumed one version block.
-  EXPECT_EQ(header_block_->available_data_blocks_count(), 53);
+  EXPECT_EQ(accessor_.available_data_blocks_count(), 53);
 
   EXPECT_TRUE(search_result.version_block_);
 
@@ -876,12 +890,12 @@ TEST_F(PrepareTransaction_Test, inserting_subkey_version) {
   EXPECT_EQ(GetPayload(kBaseVersion + 2, subkey).payload(), PayloadHandle{43});
 
   // This version should fit into existing version block.
-  ASSERT_TRUE(header_block_->AddVersion());
+  ASSERT_TRUE(accessor_.AddVersion());
   ASSERT_TRUE(accessor_.ReserveSpaceForTransaction(search_result,
                                                    kBaseVersion + 3, false));
 
   // The operation didn't consume a version block.
-  EXPECT_EQ(header_block_->available_data_blocks_count(), 53);
+  EXPECT_EQ(accessor_.available_data_blocks_count(), 53);
 
   EXPECT_TRUE(search_result.version_block_);
 
@@ -900,11 +914,11 @@ TEST_F(PrepareTransaction_Test, inserting_subkey_version) {
   // version block.
   header_block_->RemoveSnapshotReference(kBaseVersion + 1, *behavior_);
 
-  ASSERT_TRUE(header_block_->AddVersion());
+  ASSERT_TRUE(accessor_.AddVersion());
   ASSERT_TRUE(accessor_.ReserveSpaceForTransaction(search_result,
                                                    kBaseVersion + 4, true));
   // The operation consumed two new version blocks.
-  EXPECT_EQ(header_block_->available_data_blocks_count(), 51);
+  EXPECT_EQ(accessor_.available_data_blocks_count(), 51);
 
   EXPECT_TRUE(search_result.version_block_);
 
@@ -947,7 +961,7 @@ TEST_F(PrepareTransaction_Test, inserting_key_versions) {
     EXPECT_FALSE(search_result.version_block_);
 
     // The operation didn't consume any version blocks
-    EXPECT_EQ(header_block_->available_data_blocks_count(), 54);
+    EXPECT_EQ(accessor_.available_data_blocks_count(), 54);
 
     ASSERT_TRUE(search_result.state_block_->HasFreeInPlaceSlots());
     search_result.state_block_->PushSubkeysCount(VersionOffset{i}, new_count);
@@ -959,7 +973,7 @@ TEST_F(PrepareTransaction_Test, inserting_key_versions) {
     for (uint32_t j = 0; j <= i; ++j) {
       EXPECT_EQ(GetSubkeyCountForVersion(kBaseVersion + j), 9000 + j);
     }
-    ASSERT_TRUE(header_block_->AddVersion());
+    ASSERT_TRUE(accessor_.AddVersion());
   }
 
   // The next 4 versions will use a version block.
@@ -973,7 +987,7 @@ TEST_F(PrepareTransaction_Test, inserting_key_versions) {
     ASSERT_TRUE(search_result.version_block_);
 
     // All versions are in the same version block.
-    EXPECT_EQ(header_block_->available_data_blocks_count(), 53);
+    EXPECT_EQ(accessor_.available_data_blocks_count(), 53);
 
     ASSERT_TRUE(search_result.version_block_->HasEmptySlots());
     search_result.version_block_->PushSubkeysCount(VersionOffset{i}, new_count);
@@ -985,7 +999,7 @@ TEST_F(PrepareTransaction_Test, inserting_key_versions) {
     for (uint32_t j = 0; j <= i; ++j) {
       EXPECT_EQ(GetSubkeyCountForVersion(kBaseVersion + j), 9000 + j);
     }
-    EXPECT_TRUE(header_block_->AddVersion());
+    EXPECT_TRUE(accessor_.AddVersion());
   }
 
   // Dereferencing a single version.
@@ -999,7 +1013,7 @@ TEST_F(PrepareTransaction_Test, inserting_key_versions) {
 
   // Two new blocks were allocated, since 6 out of 7 previous versions are still
   // alive and have to be preserved.
-  EXPECT_EQ(header_block_->available_data_blocks_count(), 51);
+  EXPECT_EQ(accessor_.available_data_blocks_count(), 51);
 
   EXPECT_EQ(search_result.version_block_->capacity(), 15);
   EXPECT_EQ(search_result.version_block_->size_relaxed(), 6);

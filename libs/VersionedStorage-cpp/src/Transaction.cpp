@@ -287,11 +287,10 @@ class TransactionImpl : public Transaction {
 
  protected:
   PrepareResult Prepare(uint64_t new_version,
-                        HeaderBlock& header_block,
+                        MutatingBlobAccessor& accessor,
                         size_t& extra_blocks_count,
                         bool allocation_failed) noexcept override {
     extra_blocks_count = 0;
-    HeaderBlock::Accessor accessor{header_block};
     for (auto key_transactions_it = begin(key_transactions_map_),
               key_transactions_it_end = end(key_transactions_map_);
          key_transactions_it != key_transactions_it_end;) {
@@ -425,18 +424,16 @@ class TransactionImpl : public Transaction {
       ++key_transactions_it;
     }
     if (allocation_failed ||
-        !header_block.CanInsertStateBlocks(extra_blocks_count)) {
+        !accessor.CanInsertStateBlocks(extra_blocks_count)) {
       return PrepareResult::AllocationFailed;
     }
     return PrepareResult::Ready;
   }
 
   void Apply(uint64_t new_version,
-             HeaderBlock& header_block) noexcept override {
-    HeaderBlock::Accessor accessor{header_block};
-
+             MutatingBlobAccessor& accessor) noexcept override {
     VersionOffset version_offset =
-        MakeVersionOffset(new_version, header_block.base_version());
+        MakeVersionOffset(new_version, accessor.base_version());
 
     for (auto&& [key_handle, key_transaction] : key_transactions_map_) {
       if (!key_transaction.state_block()) {
@@ -457,15 +454,15 @@ class TransactionImpl : public Transaction {
             static_cast<uint32_t>(key_transaction.new_subkeys_count());
         if (new_subkeys_count == 0) {
           assert(key_transaction.current_subkeys_count_ != 0);
-          --header_block.keys_count();
+          --accessor.keys_count();
         } else if (key_transaction.current_subkeys_count_ == 0) {
-          ++header_block.keys_count();
+          ++accessor.keys_count();
         }
-        assert(header_block.subkeys_count() >=
+        assert(accessor.subkeys_count() >=
                key_transaction.current_subkeys_count_);
-        header_block.subkeys_count() = header_block.subkeys_count() +
-                                       new_subkeys_count -
-                                       key_transaction.current_subkeys_count_;
+        accessor.subkeys_count() = accessor.subkeys_count() +
+                                   new_subkeys_count -
+                                   key_transaction.current_subkeys_count_;
         if (KeyVersionBlock* block = key_transaction.version_block()) {
           block->PushSubkeysCount(version_offset, new_subkeys_count);
         } else {
@@ -602,10 +599,8 @@ class TransactionImpl : public Transaction {
 
   HeaderBlock* CreateMergedBlob(
       uint64_t new_version,
-      HeaderBlock& existing_header_block,
+      MutatingBlobAccessor& existing_block_accessor,
       size_t extra_state_blocks_to_insert) noexcept override {
-    HeaderBlock::Accessor existing_accessor{existing_header_block};
-
     // Saving the pointers to map nodes to the scratch buffer area of the
     // blocks (later, when we'll be iterating over all blocks, we'll know which
     // ones have modifications).
@@ -621,7 +616,8 @@ class TransactionImpl : public Transaction {
         }
       }
     }
-    auto key_enumerator = existing_accessor.CreateKeyStateBlockEnumerator();
+    auto key_enumerator =
+        existing_block_accessor.CreateKeyStateBlockEnumerator();
 
     // Counting the number of blocks that have to be allocated.
     size_t required_blocks_count = extra_state_blocks_to_insert;
@@ -649,7 +645,7 @@ class TransactionImpl : public Transaction {
       return nullptr;
     }
 
-    HeaderBlock::Accessor new_accessor{*new_header_block};
+    MutatingBlobAccessor new_accessor{*new_header_block};
 
     // First, moving all surviving blocks from the existing blob.
     key_enumerator.Reset();
@@ -687,7 +683,7 @@ class TransactionImpl : public Transaction {
           if (new_subkeys_count) {
             new_key_state_block->PushSubkeysCount(VersionOffset{0},
                                                   new_subkeys_count);
-            ++new_header_block->keys_count();
+            ++new_accessor.keys_count();
           }
         }
       };
@@ -728,7 +724,7 @@ class TransactionImpl : public Transaction {
                   new_version,
                   pair->second.new_payload_handle_or_deletion_marker_
                       .release());
-              ++new_header_block->subkeys_count();
+              ++new_accessor.subkeys_count();
             } else if (!pair->second.new_payload_handle_or_deletion_marker_) {
               if (key_flags.is_clear_before_transaction_mode) {
                 // This subkey exists to suppress
@@ -750,7 +746,7 @@ class TransactionImpl : public Transaction {
               new_subkey_state_block->Push(
                   new_version,
                   behavior_->DuplicateHandle(old_payload.payload()));
-              ++new_header_block->subkeys_count();
+              ++new_accessor.subkeys_count();
             }
           }
         }
@@ -778,7 +774,7 @@ class TransactionImpl : public Transaction {
             // conversion.
             new_key_state_block->PushSubkeysCount(VersionOffset{0},
                                                   static_cast<uint32_t>(count));
-            ++new_header_block->keys_count();
+            ++new_accessor.keys_count();
           }
         }
       };
@@ -798,7 +794,7 @@ class TransactionImpl : public Transaction {
               new_version,
               subkey_transaction.new_payload_handle_or_deletion_marker_
                   .release());
-          ++new_header_block->subkeys_count();
+          ++new_accessor.subkeys_count();
         }
       }
     }

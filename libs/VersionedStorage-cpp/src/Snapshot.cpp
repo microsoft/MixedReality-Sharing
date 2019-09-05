@@ -88,19 +88,21 @@ class KeyEnumeratorImpl : public KeyEnumerator {
 
 Snapshot::Snapshot(uint64_t version,
                    HeaderBlock& header_block,
+                   size_t keys_count,
+                   size_t subkeys_count,
                    std::shared_ptr<Behavior> behavior) noexcept
     : header_block_{header_block},
       behavior_{std::move(behavior)},
       version_{version},
-      keys_count_{header_block.keys_count()},
-      subkeys_count_{header_block.subkeys_count()} {}
+      keys_count_{keys_count},
+      subkeys_count_{subkeys_count} {}
 
 Snapshot::~Snapshot() noexcept {
   header_block_.RemoveSnapshotReference(version_, *behavior_);
 }
 
 size_t Snapshot::GetSubkeysCount(const KeyDescriptor& key) const noexcept {
-  return HeaderBlock::Accessor{const_cast<HeaderBlock&>(header_block_)}
+  return BlobAccessor{const_cast<HeaderBlock&>(header_block_)}
       .FindKey(version_, key)
       .value();
 }
@@ -108,7 +110,7 @@ size_t Snapshot::GetSubkeysCount(const KeyDescriptor& key) const noexcept {
 std::optional<PayloadHandle> Snapshot::Get(const KeyDescriptor& key,
                                            uint64_t subkey) const noexcept {
   VersionedPayloadHandle handle =
-      HeaderBlock::Accessor{const_cast<HeaderBlock&>(header_block_)}
+      BlobAccessor{const_cast<HeaderBlock&>(header_block_)}
           .FindSubkey(version_, key, subkey)
           .value();
   if (handle.has_payload())
@@ -120,14 +122,14 @@ std::optional<PayloadHandle> Snapshot::Get(const KeyDescriptor& key,
 std::unique_ptr<KeyEnumerator> Snapshot::CreateKeyEnumerator() const noexcept {
   return std::make_unique<KeyEnumeratorImpl>(
       shared_from_this(),
-      HeaderBlock::Accessor(header_block_).CreateKeyStateBlockEnumerator());
+      BlobAccessor(header_block_).CreateKeyStateBlockEnumerator());
 }
 
 std::unique_ptr<SubkeyEnumerator> Snapshot::CreateSubkeyEnumerator(
     const KeyDescriptor& key) const noexcept {
   return std::make_unique<SubkeyEnumeratorImpl>(
-      shared_from_this(), HeaderBlock::Accessor(header_block_)
-                              .CreateSubkeyStateBlockEnumerator(key));
+      shared_from_this(),
+      BlobAccessor(header_block_).CreateSubkeyStateBlockEnumerator(key));
 }
 
 }  // namespace Microsoft::MixedReality::Sharing::VersionedStorage

@@ -14,6 +14,7 @@ namespace Microsoft::MixedReality::Sharing::VersionedStorage {
 
 class HeaderBlock;
 class Storage;
+class MutatingBlobAccessor;
 
 // An atomic modification of the storage which can be applied to it to transfer
 // it to the next version. Transactions are destroyed after being applied.
@@ -91,20 +92,18 @@ class Transaction {
   //   not enough space in this blob to apply the transaction.
   // returns Ready if all preconditions are satisfied, and the transaction can
   //   be applied to this blob.
-  //
-  // TODO: accept an accessor
   [[nodiscard]] virtual PrepareResult Prepare(
       uint64_t new_version,
-      HeaderBlock& header_block,
+      MutatingBlobAccessor& accessor,
       size_t& extra_blocks_count,
       bool allocation_failed) noexcept = 0;
 
   virtual void Apply(uint64_t new_version,
-                     HeaderBlock& header_block) noexcept = 0;
+                     MutatingBlobAccessor& accessor) noexcept = 0;
 
   [[nodiscard]] virtual HeaderBlock* CreateMergedBlob(
       uint64_t new_version,
-      HeaderBlock& existing_header_block,
+      MutatingBlobAccessor& existing_block_accessor,
       size_t extra_states_to_insert) noexcept = 0;
 };
 

@@ -29,6 +29,8 @@ class Snapshot : public std::enable_shared_from_this<Snapshot> {
   // Doesn't increment any reference counts (they should be pre-incremented).
   Snapshot(uint64_t version,
            HeaderBlock& header_block,
+           size_t keys_count,
+           size_t subkeys_count,
            std::shared_ptr<Behavior> behavior) noexcept;
   ~Snapshot() noexcept;
 

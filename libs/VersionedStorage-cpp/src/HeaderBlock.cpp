@@ -50,13 +50,13 @@ constexpr HashMasks kHashMasks;
 }  // namespace
 
 MS_MR_SHARING_FORCEINLINE
-HeaderBlock::Accessor::IndexOffsetAndSlotHashes::IndexOffsetAndSlotHashes(
+BlobAccessor::IndexOffsetAndSlotHashes::IndexOffsetAndSlotHashes(
     uint64_t key_hash)
     : index_offset_hash{static_cast<uint32_t>(key_hash >> 8)},
       slot_hash{static_cast<uint8_t>(key_hash)} {}
 
 MS_MR_SHARING_FORCEINLINE
-HeaderBlock::Accessor::IndexOffsetAndSlotHashes::IndexOffsetAndSlotHashes(
+BlobAccessor::IndexOffsetAndSlotHashes::IndexOffsetAndSlotHashes(
     uint64_t key_hash,
     uint64_t subkey)
 #ifdef MS_MR_SHARING_PLATFORM_ANY_64_BIT
@@ -105,15 +105,19 @@ inline bool HeaderBlock::IsVersionFromThisBlock(uint64_t version) const
          (version - base_version_ < stored_versions_count());
 }
 
-inline uint32_t HeaderBlock::available_data_blocks_count() const noexcept {
-  return data_blocks_capacity_ - stored_data_blocks_count_ -
-         ((stored_versions_count() + VersionRefCount::kCountsPerBlock - 1) /
+MS_MR_SHARING_FORCEINLINE uint32_t
+MutatingBlobAccessor::available_data_blocks_count() const noexcept {
+  return header_block_.data_blocks_capacity_ -
+         header_block_.stored_data_blocks_count_ -
+         ((header_block_.stored_versions_count() +
+           VersionRefCount::kCountsPerBlock - 1) /
           VersionRefCount::kCountsPerBlock);
 }
 
-inline DataBlockLocation HeaderBlock::AllocateDataBlock() noexcept {
+MS_MR_SHARING_FORCEINLINE DataBlockLocation
+MutatingBlobAccessor::AllocateDataBlock() noexcept {
   assert(available_data_blocks_count() > 0);
-  return DataBlockLocation{stored_data_blocks_count_++};
+  return DataBlockLocation{header_block_.stored_data_blocks_count_++};
 }
 
 // FIXME: this is a very slow approach; the code should be rewritten in a
@@ -124,9 +128,9 @@ class HeaderBlock::BlockInserter {
     return accessor_.GetBlockAt<StateBlockBase>(location);
   }
 
-  BlockInserter(Accessor& accessor, uint32_t index_offset_hash)
+  BlockInserter(MutatingBlobAccessor& accessor, uint32_t index_offset_hash)
       : accessor_{accessor},
-        new_block_data_location_{accessor.header_block().AllocateDataBlock()},
+        new_block_data_location_{accessor.AllocateDataBlock()},
         new_block_{GetAt(new_block_data_location_)} {
     assert(accessor.header_block().remaining_index_slots_capacity_ > 0);
     --accessor.header_block().remaining_index_slots_capacity_;
@@ -302,7 +306,7 @@ class HeaderBlock::BlockInserter {
     }
   }
 
-  Accessor& accessor_;
+  BlobAccessor& accessor_;
   const DataBlockLocation new_block_data_location_;
   StateBlockBase& new_block_;
   uint64_t counts_and_hashes_;
@@ -313,9 +317,9 @@ class HeaderBlock::BlockInserter {
 
 class HeaderBlock::KeyBlockInserter : public HeaderBlock::BlockInserter {
  public:
-  KeyBlockInserter(Accessor& accessor,
+  KeyBlockInserter(MutatingBlobAccessor& accessor,
                    KeyDescriptor& key_descriptor,
-                   const Accessor::IndexOffsetAndSlotHashes& hashes)
+                   const BlobAccessor::IndexOffsetAndSlotHashes& hashes)
       : HeaderBlock::BlockInserter{accessor, hashes.index_offset_hash},
         key_descriptor_{key_descriptor} {
     const auto keys_count_in_slot =
@@ -354,10 +358,10 @@ class HeaderBlock::KeyBlockInserter : public HeaderBlock::BlockInserter {
 
 class HeaderBlock::SubkeyBlockInserter : public HeaderBlock::BlockInserter {
  public:
-  SubkeyBlockInserter(Accessor& accessor,
+  SubkeyBlockInserter(MutatingBlobAccessor& accessor,
                       KeyStateBlock& key_block,
                       uint64_t subkey,
-                      const Accessor::IndexOffsetAndSlotHashes& hashes)
+                      const BlobAccessor::IndexOffsetAndSlotHashes& hashes)
       : HeaderBlock::BlockInserter{accessor, hashes.index_offset_hash},
         subkey_{subkey} {
     const auto subkeys_count_in_slot =
@@ -400,8 +404,8 @@ class HeaderBlock::SubkeyBlockInserter : public HeaderBlock::BlockInserter {
 #ifdef MS_MR_SHARING_PLATFORM_x86_OR_x64
 template <IndexLevel kLevel, typename TSearchResult, typename TEqualPredicate>
 MS_MR_SHARING_FORCEINLINE TSearchResult
-HeaderBlock::Accessor::FindState(const IndexOffsetAndSlotHashes& hashes,
-                                 TEqualPredicate&& predicate) noexcept {
+BlobAccessor::FindState(const IndexOffsetAndSlotHashes& hashes,
+                        TEqualPredicate&& predicate) noexcept {
   const auto hash_8x8 = _mm_set1_epi8(hashes.slot_hash);
   // If we won't find the result in the first block, we'll check this bit to
   // see if we should keep searching.
@@ -478,7 +482,7 @@ HeaderBlock::Accessor::FindState(const IndexOffsetAndSlotHashes& hashes,
 }
 #endif  // #ifdef MS_MR_SHARING_PLATFORM_x86_OR_x64
 
-KeyBlockStateSearchResult HeaderBlock::Accessor::FindKey(
+KeyBlockStateSearchResult BlobAccessor::FindKey(
     const KeyDescriptor& key) noexcept {
   return FindState<IndexLevel::Key, KeyBlockStateSearchResult>(
       {key.hash()}, [&key](const KeyStateBlock& candidate) -> bool {
@@ -486,7 +490,7 @@ KeyBlockStateSearchResult HeaderBlock::Accessor::FindKey(
       });
 }
 
-SubkeyBlockStateSearchResult HeaderBlock::Accessor::FindSubkey(
+SubkeyBlockStateSearchResult BlobAccessor::FindSubkey(
     const KeyDescriptor& key,
     uint64_t subkey) noexcept {
   return FindState<IndexLevel::Subkey, SubkeyBlockStateSearchResult>(
@@ -496,9 +500,8 @@ SubkeyBlockStateSearchResult HeaderBlock::Accessor::FindSubkey(
       });
 }
 
-KeySearchResult HeaderBlock::Accessor::FindKey(
-    uint64_t version,
-    const KeyDescriptor& key) noexcept {
+KeySearchResult BlobAccessor::FindKey(uint64_t version,
+                                      const KeyDescriptor& key) noexcept {
   if (version >= header_block_.base_version_) {
     KeyBlockStateSearchResult search_result = FindKey(key);
     if (search_result.version_block_) {
@@ -514,9 +517,9 @@ KeySearchResult HeaderBlock::Accessor::FindKey(
   return {};
 }
 
-SubkeySearchResult HeaderBlock::Accessor::FindSubkey(uint64_t version,
-                                                     const KeyDescriptor& key,
-                                                     uint64_t subkey) noexcept {
+SubkeySearchResult BlobAccessor::FindSubkey(uint64_t version,
+                                            const KeyDescriptor& key,
+                                            uint64_t subkey) noexcept {
   if (version >= header_block_.base_version_) {
     SubkeyBlockStateSearchResult search_result = FindSubkey(key, subkey);
     return {search_result.index_slot_location_, search_result.state_block_,
@@ -525,31 +528,7 @@ SubkeySearchResult HeaderBlock::Accessor::FindSubkey(uint64_t version,
   return {};
 }
 
-KeyBlockStateSearchResult HeaderBlock::Accessor::InsertKeyBlock(
-    KeyDescriptor& key) noexcept {
-  assert(header_block_.CanInsertStateBlocks(1));
-  assert(FindKey(key).index_slot_location_ == IndexSlotLocation::kInvalid);
-  KeyBlockInserter inserter{*this, key, {key.hash()}};
-  assert(inserter.index_slot_location() != IndexSlotLocation::kInvalid);
-  return {inserter.index_slot_location(), &inserter.new_block(), nullptr};
-}
-
-SubkeyBlockStateSearchResult HeaderBlock::Accessor::InsertSubkeyBlock(
-    Behavior& behavior,
-    KeyStateBlock& key_block,
-    uint64_t subkey) noexcept {
-  assert(header_block_.CanInsertStateBlocks(1));
-  assert(FindSubkey(KeyDescriptorWithHandle{behavior, key_block.key_, false},
-                    subkey)
-             .index_slot_location_ == IndexSlotLocation::kInvalid);
-
-  SubkeyBlockInserter inserter(*this, key_block, subkey,
-                               {behavior.GetHash(key_block.key_), subkey});
-  assert(inserter.index_slot_location() != IndexSlotLocation::kInvalid);
-  return {inserter.index_slot_location(), &inserter.new_block(), nullptr};
-}
-
-bool HeaderBlock::Accessor::ReserveSpaceForTransaction(
+bool MutatingBlobAccessor::ReserveSpaceForTransaction(
     KeyBlockStateSearchResult& search_result) noexcept {
   assert(search_result.state_block_);
   KeyStateBlock& state_block = *search_result.state_block_;
@@ -561,9 +540,8 @@ bool HeaderBlock::Accessor::ReserveSpaceForTransaction(
   } else if (state_block.HasFreeInPlaceSlots()) {
     return true;
   }
-  const uint32_t available_data_blocks_count =
-      header_block_.available_data_blocks_count();
-  if (available_data_blocks_count == 0)
+  const uint32_t available_blocks_count = available_data_blocks_count();
+  if (available_blocks_count == 0)
     return false;
 
   const DataBlockLocation new_version_block_location{
@@ -578,8 +556,7 @@ bool HeaderBlock::Accessor::ReserveSpaceForTransaction(
   KeyVersionBlock& new_version_block =
       GetBlockAt<KeyVersionBlock>(new_version_block_location);
 
-  KeyVersionBlock::Builder builder{new_version_block,
-                                   available_data_blocks_count,
+  KeyVersionBlock::Builder builder{new_version_block, available_blocks_count,
                                    header_block_.stored_data_blocks_count_};
 
   VersionRefCount::Accessor version_ref_count_accessor =
@@ -614,7 +591,7 @@ bool HeaderBlock::Accessor::ReserveSpaceForTransaction(
   return true;
 }
 
-bool HeaderBlock::Accessor::ReserveSpaceForTransaction(
+bool MutatingBlobAccessor::ReserveSpaceForTransaction(
     SubkeyBlockStateSearchResult& search_result,
     uint64_t new_version,
     bool has_value) noexcept {
@@ -633,9 +610,8 @@ bool HeaderBlock::Accessor::ReserveSpaceForTransaction(
   }
   // Allocating new data blocks from the free data blocks in this blob.
   // (starting with one block, and adding additional ones if necessary).
-  uint32_t available_data_blocks_count =
-      header_block_.available_data_blocks_count();
-  if (available_data_blocks_count == 0)
+  uint32_t available_blocks_count = available_data_blocks_count();
+  if (available_blocks_count == 0)
     return false;
 
   const DataBlockLocation new_version_block_location{
@@ -650,9 +626,9 @@ bool HeaderBlock::Accessor::ReserveSpaceForTransaction(
   SubkeyVersionBlock& new_version_block =
       GetBlockAt<SubkeyVersionBlock>(new_version_block_location);
 
-  SubkeyVersionBlock::Builder builder{
-      previous_version_block_location, new_version_block,
-      available_data_blocks_count, header_block_.stored_data_blocks_count_};
+  SubkeyVersionBlock::Builder builder{previous_version_block_location,
+                                      new_version_block, available_blocks_count,
+                                      header_block_.stored_data_blocks_count_};
 
   VersionRefCount::Accessor version_ref_count_accessor =
       header_block_.version_ref_count_accessor();
@@ -690,14 +666,12 @@ bool HeaderBlock::Accessor::ReserveSpaceForTransaction(
   return true;
 }
 
-KeyStateBlockEnumerator
-HeaderBlock::Accessor::CreateKeyStateBlockEnumerator() noexcept {
+KeyStateBlockEnumerator BlobAccessor::CreateKeyStateBlockEnumerator() noexcept {
   return {header_block_.keys_list_head_.load(std::memory_order_acquire),
           index_begin_, data_begin_, header_block_.base_version_};
 }
 
-SubkeyStateBlockEnumerator
-HeaderBlock::Accessor::CreateSubkeyStateBlockEnumerator(
+SubkeyStateBlockEnumerator BlobAccessor::CreateSubkeyStateBlockEnumerator(
     const KeyBlockStateSearchResult& search_result) noexcept {
   IndexSlotLocation location =
       search_result.state_block_
@@ -718,28 +692,6 @@ HeaderBlock::HeaderBlock(uint64_t base_version,
   version_ref_count_accessor().InitVersion(VersionOffset{0});
 }
 
-bool HeaderBlock::AddVersion() noexcept {
-  uint32_t new_version_id = stored_versions_count();
-  if (new_version_id == ~0ull) {
-    // Even if there are empty data blocks, the new version won't be
-    // compressible as an offset from the base version.
-    return false;
-  }
-
-  assert(data_blocks_capacity_ > stored_data_blocks_count_);
-  const uint32_t blocks_available_for_versions =
-      data_blocks_capacity_ - stored_data_blocks_count_;
-  if (blocks_available_for_versions < 0x1000'0000 &&
-      new_version_id ==
-          blocks_available_for_versions * VersionRefCount::kCountsPerBlock) {
-    return false;
-  }
-  alive_snapshots_count_.fetch_add(1, std::memory_order_relaxed);
-  version_ref_count_accessor().InitVersion(VersionOffset{new_version_id});
-  stored_versions_count_.store(new_version_id + 1, std::memory_order_release);
-  return true;
-}
-
 void HeaderBlock::RemoveSnapshotReference(uint64_t version,
                                           Behavior& behavior) noexcept {
   assert(IsVersionFromThisBlock(version));
@@ -749,7 +701,7 @@ void HeaderBlock::RemoveSnapshotReference(uint64_t version,
     if (1 == alive_snapshots_count_.fetch_sub(1, std::memory_order_acq_rel)) {
       // This was the last reference, the whole blob can be safely destroyed.
 
-      Accessor accessor(*this);
+      BlobAccessor accessor(*this);
       // We are doing two passes. First pass cleans up all subkeys, second
       // pass cleans up all keys. This is done in case subkeys' payloads
       // contain non-owning pointers to keys that are referenced from the
@@ -828,15 +780,6 @@ void HeaderBlock::RemoveSnapshotReference(uint64_t version,
   }
 }
 
-bool HeaderBlock::CanInsertStateBlocks(size_t extra_state_blocks_count) const
-    noexcept {
-  // Each state block will also require one index slot
-  if (extra_state_blocks_count > remaining_index_slots_capacity_)
-    return false;
-
-  return extra_state_blocks_count <= available_data_blocks_count();
-}
-
 HeaderBlock* HeaderBlock::CreateBlob(Behavior& behavior,
                                      uint64_t base_version,
                                      size_t min_index_capacity) noexcept {
@@ -878,6 +821,65 @@ HeaderBlock* HeaderBlock::CreateBlob(Behavior& behavior,
     // It's safe to skip the construction of all the other blocks.
   }
   return header;
+}
+
+bool MutatingBlobAccessor::AddVersion() noexcept {
+  uint32_t new_version_id = header_block_.stored_versions_count();
+  if (new_version_id == ~0ull) {
+    // Even if there are empty data blocks, the new version won't be
+    // compressible as an offset from the base version.
+    return false;
+  }
+
+  assert(header_block_.data_blocks_capacity_ >
+         header_block_.stored_data_blocks_count_);
+  const uint32_t blocks_available_for_versions =
+      header_block_.data_blocks_capacity_ -
+      header_block_.stored_data_blocks_count_;
+  if (blocks_available_for_versions < 0x1000'0000 &&
+      new_version_id ==
+          blocks_available_for_versions * VersionRefCount::kCountsPerBlock) {
+    return false;
+  }
+  header_block_.alive_snapshots_count_.fetch_add(1, std::memory_order_relaxed);
+  header_block_.version_ref_count_accessor().InitVersion(
+      VersionOffset{new_version_id});
+  header_block_.stored_versions_count_.store(new_version_id + 1,
+                                             std::memory_order_release);
+  return true;
+}
+
+bool MutatingBlobAccessor::CanInsertStateBlocks(
+    size_t extra_state_blocks_count) const noexcept {
+  // Each state block will also require one index slot
+  if (extra_state_blocks_count > header_block_.remaining_index_slots_capacity_)
+    return false;
+
+  return extra_state_blocks_count <= available_data_blocks_count();
+}
+
+KeyBlockStateSearchResult MutatingBlobAccessor::InsertKeyBlock(
+    KeyDescriptor& key) noexcept {
+  assert(CanInsertStateBlocks(1));
+  assert(FindKey(key).index_slot_location_ == IndexSlotLocation::kInvalid);
+  HeaderBlock::KeyBlockInserter inserter{*this, key, {key.hash()}};
+  assert(inserter.index_slot_location() != IndexSlotLocation::kInvalid);
+  return {inserter.index_slot_location(), &inserter.new_block(), nullptr};
+}
+
+SubkeyBlockStateSearchResult MutatingBlobAccessor::InsertSubkeyBlock(
+    Behavior& behavior,
+    KeyStateBlock& key_block,
+    uint64_t subkey) noexcept {
+  assert(CanInsertStateBlocks(1));
+  assert(FindSubkey(KeyDescriptorWithHandle{behavior, key_block.key_, false},
+                    subkey)
+             .index_slot_location_ == IndexSlotLocation::kInvalid);
+
+  HeaderBlock::SubkeyBlockInserter inserter(
+      *this, key_block, subkey, {behavior.GetHash(key_block.key_), subkey});
+  assert(inserter.index_slot_location() != IndexSlotLocation::kInvalid);
+  return {inserter.index_slot_location(), &inserter.new_block(), nullptr};
 }
 
 }  // namespace Microsoft::MixedReality::Sharing::VersionedStorage
