@@ -38,10 +38,10 @@ class alignas(kBlockSize) KeyVersionBlock {
    public:
     // Constructs uninitialized_first_block and increments
     // stored_data_blocks_count (it will also be incremented each time a Push
-    // operation would require an extra block). avaliable_blocks_count must be
+    // operation would require an extra block). available_blocks_count must be
     // at least 1, and the total number of written blocks won't exceed it.
     Builder(KeyVersionBlock& uninitialized_first_block,
-            uint32_t avaliable_blocks_count,
+            uint32_t available_blocks_count,
             uint32_t& stored_data_blocks_count) noexcept;
 
     // Attempts to store a version, allocating a new block if necessary.
@@ -62,7 +62,7 @@ class alignas(kBlockSize) KeyVersionBlock {
 
    private:
     KeyVersionBlock& first_block_;
-    uint32_t avaliable_blocks_count_;
+    uint32_t available_blocks_count_;
     uint32_t& stored_data_blocks_count_;
     uint32_t size_ = 0;
     uint32_t capacity_ = 7;

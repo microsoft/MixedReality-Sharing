@@ -199,12 +199,12 @@ void SubkeyVersionBlock::PushFromWriterThread(
 SubkeyVersionBlock::Builder::Builder(
     DataBlockLocation previous,
     SubkeyVersionBlock& uninitialized_first_block,
-    uint32_t avaliable_blocks_count,
+    uint32_t available_blocks_count,
     uint32_t& stored_data_blocks_count) noexcept
     : first_block_{uninitialized_first_block},
-      avaliable_blocks_count_{avaliable_blocks_count - 1},
+      available_blocks_count_{available_blocks_count - 1},
       stored_data_blocks_count_{stored_data_blocks_count} {
-  assert(avaliable_blocks_count > 0);
+  assert(available_blocks_count > 0);
   ++stored_data_blocks_count;
   new (&uninitialized_first_block) SubkeyVersionBlock{previous};
 }
@@ -253,10 +253,10 @@ bool SubkeyVersionBlock::Builder::Push(
   }
   if (current_block_size_ == current_block_capacity_) {
     // Allocating a new block
-    if (avaliable_blocks_count_ == 0) {
+    if (available_blocks_count_ == 0) {
       return false;
     }
-    --avaliable_blocks_count_;
+    --available_blocks_count_;
     ++stored_data_blocks_count_;
     capacity_ += 5;
     current_block_capacity_ = 5;
@@ -282,8 +282,8 @@ bool SubkeyVersionBlock::Builder::FinalizeAndReserveOne(
   const uint32_t current_blocks_count = (capacity_ + 1) / 5;
   assert(current_blocks_count <= optimal_blocks_count);
   uint32_t extra_blocks_count = optimal_blocks_count - current_blocks_count;
-  if (extra_blocks_count > avaliable_blocks_count_) {
-    if (avaliable_blocks_count_ == 0) {
+  if (extra_blocks_count > available_blocks_count_) {
+    if (available_blocks_count_ == 0) {
       if (current_block_size_ == current_block_capacity_)
         return false;
 
@@ -295,10 +295,10 @@ bool SubkeyVersionBlock::Builder::FinalizeAndReserveOne(
              kInvalidMarkedOffset;
     }
     // Reserving as much as we can.
-    extra_blocks_count = avaliable_blocks_count_;
+    extra_blocks_count = available_blocks_count_;
   }
   capacity_ += extra_blocks_count * 5;
-  avaliable_blocks_count_ -= extra_blocks_count;
+  available_blocks_count_ -= extra_blocks_count;
   stored_data_blocks_count_ += extra_blocks_count;
   assert(size_ < capacity_);
   first_block_.capacity_ = capacity_;

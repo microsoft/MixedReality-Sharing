@@ -678,9 +678,6 @@ TEST_F(HeaderBlock_Test, subkey_hashes_fuzzing) {
     ASSERT_TRUE(key_block_state_search_result.state_block_);
     EXPECT_EQ(key_block_state_search_result.state_block_->key_, KeyHandle{5});
 
-    shuffled_subkeys = sorted_subkeys;
-    std::shuffle(begin(shuffled_subkeys), end(shuffled_subkeys), rng);
-
     ASSERT_TRUE(accessor.CanInsertStateBlocks(shuffled_subkeys.size()));
     EXPECT_FALSE(accessor.CanInsertStateBlocks(shuffled_subkeys.size() + 1));
 
