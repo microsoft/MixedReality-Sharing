@@ -816,7 +816,7 @@ HeaderBlock* HeaderBlock::CreateBlob(Behavior& behavior,
         pages_count * kBlocksPerPage - index_blocks_count - 1;
     new (header) HeaderBlock{base_version, index_blocks_count - 1,
                              index_capacity, data_blocks_capacity};
-    // The empty state of HashBlock requires the memory to be zeroed, and we
+    // The empty state of IndexBlock requires the memory to be zeroed, and we
     // won't be accessing any other blocks before constructing them.
     // It's safe to skip the construction of all the other blocks.
   }
@@ -825,7 +825,7 @@ HeaderBlock* HeaderBlock::CreateBlob(Behavior& behavior,
 
 bool MutatingBlobAccessor::AddVersion() noexcept {
   uint32_t new_version_id = header_block_.stored_versions_count();
-  if (new_version_id == ~0ull) {
+  if (new_version_id == ~0u) {
     // Even if there are empty data blocks, the new version won't be
     // compressible as an offset from the base version.
     return false;
@@ -836,7 +836,9 @@ bool MutatingBlobAccessor::AddVersion() noexcept {
   const uint32_t blocks_available_for_versions =
       header_block_.data_blocks_capacity_ -
       header_block_.stored_data_blocks_count_;
-  if (blocks_available_for_versions < 0x1000'0000 &&
+  static constexpr uint32_t kMaxPossibleBlocksConsumedByVersions =
+      (~0u / VersionRefCount::kCountsPerBlock) + 1;
+  if (blocks_available_for_versions < kMaxPossibleBlocksConsumedByVersions &&
       new_version_id ==
           blocks_available_for_versions * VersionRefCount::kCountsPerBlock) {
     return false;
