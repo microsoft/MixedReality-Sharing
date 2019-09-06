@@ -27,8 +27,13 @@ bool StateBlockEnumeratorBase<kLevel>::MoveNext() noexcept {
   const DataBlockLocation version_block_location =
       slot.version_block_location_.load(std::memory_order_acquire);
   if (version_block_location != DataBlockLocation::kInvalid) {
-    // This can be either SubkeyVersionBlock or KeyVersionBlock,
-    // but we cast to void* anyway since there is currently no base class.
+    // Almost all possible use cases will need to access the version block soon
+    // after the state block, so it makes sense to start prefetching it here
+    // unconditionally. Normal iterators (over snapshots etc.) will care about
+    // it because they have to check if the key/subkey is even present in the
+    // version. Special internal cases, such as the code that reallocates the
+    // blob, will almost always want to know the most recent version (and for
+    // that they will have to read the version block).
     current_version_block_ =
         &GetBlockAt<VersionBlock<kLevel>>(data_begin_, version_block_location);
     Platform::Prefetch(current_version_block_);

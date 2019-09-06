@@ -99,8 +99,8 @@ BlobAccessor::IndexOffsetAndSlotHashes::IndexOffsetAndSlotHashes(
 }
 #endif
 
-inline bool HeaderBlock::IsVersionFromThisBlock(uint64_t version) const
-    noexcept {
+MS_MR_SHARING_FORCEINLINE bool HeaderBlock::IsVersionFromThisBlock(
+    uint64_t version) const noexcept {
   return (base_version_ <= version) &&
          (version - base_version_ < stored_versions_count());
 }
