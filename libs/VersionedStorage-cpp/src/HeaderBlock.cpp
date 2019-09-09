@@ -99,7 +99,7 @@ BlobAccessor::IndexOffsetAndSlotHashes::IndexOffsetAndSlotHashes(
 }
 #endif
 
-MS_MR_SHARING_FORCEINLINE bool HeaderBlock::IsVersionFromThisBlock(
+MS_MR_SHARING_FORCEINLINE bool HeaderBlock::IsVersionFromThisBlob(
     uint64_t version) const noexcept {
   return (base_version_ <= version) &&
          (version - base_version_ < stored_versions_count());
@@ -694,7 +694,7 @@ HeaderBlock::HeaderBlock(uint64_t base_version,
 
 void HeaderBlock::RemoveSnapshotReference(uint64_t version,
                                           Behavior& behavior) noexcept {
-  assert(IsVersionFromThisBlock(version));
+  assert(IsVersionFromThisBlob(version));
 
   VersionOffset version_offset{static_cast<uint32_t>(version - base_version_)};
   if (version_ref_count_accessor().RemoveReference(version_offset)) {

@@ -52,11 +52,14 @@ class alignas(kBlockSize) HeaderBlock {
 
  private:
   VersionRefCount::Accessor version_ref_count_accessor() noexcept {
+    // Accessor is constructed from the position of the refcount of the base
+    // version, which is located at the end of the blob, see VersionRefCount.h
+    // for details.
     return {15 + reinterpret_cast<VersionRefCount*>(this + index_blocks_mask_ +
                                                     data_blocks_capacity_ + 1)};
   }
 
-  bool IsVersionFromThisBlock(uint64_t version) const noexcept;
+  bool IsVersionFromThisBlob(uint64_t version) const noexcept;
 
   class BlockInserter;
   class KeyBlockInserter;
@@ -64,6 +67,9 @@ class alignas(kBlockSize) HeaderBlock {
 
   const uint64_t base_version_;
   mutable std::atomic_uint32_t alive_snapshots_count_{1};
+
+  // Always 1 less than the number of index blocks (which is a power of two),
+  // mainly used to convert hashes into index block positions.
   const uint32_t index_blocks_mask_;
   uint32_t remaining_index_slots_capacity_;
 

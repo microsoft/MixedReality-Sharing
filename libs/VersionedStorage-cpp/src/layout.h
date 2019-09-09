@@ -19,10 +19,10 @@ namespace Microsoft::MixedReality::Sharing::VersionedStorage {
 // * Header block [1 block]
 // * Index blocks [2^k blocks]
 // * Data blocks
-//   - Blocks with reference counts for versions stored in the blob  (allocated
-//     from the beginning of the data blocks area).
-//   - State blocks and version blocks (allocated from the end of the data
+//   - State blocks and version blocks (allocated from the beginning of the data
 //     blocks area). They are referenced by index blocks and each other.
+//   - Blocks with reference counts for versions stored in the blob  (allocated
+//     from the end of the data blocks area).
 // Note that initially it is unknown how many data blocks will be used for
 // various purposes. The blocks are simply allocated (from both ends) until the
 // blob runs out of space.
