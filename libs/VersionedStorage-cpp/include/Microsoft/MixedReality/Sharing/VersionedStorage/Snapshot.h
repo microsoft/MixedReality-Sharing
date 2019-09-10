@@ -18,21 +18,28 @@ class KeyDescriptor;
 class Behavior;
 class Storage;
 
-// An immutable object representing the state of the Storage at some specific
-// version.
+// References an immutable state of the storage at some specific version.
 // A snapshot can be taken from the Storage at any time, and it is going to
 // reference the same state for as long as it's alive.
 // There is no specific limit on the number of alive snapshots, although having
 // too many may result in the storage running out of memory.
-class Snapshot : public std::enable_shared_from_this<Snapshot> {
+class Snapshot {
  public:
+  ~Snapshot() noexcept;
+
+  Snapshot() noexcept;
+
   // Doesn't increment any reference counts (they should be pre-incremented).
   Snapshot(uint64_t version,
            Detail::HeaderBlock& header_block,
            size_t keys_count,
            size_t subkeys_count,
            std::shared_ptr<Behavior> behavior) noexcept;
-  ~Snapshot() noexcept;
+
+  Snapshot(Snapshot&&) noexcept;
+  Snapshot(const Snapshot&) noexcept;
+  Snapshot& operator=(Snapshot&&) noexcept;
+  Snapshot& operator=(const Snapshot&) noexcept;
 
   constexpr uint64_t version() const noexcept { return version_; }
   constexpr size_t keys_count() const noexcept { return keys_count_; }
@@ -49,14 +56,11 @@ class Snapshot : public std::enable_shared_from_this<Snapshot> {
   KeyIteratorEnd end() const noexcept { return {}; }
 
  private:
-  Snapshot(const Snapshot&) = delete;
-  Snapshot& operator=(const Snapshot&) = delete;
-
-  Detail::HeaderBlock& header_block_;
+  Detail::HeaderBlock* header_block_{nullptr};
   std::shared_ptr<Behavior> behavior_;
-  const uint64_t version_;
-  const size_t keys_count_{0};
-  const size_t subkeys_count_{0};
+  uint64_t version_{0};
+  size_t keys_count_{0};
+  size_t subkeys_count_{0};
   friend class Storage;
 };
 

@@ -31,20 +31,19 @@ class Storage_Test : public ::testing::Test {
 TEST_F(Storage_Test, initial_state_is_empty) {
   auto storage = std::make_shared<Storage>(behavior_);
   auto snapshot = storage->GetSnapshot();
-  ASSERT_TRUE(snapshot);
 
-  EXPECT_EQ(snapshot->version(), 0);
+  EXPECT_EQ(snapshot.version(), 0);
 
-  EXPECT_EQ(snapshot->keys_count(), 0);
-  EXPECT_EQ(snapshot->subkeys_count(), 0);
+  EXPECT_EQ(snapshot.keys_count(), 0);
+  EXPECT_EQ(snapshot.subkeys_count(), 0);
 
   const auto key_0 = MakeKeyDescriptor(0);
 
-  // EXPECT_EQ(snapshot->GetSubkeysCount(key_0), 0);
-  EXPECT_FALSE(snapshot->Get(key_0, 0).has_value());
+  EXPECT_EQ(snapshot.GetSubkeysCount(key_0), 0);
+  EXPECT_FALSE(snapshot.Get(key_0, 0).has_value());
 
-  //   EXPECT_EQ(snapshot->begin(), snapshot->end());
-  //   EXPECT_FALSE(snapshot->Get(key_0));
+  EXPECT_EQ(snapshot.begin(), snapshot.end());
+  EXPECT_FALSE(snapshot.Get(key_0));
 }
 
 TEST_F(Storage_Test, unused_transaction_cleans_after_itself) {
@@ -74,10 +73,9 @@ TEST_F(Storage_Test, unsatisfied_subkeys_count_prerequisite) {
                 AppliedWithNoEffectDueToUnsatisfiedPrerequisites);
 
   auto snapshot = storage->GetSnapshot();
-  ASSERT_TRUE(snapshot);
-  EXPECT_EQ(snapshot->version(), 1);
-  EXPECT_EQ(snapshot->keys_count(), 0);
-  EXPECT_EQ(snapshot->subkeys_count(), 0);
+  EXPECT_EQ(snapshot.version(), 1);
+  EXPECT_EQ(snapshot.keys_count(), 0);
+  EXPECT_EQ(snapshot.subkeys_count(), 0);
 }
 
 TEST_F(Storage_Test, unsatisfied_payload_prerequisite) {
@@ -90,10 +88,9 @@ TEST_F(Storage_Test, unsatisfied_payload_prerequisite) {
                 AppliedWithNoEffectDueToUnsatisfiedPrerequisites);
 
   auto snapshot = storage->GetSnapshot();
-  ASSERT_TRUE(snapshot);
-  EXPECT_EQ(snapshot->version(), 1);
-  EXPECT_EQ(snapshot->keys_count(), 0);
-  EXPECT_EQ(snapshot->subkeys_count(), 0);
+  EXPECT_EQ(snapshot.version(), 1);
+  EXPECT_EQ(snapshot.keys_count(), 0);
+  EXPECT_EQ(snapshot.subkeys_count(), 0);
 }
 
 TEST_F(Storage_Test, transaction_with_no_effect) {
@@ -108,10 +105,9 @@ TEST_F(Storage_Test, transaction_with_no_effect) {
             Storage::TransactionResult::Applied);
 
   auto snapshot = storage->GetSnapshot();
-  ASSERT_TRUE(snapshot);
-  EXPECT_EQ(snapshot->version(), 1);
-  EXPECT_EQ(snapshot->keys_count(), 0);
-  EXPECT_EQ(snapshot->subkeys_count(), 0);
+  EXPECT_EQ(snapshot.version(), 1);
+  EXPECT_EQ(snapshot.keys_count(), 0);
+  EXPECT_EQ(snapshot.subkeys_count(), 0);
 }
 
 TEST_F(Storage_Test, simple_transactions) {
@@ -125,18 +121,17 @@ TEST_F(Storage_Test, simple_transactions) {
   }
 
   auto snapshot_1 = storage->GetSnapshot();
-  ASSERT_TRUE(snapshot_1);
-  EXPECT_EQ(snapshot_1->version(), 1);
-  EXPECT_EQ(snapshot_1->keys_count(), 1);
-  EXPECT_EQ(snapshot_1->subkeys_count(), 1);
+  EXPECT_EQ(snapshot_1.version(), 1);
+  EXPECT_EQ(snapshot_1.keys_count(), 1);
+  EXPECT_EQ(snapshot_1.subkeys_count(), 1);
 
-  EXPECT_EQ(snapshot_1->GetSubkeysCount(MakeKeyDescriptor(5)), 1);
-  ASSERT_TRUE(snapshot_1->Get(MakeKeyDescriptor(5), 111).has_value());
-  EXPECT_EQ(snapshot_1->Get(MakeKeyDescriptor(5), 111), PayloadHandle{1});
+  EXPECT_EQ(snapshot_1.GetSubkeysCount(MakeKeyDescriptor(5)), 1);
+  ASSERT_TRUE(snapshot_1.Get(MakeKeyDescriptor(5), 111).has_value());
+  EXPECT_EQ(snapshot_1.Get(MakeKeyDescriptor(5), 111), PayloadHandle{1});
 
   {
-    KeyIterator key_it = snapshot_1->begin();
-    ASSERT_NE(key_it, snapshot_1->end());
+    KeyIterator key_it = snapshot_1.begin();
+    ASSERT_NE(key_it, snapshot_1.end());
 
     ASSERT_EQ(key_it->key_handle(), KeyHandle{5});
     ASSERT_EQ(key_it->subkeys_count(), 1);
@@ -150,7 +145,7 @@ TEST_F(Storage_Test, simple_transactions) {
     ASSERT_EQ(it, key_it->end());
   }
   {
-    std::optional<KeyView> key_view = snapshot_1->Get(MakeKeyDescriptor(5));
+    std::optional<KeyView> key_view = snapshot_1.Get(MakeKeyDescriptor(5));
     ASSERT_TRUE(key_view);
     ASSERT_EQ(key_view->subkeys_count(), 1);
 
@@ -174,25 +169,24 @@ TEST_F(Storage_Test, simple_transactions) {
   }
 
   auto snapshot_2 = storage->GetSnapshot();
-  ASSERT_TRUE(snapshot_2);
-  EXPECT_EQ(snapshot_2->version(), 2);
-  EXPECT_EQ(snapshot_2->keys_count(), 1);
-  EXPECT_EQ(snapshot_2->subkeys_count(), 2);
+  EXPECT_EQ(snapshot_2.version(), 2);
+  EXPECT_EQ(snapshot_2.keys_count(), 1);
+  EXPECT_EQ(snapshot_2.subkeys_count(), 2);
 
   // The subkey of key 5 was successfully deleted
-  EXPECT_EQ(snapshot_2->GetSubkeysCount(MakeKeyDescriptor(5)), 0);
-  EXPECT_FALSE(snapshot_2->Get(MakeKeyDescriptor(5), 111).has_value());
+  EXPECT_EQ(snapshot_2.GetSubkeysCount(MakeKeyDescriptor(5)), 0);
+  EXPECT_FALSE(snapshot_2.Get(MakeKeyDescriptor(5), 111).has_value());
 
   // Both subkeys of the new key 6 are visible
-  EXPECT_EQ(snapshot_2->GetSubkeysCount(MakeKeyDescriptor(6)), 2);
-  ASSERT_TRUE(snapshot_2->Get(MakeKeyDescriptor(6), 222).has_value());
-  EXPECT_EQ(snapshot_2->Get(MakeKeyDescriptor(6), 222), PayloadHandle{2});
-  ASSERT_TRUE(snapshot_2->Get(MakeKeyDescriptor(6), 333).has_value());
-  EXPECT_EQ(snapshot_2->Get(MakeKeyDescriptor(6), 333), PayloadHandle{3});
+  EXPECT_EQ(snapshot_2.GetSubkeysCount(MakeKeyDescriptor(6)), 2);
+  ASSERT_TRUE(snapshot_2.Get(MakeKeyDescriptor(6), 222).has_value());
+  EXPECT_EQ(snapshot_2.Get(MakeKeyDescriptor(6), 222), PayloadHandle{2});
+  ASSERT_TRUE(snapshot_2.Get(MakeKeyDescriptor(6), 333).has_value());
+  EXPECT_EQ(snapshot_2.Get(MakeKeyDescriptor(6), 333), PayloadHandle{3});
 
   {
-    KeyIterator key_it = snapshot_2->begin();
-    ASSERT_NE(key_it, snapshot_2->end());
+    KeyIterator key_it = snapshot_2.begin();
+    ASSERT_NE(key_it, snapshot_2.end());
 
     ASSERT_EQ(key_it->key_handle(), KeyHandle{6});
     ASSERT_EQ(key_it->subkeys_count(), 2);
@@ -211,9 +205,9 @@ TEST_F(Storage_Test, simple_transactions) {
     ASSERT_EQ(it, key_it->end());
   }
   {
-    std::optional<KeyView> key_view = snapshot_2->Get(MakeKeyDescriptor(5));
+    std::optional<KeyView> key_view = snapshot_2.Get(MakeKeyDescriptor(5));
     ASSERT_FALSE(key_view);
-    key_view = snapshot_2->Get(MakeKeyDescriptor(6));
+    key_view = snapshot_2.Get(MakeKeyDescriptor(6));
     ASSERT_TRUE(key_view);
     ASSERT_EQ(key_view->subkeys_count(), 2);
     SubkeyIterator it = key_view->begin();
@@ -230,17 +224,17 @@ TEST_F(Storage_Test, simple_transactions) {
     ASSERT_EQ(it, key_view->end());
   }
   // Re-checking the first snapshot (should be unaffected by the second one).
-  EXPECT_EQ(snapshot_1->version(), 1);
-  EXPECT_EQ(snapshot_1->keys_count(), 1);
-  EXPECT_EQ(snapshot_1->subkeys_count(), 1);
+  EXPECT_EQ(snapshot_1.version(), 1);
+  EXPECT_EQ(snapshot_1.keys_count(), 1);
+  EXPECT_EQ(snapshot_1.subkeys_count(), 1);
 
-  EXPECT_EQ(snapshot_1->GetSubkeysCount(MakeKeyDescriptor(5)), 1);
-  ASSERT_TRUE(snapshot_1->Get(MakeKeyDescriptor(5), 111).has_value());
-  EXPECT_EQ(snapshot_1->Get(MakeKeyDescriptor(5), 111), PayloadHandle{1});
+  EXPECT_EQ(snapshot_1.GetSubkeysCount(MakeKeyDescriptor(5)), 1);
+  ASSERT_TRUE(snapshot_1.Get(MakeKeyDescriptor(5), 111).has_value());
+  EXPECT_EQ(snapshot_1.Get(MakeKeyDescriptor(5), 111), PayloadHandle{1});
 
   {
-    KeyIterator key_it = snapshot_1->begin();
-    ASSERT_NE(key_it, snapshot_1->end());
+    KeyIterator key_it = snapshot_1.begin();
+    ASSERT_NE(key_it, snapshot_1.end());
 
     ASSERT_EQ(key_it->key_handle(), KeyHandle{5});
     ASSERT_EQ(key_it->subkeys_count(), 1);
@@ -254,7 +248,7 @@ TEST_F(Storage_Test, simple_transactions) {
     ASSERT_EQ(it, key_it->end());
   }
   {
-    std::optional<KeyView> key_view = snapshot_1->Get(MakeKeyDescriptor(5));
+    std::optional<KeyView> key_view = snapshot_1.Get(MakeKeyDescriptor(5));
     ASSERT_TRUE(key_view);
     ASSERT_EQ(key_view->subkeys_count(), 1);
 
@@ -280,7 +274,6 @@ TEST_F(Storage_Test, ClearBeforeTransaction) {
               Storage::TransactionResult::Applied);
   }
   auto snapshot_1 = storage->GetSnapshot();
-  ASSERT_TRUE(snapshot_1);
   {
     auto transaction = Transaction::Create(behavior_);
 
@@ -306,26 +299,25 @@ TEST_F(Storage_Test, ClearBeforeTransaction) {
               Storage::TransactionResult::Applied);
   }
   auto snapshot_2 = storage->GetSnapshot();
-  ASSERT_TRUE(snapshot_2);
 
   // Checking both snapshots.
-  EXPECT_EQ(snapshot_1->version(), 1);
-  EXPECT_EQ(snapshot_1->keys_count(), 1);
-  EXPECT_EQ(snapshot_1->subkeys_count(), 3);
+  EXPECT_EQ(snapshot_1.version(), 1);
+  EXPECT_EQ(snapshot_1.keys_count(), 1);
+  EXPECT_EQ(snapshot_1.subkeys_count(), 3);
 
-  EXPECT_EQ(snapshot_1->GetSubkeysCount(MakeKeyDescriptor(5)), 3);
-  ASSERT_TRUE(snapshot_1->Get(MakeKeyDescriptor(5), 111).has_value());
-  ASSERT_TRUE(snapshot_1->Get(MakeKeyDescriptor(5), 222).has_value());
-  ASSERT_TRUE(snapshot_1->Get(MakeKeyDescriptor(5), 333).has_value());
-  EXPECT_FALSE(snapshot_1->Get(MakeKeyDescriptor(5), 444).has_value());
-  EXPECT_FALSE(snapshot_1->Get(MakeKeyDescriptor(5), 555).has_value());
-  EXPECT_EQ(snapshot_1->Get(MakeKeyDescriptor(5), 111), PayloadHandle{1});
-  EXPECT_EQ(snapshot_1->Get(MakeKeyDescriptor(5), 222), PayloadHandle{2});
-  EXPECT_EQ(snapshot_1->Get(MakeKeyDescriptor(5), 333), PayloadHandle{3});
+  EXPECT_EQ(snapshot_1.GetSubkeysCount(MakeKeyDescriptor(5)), 3);
+  ASSERT_TRUE(snapshot_1.Get(MakeKeyDescriptor(5), 111).has_value());
+  ASSERT_TRUE(snapshot_1.Get(MakeKeyDescriptor(5), 222).has_value());
+  ASSERT_TRUE(snapshot_1.Get(MakeKeyDescriptor(5), 333).has_value());
+  EXPECT_FALSE(snapshot_1.Get(MakeKeyDescriptor(5), 444).has_value());
+  EXPECT_FALSE(snapshot_1.Get(MakeKeyDescriptor(5), 555).has_value());
+  EXPECT_EQ(snapshot_1.Get(MakeKeyDescriptor(5), 111), PayloadHandle{1});
+  EXPECT_EQ(snapshot_1.Get(MakeKeyDescriptor(5), 222), PayloadHandle{2});
+  EXPECT_EQ(snapshot_1.Get(MakeKeyDescriptor(5), 333), PayloadHandle{3});
 
   {
-    KeyIterator key_it = snapshot_1->begin();
-    ASSERT_NE(key_it, snapshot_1->end());
+    KeyIterator key_it = snapshot_1.begin();
+    ASSERT_NE(key_it, snapshot_1.end());
 
     ASSERT_EQ(key_it->key_handle(), KeyHandle{5});
     ASSERT_EQ(key_it->subkeys_count(), 3);
@@ -349,7 +341,7 @@ TEST_F(Storage_Test, ClearBeforeTransaction) {
     ASSERT_EQ(it, key_it->end());
   }
   {
-    std::optional<KeyView> key_view = snapshot_1->Get(MakeKeyDescriptor(5));
+    std::optional<KeyView> key_view = snapshot_1.Get(MakeKeyDescriptor(5));
     ASSERT_TRUE(key_view);
     ASSERT_EQ(key_view->subkeys_count(), 3);
 
@@ -372,28 +364,28 @@ TEST_F(Storage_Test, ClearBeforeTransaction) {
     ASSERT_EQ(it, key_view->end());
   }
 
-  EXPECT_EQ(snapshot_2->version(), 2);
-  EXPECT_EQ(snapshot_2->keys_count(), 1);
-  EXPECT_EQ(snapshot_2->subkeys_count(), 4);
+  EXPECT_EQ(snapshot_2.version(), 2);
+  EXPECT_EQ(snapshot_2.keys_count(), 1);
+  EXPECT_EQ(snapshot_2.subkeys_count(), 4);
 
-  EXPECT_EQ(snapshot_2->GetSubkeysCount(MakeKeyDescriptor(5)), 4);
+  EXPECT_EQ(snapshot_2.GetSubkeysCount(MakeKeyDescriptor(5)), 4);
 
   // This one was implicitly deleted due to the ClearBeforeTransaction() call.
-  EXPECT_FALSE(snapshot_2->Get(MakeKeyDescriptor(5), 111).has_value());
-  ASSERT_TRUE(snapshot_2->Get(MakeKeyDescriptor(5), 222).has_value());
-  ASSERT_TRUE(snapshot_2->Get(MakeKeyDescriptor(5), 333).has_value());
-  ASSERT_TRUE(snapshot_2->Get(MakeKeyDescriptor(5), 444).has_value());
-  ASSERT_TRUE(snapshot_2->Get(MakeKeyDescriptor(5), 555).has_value());
-  EXPECT_EQ(snapshot_2->Get(MakeKeyDescriptor(5), 222), PayloadHandle{22});
+  EXPECT_FALSE(snapshot_2.Get(MakeKeyDescriptor(5), 111).has_value());
+  ASSERT_TRUE(snapshot_2.Get(MakeKeyDescriptor(5), 222).has_value());
+  ASSERT_TRUE(snapshot_2.Get(MakeKeyDescriptor(5), 333).has_value());
+  ASSERT_TRUE(snapshot_2.Get(MakeKeyDescriptor(5), 444).has_value());
+  ASSERT_TRUE(snapshot_2.Get(MakeKeyDescriptor(5), 555).has_value());
+  EXPECT_EQ(snapshot_2.Get(MakeKeyDescriptor(5), 222), PayloadHandle{22});
   // The transaction tried to overwrite the subkey with the same value here,
   // so it should stay unchanged (and not touched by ClearBeforeTransaction()).
-  EXPECT_EQ(snapshot_2->Get(MakeKeyDescriptor(5), 333), PayloadHandle{3});
-  EXPECT_EQ(snapshot_2->Get(MakeKeyDescriptor(5), 444), PayloadHandle{4});
-  EXPECT_EQ(snapshot_2->Get(MakeKeyDescriptor(5), 555), PayloadHandle{5});
+  EXPECT_EQ(snapshot_2.Get(MakeKeyDescriptor(5), 333), PayloadHandle{3});
+  EXPECT_EQ(snapshot_2.Get(MakeKeyDescriptor(5), 444), PayloadHandle{4});
+  EXPECT_EQ(snapshot_2.Get(MakeKeyDescriptor(5), 555), PayloadHandle{5});
 
   {
-    KeyIterator key_it = snapshot_2->begin();
-    ASSERT_NE(key_it, snapshot_2->end());
+    KeyIterator key_it = snapshot_2.begin();
+    ASSERT_NE(key_it, snapshot_2.end());
 
     ASSERT_EQ(key_it->key_handle(), KeyHandle{5});
     ASSERT_EQ(key_it->subkeys_count(), 4);
@@ -422,7 +414,7 @@ TEST_F(Storage_Test, ClearBeforeTransaction) {
     ASSERT_EQ(it, key_it->end());
   }
   {
-    std::optional<KeyView> key_view = snapshot_2->Get(MakeKeyDescriptor(5));
+    std::optional<KeyView> key_view = snapshot_2.Get(MakeKeyDescriptor(5));
     ASSERT_TRUE(key_view);
     ASSERT_EQ(key_view->subkeys_count(), 4);
 
@@ -463,7 +455,7 @@ TEST_F(Storage_Test, ClearBeforeTransaction_entire_key) {
               Storage::TransactionResult::Applied);
   }
   auto snapshot_1 = storage->GetSnapshot();
-  ASSERT_TRUE(snapshot_1);
+
   {
     auto transaction = Transaction::Create(behavior_);
     transaction->ClearBeforeTransaction(MakeKeyDescriptor(5));
@@ -471,26 +463,25 @@ TEST_F(Storage_Test, ClearBeforeTransaction_entire_key) {
               Storage::TransactionResult::Applied);
   }
   auto snapshot_2 = storage->GetSnapshot();
-  ASSERT_TRUE(snapshot_2);
 
   // Checking both snapshots.
-  EXPECT_EQ(snapshot_1->version(), 1);
-  EXPECT_EQ(snapshot_1->keys_count(), 1);
-  EXPECT_EQ(snapshot_1->subkeys_count(), 3);
+  EXPECT_EQ(snapshot_1.version(), 1);
+  EXPECT_EQ(snapshot_1.keys_count(), 1);
+  EXPECT_EQ(snapshot_1.subkeys_count(), 3);
 
-  EXPECT_EQ(snapshot_1->GetSubkeysCount(MakeKeyDescriptor(5)), 3);
-  ASSERT_TRUE(snapshot_1->Get(MakeKeyDescriptor(5), 111).has_value());
-  ASSERT_TRUE(snapshot_1->Get(MakeKeyDescriptor(5), 222).has_value());
-  ASSERT_TRUE(snapshot_1->Get(MakeKeyDescriptor(5), 333).has_value());
-  EXPECT_FALSE(snapshot_1->Get(MakeKeyDescriptor(5), 444).has_value());
-  EXPECT_FALSE(snapshot_1->Get(MakeKeyDescriptor(5), 555).has_value());
-  EXPECT_EQ(snapshot_1->Get(MakeKeyDescriptor(5), 111), PayloadHandle{1});
-  EXPECT_EQ(snapshot_1->Get(MakeKeyDescriptor(5), 222), PayloadHandle{2});
-  EXPECT_EQ(snapshot_1->Get(MakeKeyDescriptor(5), 333), PayloadHandle{3});
+  EXPECT_EQ(snapshot_1.GetSubkeysCount(MakeKeyDescriptor(5)), 3);
+  ASSERT_TRUE(snapshot_1.Get(MakeKeyDescriptor(5), 111).has_value());
+  ASSERT_TRUE(snapshot_1.Get(MakeKeyDescriptor(5), 222).has_value());
+  ASSERT_TRUE(snapshot_1.Get(MakeKeyDescriptor(5), 333).has_value());
+  EXPECT_FALSE(snapshot_1.Get(MakeKeyDescriptor(5), 444).has_value());
+  EXPECT_FALSE(snapshot_1.Get(MakeKeyDescriptor(5), 555).has_value());
+  EXPECT_EQ(snapshot_1.Get(MakeKeyDescriptor(5), 111), PayloadHandle{1});
+  EXPECT_EQ(snapshot_1.Get(MakeKeyDescriptor(5), 222), PayloadHandle{2});
+  EXPECT_EQ(snapshot_1.Get(MakeKeyDescriptor(5), 333), PayloadHandle{3});
 
   {
-    KeyIterator key_it = snapshot_1->begin();
-    ASSERT_NE(key_it, snapshot_1->end());
+    KeyIterator key_it = snapshot_1.begin();
+    ASSERT_NE(key_it, snapshot_1.end());
 
     ASSERT_EQ(key_it->key_handle(), KeyHandle{5});
     ASSERT_EQ(key_it->subkeys_count(), 3);
@@ -514,7 +505,7 @@ TEST_F(Storage_Test, ClearBeforeTransaction_entire_key) {
     ASSERT_EQ(it, key_it->end());
   }
   {
-    std::optional<KeyView> key_view = snapshot_1->Get(MakeKeyDescriptor(5));
+    std::optional<KeyView> key_view = snapshot_1.Get(MakeKeyDescriptor(5));
     ASSERT_TRUE(key_view);
     ASSERT_EQ(key_view->subkeys_count(), 3);
 
@@ -537,17 +528,17 @@ TEST_F(Storage_Test, ClearBeforeTransaction_entire_key) {
     ASSERT_EQ(it, key_view->end());
   }
 
-  EXPECT_EQ(snapshot_2->version(), 2);
-  EXPECT_EQ(snapshot_2->keys_count(), 0);
-  EXPECT_EQ(snapshot_2->subkeys_count(), 0);
-  EXPECT_EQ(snapshot_2->GetSubkeysCount(MakeKeyDescriptor(5)), 0);
+  EXPECT_EQ(snapshot_2.version(), 2);
+  EXPECT_EQ(snapshot_2.keys_count(), 0);
+  EXPECT_EQ(snapshot_2.subkeys_count(), 0);
+  EXPECT_EQ(snapshot_2.GetSubkeysCount(MakeKeyDescriptor(5)), 0);
 
   // This one was implicitly deleted due to the ClearBeforeTransaction() call.
-  EXPECT_FALSE(snapshot_2->Get(MakeKeyDescriptor(5), 111).has_value());
-  EXPECT_FALSE(snapshot_2->Get(MakeKeyDescriptor(5), 222).has_value());
-  EXPECT_FALSE(snapshot_2->Get(MakeKeyDescriptor(5), 333).has_value());
-  ASSERT_EQ(snapshot_2->begin(), snapshot_2->end());
-  ASSERT_FALSE(snapshot_2->Get(MakeKeyDescriptor(5)));
+  EXPECT_FALSE(snapshot_2.Get(MakeKeyDescriptor(5), 111).has_value());
+  EXPECT_FALSE(snapshot_2.Get(MakeKeyDescriptor(5), 222).has_value());
+  EXPECT_FALSE(snapshot_2.Get(MakeKeyDescriptor(5), 333).has_value());
+  ASSERT_EQ(snapshot_2.begin(), snapshot_2.end());
+  ASSERT_FALSE(snapshot_2.Get(MakeKeyDescriptor(5)));
 }
 
 TEST_F(Storage_Test, simple_blob_reallocation) {
@@ -572,19 +563,18 @@ TEST_F(Storage_Test, simple_blob_reallocation) {
   }
 
   auto snapshot = storage->GetSnapshot();
-  ASSERT_TRUE(snapshot);
-  EXPECT_EQ(snapshot->version(), 1);
-  EXPECT_EQ(snapshot->keys_count(), 1);
-  EXPECT_EQ(snapshot->subkeys_count(), 7);
-  EXPECT_EQ(snapshot->GetSubkeysCount(MakeKeyDescriptor(5)), 7);
+  EXPECT_EQ(snapshot.version(), 1);
+  EXPECT_EQ(snapshot.keys_count(), 1);
+  EXPECT_EQ(snapshot.subkeys_count(), 7);
+  EXPECT_EQ(snapshot.GetSubkeysCount(MakeKeyDescriptor(5)), 7);
   for (uint32_t i = 0; i < 7; ++i) {
-    ASSERT_TRUE(snapshot->Get(MakeKeyDescriptor(5), 100u + i).has_value());
-    EXPECT_EQ(snapshot->Get(MakeKeyDescriptor(5), 100u + i), PayloadHandle{i});
+    ASSERT_TRUE(snapshot.Get(MakeKeyDescriptor(5), 100u + i).has_value());
+    EXPECT_EQ(snapshot.Get(MakeKeyDescriptor(5), 100u + i), PayloadHandle{i});
   }
 
   {
-    KeyIterator key_it = snapshot->begin();
-    ASSERT_NE(key_it, snapshot->end());
+    KeyIterator key_it = snapshot.begin();
+    ASSERT_NE(key_it, snapshot.end());
 
     EXPECT_EQ(key_it->key_handle(), KeyHandle{5});
     EXPECT_EQ(key_it->subkeys_count(), 7);
@@ -597,10 +587,10 @@ TEST_F(Storage_Test, simple_blob_reallocation) {
     }
     ASSERT_EQ(it, key_it->end());
     ++key_it;
-    ASSERT_EQ(key_it, snapshot->end());
+    ASSERT_EQ(key_it, snapshot.end());
   }
   {
-    std::optional<KeyView> key_view = snapshot->Get(MakeKeyDescriptor(5));
+    std::optional<KeyView> key_view = snapshot.Get(MakeKeyDescriptor(5));
     ASSERT_TRUE(key_view);
     SubkeyIterator it = key_view->begin();
 
@@ -618,7 +608,7 @@ TEST_F(Storage_Test, simple_blob_reallocation) {
 TEST_F(Storage_Test, single_subkey_versions_reallocation) {
   auto storage = std::make_shared<Storage>(behavior_);
 
-  std::vector<std::shared_ptr<Snapshot>> snapshots;
+  std::vector<Snapshot> snapshots;
 
   EXPECT_EQ(behavior_->total_allocated_pages_count(), 1);
 
@@ -636,12 +626,11 @@ TEST_F(Storage_Test, single_subkey_versions_reallocation) {
   const auto key_5 = MakeKeyDescriptor(5);
   for (size_t i = 0; i < snapshots.size(); ++i) {
     auto& snapshot = snapshots[i];
-    ASSERT_TRUE(snapshot);
-    EXPECT_EQ(snapshot->version(), i + 1);
-    EXPECT_EQ(snapshot->keys_count(), 1);
-    EXPECT_EQ(snapshot->subkeys_count(), 1);
-    EXPECT_EQ(snapshot->GetSubkeysCount(key_5), 1);
-    EXPECT_EQ(snapshot->Get(key_5, 42), PayloadHandle{i % 10});
+    EXPECT_EQ(snapshot.version(), i + 1);
+    EXPECT_EQ(snapshot.keys_count(), 1);
+    EXPECT_EQ(snapshot.subkeys_count(), 1);
+    EXPECT_EQ(snapshot.GetSubkeysCount(key_5), 1);
+    EXPECT_EQ(snapshot.Get(key_5, 42), PayloadHandle{i % 10});
   }
 }
 
@@ -665,7 +654,6 @@ TEST_F(Storage_Test, reallocated_with_cleanups) {
   EXPECT_EQ(behavior_->total_allocated_pages_count(), 1);
 
   auto snapshot_1 = storage->GetSnapshot();
-  ASSERT_TRUE(snapshot_1);
   {
     auto transaction = Transaction::Create(behavior_);
 
@@ -686,38 +674,37 @@ TEST_F(Storage_Test, reallocated_with_cleanups) {
   EXPECT_EQ(behavior_->total_allocated_pages_count(), 2);
 
   auto snapshot_2 = storage->GetSnapshot();
-  ASSERT_TRUE(snapshot_2);
 
   const auto key_5 = MakeKeyDescriptor(5);
   const auto key_6 = MakeKeyDescriptor(6);
 
   // Checking the old snapshot
-  EXPECT_EQ(snapshot_1->version(), 1);
-  EXPECT_EQ(snapshot_1->keys_count(), 2);
-  EXPECT_EQ(snapshot_1->subkeys_count(), 5);
-  EXPECT_EQ(snapshot_1->GetSubkeysCount(key_5), 2);
-  EXPECT_EQ(snapshot_1->GetSubkeysCount(key_6), 3);
-  EXPECT_EQ(snapshot_1->Get(key_5, 100), PayloadHandle{1});
-  EXPECT_EQ(snapshot_1->Get(key_5, 200), PayloadHandle{2});
-  EXPECT_EQ(snapshot_1->Get(key_6, 100), PayloadHandle{10});
-  EXPECT_EQ(snapshot_1->Get(key_6, 200), PayloadHandle{20});
-  EXPECT_EQ(snapshot_1->Get(key_6, 300), PayloadHandle{30});
+  EXPECT_EQ(snapshot_1.version(), 1);
+  EXPECT_EQ(snapshot_1.keys_count(), 2);
+  EXPECT_EQ(snapshot_1.subkeys_count(), 5);
+  EXPECT_EQ(snapshot_1.GetSubkeysCount(key_5), 2);
+  EXPECT_EQ(snapshot_1.GetSubkeysCount(key_6), 3);
+  EXPECT_EQ(snapshot_1.Get(key_5, 100), PayloadHandle{1});
+  EXPECT_EQ(snapshot_1.Get(key_5, 200), PayloadHandle{2});
+  EXPECT_EQ(snapshot_1.Get(key_6, 100), PayloadHandle{10});
+  EXPECT_EQ(snapshot_1.Get(key_6, 200), PayloadHandle{20});
+  EXPECT_EQ(snapshot_1.Get(key_6, 300), PayloadHandle{30});
 
   // Checking the new snapshot
-  EXPECT_EQ(snapshot_2->version(), 2);
-  EXPECT_EQ(snapshot_2->keys_count(), 2);
-  EXPECT_EQ(snapshot_2->subkeys_count(), 2);
-  EXPECT_EQ(snapshot_2->GetSubkeysCount(key_5), 1);
-  EXPECT_EQ(snapshot_2->GetSubkeysCount(key_6), 1);
-  EXPECT_EQ(snapshot_2->Get(key_5, 300), PayloadHandle{3});
-  EXPECT_EQ(snapshot_2->Get(key_6, 200), PayloadHandle{20});
-  EXPECT_FALSE(snapshot_2->Get(key_5, 100).has_value());
-  EXPECT_FALSE(snapshot_2->Get(key_5, 200).has_value());
-  EXPECT_FALSE(snapshot_2->Get(key_6, 100).has_value());
+  EXPECT_EQ(snapshot_2.version(), 2);
+  EXPECT_EQ(snapshot_2.keys_count(), 2);
+  EXPECT_EQ(snapshot_2.subkeys_count(), 2);
+  EXPECT_EQ(snapshot_2.GetSubkeysCount(key_5), 1);
+  EXPECT_EQ(snapshot_2.GetSubkeysCount(key_6), 1);
+  EXPECT_EQ(snapshot_2.Get(key_5, 300), PayloadHandle{3});
+  EXPECT_EQ(snapshot_2.Get(key_6, 200), PayloadHandle{20});
+  EXPECT_FALSE(snapshot_2.Get(key_5, 100).has_value());
+  EXPECT_FALSE(snapshot_2.Get(key_5, 200).has_value());
+  EXPECT_FALSE(snapshot_2.Get(key_6, 100).has_value());
 
   {
-    KeyIterator key_it = snapshot_2->begin();
-    ASSERT_NE(key_it, snapshot_2->end());
+    KeyIterator key_it = snapshot_2.begin();
+    ASSERT_NE(key_it, snapshot_2.end());
     EXPECT_EQ(key_it->key_handle(), KeyHandle{5});
     EXPECT_EQ(key_it->subkeys_count(), 1);
     {
@@ -730,7 +717,7 @@ TEST_F(Storage_Test, reallocated_with_cleanups) {
       ASSERT_EQ(it, key_it->end());
     }
     ++key_it;
-    ASSERT_NE(key_it, snapshot_2->end());
+    ASSERT_NE(key_it, snapshot_2.end());
     EXPECT_EQ(key_it->key_handle(), KeyHandle{6});
     EXPECT_EQ(key_it->subkeys_count(), 1);
     {
@@ -743,7 +730,7 @@ TEST_F(Storage_Test, reallocated_with_cleanups) {
       ASSERT_EQ(it, key_it->end());
     }
     ++key_it;
-    ASSERT_EQ(key_it, snapshot_2->end());
+    ASSERT_EQ(key_it, snapshot_2.end());
   }
 }
 

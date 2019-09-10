@@ -102,8 +102,8 @@ class BlockIterator
   }
 
   StateView<kLevel> state_view_;
-  IndexBlock* index_begin_ = nullptr;
-  std::byte* data_begin_ = nullptr;
+  IndexBlock* index_begin_{nullptr};
+  std::byte* data_begin_{nullptr};
 };
 
 using KeyBlockIterator = BlockIterator<IndexLevel::Key>;

@@ -671,6 +671,12 @@ HeaderBlock::HeaderBlock(uint64_t base_version,
   version_ref_count_accessor().InitVersion(VersionOffset{0});
 }
 
+void HeaderBlock::AddSnapshotReference(uint64_t version) noexcept {
+  assert(IsVersionFromThisBlob(version));
+  VersionOffset version_offset{static_cast<uint32_t>(version - base_version_)};
+  version_ref_count_accessor().AddReference(version_offset);
+}
+
 void HeaderBlock::RemoveSnapshotReference(uint64_t version,
                                           Behavior& behavior) noexcept {
   assert(IsVersionFromThisBlob(version));

@@ -17,6 +17,7 @@ class KeyIteratorEnd {};
 
 class KeyIterator : public std::iterator<std::forward_iterator_tag, KeyView> {
  public:
+  KeyIterator() noexcept = default;
   KeyIterator(uint64_t observed_version,
               Detail::VersionOffset version_offset,
               Detail::HeaderBlock& header_block) noexcept
@@ -78,7 +79,7 @@ class KeyIterator : public std::iterator<std::forward_iterator_tag, KeyView> {
   void Advance() noexcept { current_key_view_.Advance(version_offset_); }
 
   KeyView current_key_view_;
-  Detail::VersionOffset version_offset_;
+  Detail::VersionOffset version_offset_{0};
 };
 
 }  // namespace Microsoft::MixedReality::Sharing::VersionedStorage

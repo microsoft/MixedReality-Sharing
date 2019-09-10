@@ -39,7 +39,7 @@ class Storage {
   // C on version 30, and the snapshot for version 25 is alive, the state B will
   // stay discoverable (because for this snapshot this is the actual state of
   // this subkey).
-  std::shared_ptr<Snapshot> GetSnapshot() const noexcept;
+  Snapshot GetSnapshot() const noexcept;
 
   enum class TransactionResult {
     // The transaction is successfully applied and the version is incremented.
@@ -68,7 +68,7 @@ class Storage {
 
  private:
   std::shared_ptr<Behavior> behavior_;
-  std::shared_ptr<Snapshot> latest_snapshot_;
+  Snapshot latest_snapshot_;
   mutable std::mutex latest_snapshot_reader_mutex_;
 };
 

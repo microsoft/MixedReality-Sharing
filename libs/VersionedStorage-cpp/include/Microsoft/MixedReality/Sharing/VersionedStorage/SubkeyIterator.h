@@ -81,7 +81,7 @@ class SubkeyIterator
   void Advance() noexcept;
   void AdvanceUntilPayloadFound(Detail::IndexSlotLocation location) noexcept;
 
-  uint64_t version_{Detail::kSmallestInvalidVersion};
+  uint64_t version_{0};
   SubkeyView current_subkey_view_;
   Detail::SubkeyStateBlock* current_state_block_ = nullptr;
   Detail::IndexBlock* index_begin_ = nullptr;

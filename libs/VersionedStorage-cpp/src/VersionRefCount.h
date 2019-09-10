@@ -36,6 +36,13 @@ class VersionRefCount {
           VersionRefCount;
     }
 
+    void AddReference(VersionOffset offset) {
+      const uint32_t old_value =
+          (refcount_of_base_version_ - static_cast<size_t>(offset))
+              ->value_.fetch_add(2, std::memory_order_relaxed);
+      assert((old_value & 1) == 1 && old_value >= 3);
+    }
+
     // Returns true if the reference count is 0
     bool RemoveReference(VersionOffset offset) {
       uint32_t old_value =

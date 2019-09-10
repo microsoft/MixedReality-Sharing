@@ -44,6 +44,9 @@ class alignas(kBlockSize) HeaderBlock {
 
   uint64_t base_version() const noexcept { return base_version_; }
 
+  // Thread-safe. The snapshot must be already alive.
+  void AddSnapshotReference(uint64_t version) noexcept;
+
   // Thread-safe.
   void RemoveSnapshotReference(uint64_t version, Behavior& behavior) noexcept;
 

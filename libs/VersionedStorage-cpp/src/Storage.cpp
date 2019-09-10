@@ -25,18 +25,14 @@ class WriterMutexGuard {
 
 Storage::Storage(std::shared_ptr<Behavior> behavior)
     : behavior_{std::move(behavior)},
-      latest_snapshot_{std::make_shared<Snapshot>(
-          0,
-          *Detail::HeaderBlock::CreateBlob(*behavior_, 0, 0),
-          0,
-          0,
-          behavior_)} {
+      latest_snapshot_{0, *Detail::HeaderBlock::CreateBlob(*behavior_, 0, 0), 0,
+                       0, behavior_} {
   assert(behavior_);
 }
 
 Storage::~Storage() = default;
 
-std::shared_ptr<Snapshot> Storage::GetSnapshot() const noexcept {
+Snapshot Storage::GetSnapshot() const noexcept {
   auto lock = std::lock_guard{latest_snapshot_reader_mutex_};
   return latest_snapshot_;
 }
@@ -49,7 +45,7 @@ Storage::TransactionResult Storage::ApplyTransaction(
   // No need to lock latest_snapshot_reader_mutex_ here to perform the read
   // since only the writer thread can modify the latest_snapshot_ field, and
   // this method is called by the writer thread.
-  Detail::HeaderBlock& current_header_block = latest_snapshot_->header_block_;
+  Detail::HeaderBlock& current_header_block = *latest_snapshot_.header_block_;
 
   Detail::MutatingBlobAccessor accessor{current_header_block};
 
@@ -75,9 +71,9 @@ Storage::TransactionResult Storage::ApplyTransaction(
   if (prepare_result == Transaction::PrepareResult::ValidationFailed) {
     if (has_added_version) {
       auto lock = std::lock_guard{latest_snapshot_reader_mutex_};
-      latest_snapshot_ = std::make_shared<Snapshot>(
-          new_version, current_header_block, accessor.keys_count(),
-          accessor.subkeys_count(), behavior_);
+      latest_snapshot_ =
+          Snapshot{new_version, current_header_block, accessor.keys_count(),
+                   accessor.subkeys_count(), behavior_};
       return TransactionResult::
           AppliedWithNoEffectDueToUnsatisfiedPrerequisites;
     } else {
@@ -94,9 +90,9 @@ Storage::TransactionResult Storage::ApplyTransaction(
 
       Detail::MutatingBlobAccessor new_block_accessor{*new_header_block};
 
-      latest_snapshot_ = std::make_shared<Snapshot>(
+      latest_snapshot_ = Snapshot{
           new_version, *new_header_block, new_block_accessor.keys_count(),
-          new_block_accessor.subkeys_count(), behavior_);
+          new_block_accessor.subkeys_count(), behavior_};
       return Storage::TransactionResult::
           AppliedWithNoEffectDueToUnsatisfiedPrerequisites;
     }
@@ -108,9 +104,9 @@ Storage::TransactionResult Storage::ApplyTransaction(
 
     transaction->Apply(new_version, accessor);
     auto lock = std::lock_guard{latest_snapshot_reader_mutex_};
-    latest_snapshot_ = std::make_shared<Snapshot>(
-        new_version, current_header_block, accessor.keys_count(),
-        accessor.subkeys_count(), behavior_);
+    latest_snapshot_ =
+        Snapshot{new_version, current_header_block, accessor.keys_count(),
+                 accessor.subkeys_count(), behavior_};
     return Storage::TransactionResult::Applied;
   }
   // This blob can't accept any new versions.
@@ -128,9 +124,9 @@ Storage::TransactionResult Storage::ApplyTransaction(
     return Storage::TransactionResult::FailedDueToInsufficientResources;
   }
   auto lock = std::lock_guard{latest_snapshot_reader_mutex_};
-  latest_snapshot_ = std::make_shared<Snapshot>(
-      new_version, *new_header_block, new_block_accessor.keys_count(),
-      new_block_accessor.subkeys_count(), behavior_);
+  latest_snapshot_ =
+      Snapshot{new_version, *new_header_block, new_block_accessor.keys_count(),
+               new_block_accessor.subkeys_count(), behavior_};
   return Storage::TransactionResult::Applied;
 }
 

@@ -16,6 +16,7 @@ class KeyIterator;
 
 class KeyView {
  public:
+  KeyView() noexcept = default;
   KeyView(uint64_t observed_version,
           size_t subkeys_count,
           Detail::KeyStateBlock* key_state_block,
@@ -53,11 +54,11 @@ class KeyView {
   void AdvanceUntilSubkeysFound(Detail::IndexSlotLocation location,
                                 Detail::VersionOffset version_offset) noexcept;
 
-  uint64_t observed_version_ = Detail::kSmallestInvalidVersion;
-  size_t subkeys_count_ = 0;
-  Detail::KeyStateBlock* key_state_block_ = nullptr;
-  Detail::IndexBlock* index_begin_ = nullptr;
-  std::byte* data_begin_ = nullptr;
+  uint64_t observed_version_{0};
+  size_t subkeys_count_{0};
+  Detail::KeyStateBlock* key_state_block_{nullptr};
+  Detail::IndexBlock* index_begin_{nullptr};
+  std::byte* data_begin_{nullptr};
 
   friend class KeyIterator;
 };
