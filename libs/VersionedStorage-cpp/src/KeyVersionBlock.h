@@ -7,7 +7,7 @@
 
 #include <atomic>
 
-namespace Microsoft::MixedReality::Sharing::VersionedStorage {
+namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail {
 
 // If the StateBlock for a key runs out of space to store versions,
 // one or more consecutive KeyVersionBlocks are allocated.
@@ -88,4 +88,4 @@ class alignas(kBlockSize) KeyVersionBlock {
 };
 static_assert(sizeof(KeyVersionBlock) == kBlockSize);
 
-}  // namespace Microsoft::MixedReality::Sharing::VersionedStorage
+}  // namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail

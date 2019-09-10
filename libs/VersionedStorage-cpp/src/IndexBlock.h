@@ -7,7 +7,7 @@
 
 #include <atomic>
 
-namespace Microsoft::MixedReality::Sharing::VersionedStorage {
+namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail {
 
 // Indexes up to 7 keys/subkeys.
 //
@@ -35,22 +35,11 @@ namespace Microsoft::MixedReality::Sharing::VersionedStorage {
 
 class alignas(kBlockSize) IndexBlock {
  public:
-  struct Slot {
-    // Location of either KeyStateBlock or SubkeyStateBlock.
-    DataBlockLocation state_block_location_;
-
-    // Location of the first block of the sequence of VersionInfo blocks
-    // associated with the slot.
-    // Initially Invalid, because up to two first versions can be stored in the
-    // state block.
-    std::atomic<DataBlockLocation> version_block_location_;
-  };
-
   uint64_t counts_and_hashes_relaxed() const noexcept {
     return counts_and_hashes_.load(std::memory_order_relaxed);
   }
 
-  const Slot& GetSlot(size_t id) const noexcept { return slots_[id]; }
+  IndexBlockSlot& GetSlot(size_t id) noexcept { return slots_[id]; }
 
   void InitSlot(size_t id, DataBlockLocation state_block_location) noexcept {
     auto& slot = slots_[id];
@@ -79,8 +68,9 @@ class alignas(kBlockSize) IndexBlock {
     return ((~(snapshot32 + (snapshot32 >> 3))) & 7) != 0;
   }
 
-  static constexpr Slot& GetSlot(IndexBlock* blocks,
-                                 IndexSlotLocation location) noexcept {
+  static constexpr IndexBlockSlot& GetSlot(
+      IndexBlock* blocks,
+      IndexSlotLocation location) noexcept {
     return blocks[static_cast<uint32_t>(location) >> 3]
         .slots_[(static_cast<uint32_t>(location) & 7) - 1];
   }
@@ -116,9 +106,9 @@ class alignas(kBlockSize) IndexBlock {
   // on first two counters. For example, if the number of keys is 2 and the
   // number of subkeys is 4, kinds of the slots will look like:
   // [key][key][-empty-][subkey][subkey][subkey][subkey]
-  Slot slots_[7];
+  IndexBlockSlot slots_[7];
 };
 
 static_assert(sizeof(IndexBlock) == kBlockSize);
 
-}  // namespace Microsoft::MixedReality::Sharing::VersionedStorage
+}  // namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail

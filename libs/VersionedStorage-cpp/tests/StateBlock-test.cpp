@@ -6,7 +6,7 @@
 
 #include "src/StateBlock.h"
 
-namespace Microsoft::MixedReality::Sharing::VersionedStorage {
+namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail {
 
 TEST(StateBlock, KeyStateBlock) {
   // KeyStateBlock can hold up to 3 versions in-place.
@@ -235,4 +235,4 @@ TEST(StateBlock, SubkeyStateBlock_2_payloads_largest_offset) {
   EXPECT_EQ(block.GetScratchBuffer(), reinterpret_cast<void*>(999'999'999));
 }
 
-}  // namespace Microsoft::MixedReality::Sharing::VersionedStorage
+}  // namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail

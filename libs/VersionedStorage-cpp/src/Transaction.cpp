@@ -20,17 +20,18 @@ namespace {
 struct KeyTransaction;
 
 struct SubkeyTransaction {
-  OptionalPayloadStateOrDeletionMarker new_payload_handle_or_deletion_marker_;
-  OptionalPayloadStateOrDeletionMarker
+  Detail::OptionalPayloadStateOrDeletionMarker
+      new_payload_handle_or_deletion_marker_;
+  Detail::OptionalPayloadStateOrDeletionMarker
       required_payload_handle_or_deletion_marker_;
-  SubkeyBlockStateSearchResult search_result_;
+  Detail::SubkeyStateView subkey_state_view_;
 
-  SubkeyStateBlock* state_block() const noexcept {
-    return search_result_.state_block_;
+  Detail::SubkeyStateBlock* state_block() const noexcept {
+    return subkey_state_view_.state_block_;
   }
 
-  SubkeyVersionBlock* version_block() const noexcept {
-    return search_result_.version_block_;
+  Detail::SubkeyVersionBlock* version_block() const noexcept {
+    return subkey_state_view_.version_block_;
   }
 
   void ResetNewPayload(Behavior& behavior) noexcept {
@@ -70,7 +71,7 @@ struct KeyTransaction {
   bool clear_before_transaction_{false};
   std::optional<size_t> required_subkeys_count_;
   SubkeyTransactionsMap subkey_transactions_map_;
-  KeyBlockStateSearchResult search_result_;
+  Detail::KeyStateView key_state_view_;
 
   uint32_t current_subkeys_count_{0};
 
@@ -81,12 +82,12 @@ struct KeyTransaction {
   size_t inserted_subkeys_count_{0};
   size_t removed_subkeys_count_{0};
 
-  KeyStateBlock* state_block() const noexcept {
-    return search_result_.state_block_;
+  Detail::KeyStateBlock* state_block() const noexcept {
+    return key_state_view_.state_block_;
   }
 
-  KeyVersionBlock* version_block() const noexcept {
-    return search_result_.version_block_;
+  Detail::KeyVersionBlock* version_block() const noexcept {
+    return key_state_view_.version_block_;
   }
 
   void ClearSubkeyTransactions(Behavior& behavior) noexcept {
@@ -98,10 +99,10 @@ struct KeyTransaction {
   // Initializes current_subkeys_count_, checks the preconditions and simplifies
   // the transaction if possible, by removing the passed preconditions and
   // unnecessary cleanups.
-  bool InitializeAndValidate(KeyBlockStateSearchResult search_result) noexcept {
-    search_result_ = search_result;
+  bool InitializeAndValidate(Detail::KeyStateView key_state_view) noexcept {
+    key_state_view_ = key_state_view;
     current_subkeys_count_ =
-        search_result_.latest_subkeys_count_thread_unsafe();
+        key_state_view_.latest_subkeys_count_thread_unsafe();
     if (required_subkeys_count_) {
       if (*required_subkeys_count_ != current_subkeys_count_)
         return false;
@@ -129,8 +130,8 @@ struct KeyTransaction {
 inline bool SubkeyTransaction::InitializeAndValidate(
     Behavior& behavior,
     KeyTransaction& key_transaction) noexcept {
-  const VersionedPayloadHandle latest_payload =
-      search_result_.latest_versioned_payload_thread_unsafe();
+  const Detail::VersionedPayloadHandle latest_payload =
+      subkey_state_view_.latest_payload_thread_unsafe();
   if (required_payload_handle_or_deletion_marker_) {
     if (required_payload_handle_or_deletion_marker_.is_specific_handle()) {
       if (!latest_payload.has_payload() ||
@@ -148,7 +149,7 @@ inline bool SubkeyTransaction::InitializeAndValidate(
   }
   if (new_payload_handle_or_deletion_marker_) {
     if (new_payload_handle_or_deletion_marker_.is_specific_handle()) {
-      if (search_result_.is_state_block_found()) {
+      if (subkey_state_view_) {
         if (latest_payload.has_payload()) {
           if (behavior.Equal(latest_payload.payload(),
                              *new_payload_handle_or_deletion_marker_)) {
@@ -288,7 +289,7 @@ class TransactionImpl : public Transaction {
 
  protected:
   PrepareResult Prepare(uint64_t new_version,
-                        MutatingBlobAccessor& accessor,
+                        Detail::MutatingBlobAccessor& accessor,
                         size_t& extra_blocks_count,
                         bool allocation_failed) noexcept override {
     extra_blocks_count = 0;
@@ -306,28 +307,26 @@ class TransactionImpl : public Transaction {
         return PrepareResult::ValidationFailed;
 
       const bool is_key_state_found =
-          key_transaction.search_result_.is_state_block_found();
+          static_cast<bool>(key_transaction.key_state_view_);
 
       auto it = begin(subkey_transactions);
       auto it_end = end(subkey_transactions);
 
       if (key_transaction.clear_before_transaction_) {
-        SubkeyStateBlockEnumerator enumerator =
-            accessor.CreateSubkeyStateBlockEnumerator(
-                key_transaction.search_result_);
-        while (enumerator.MoveNext()) {
-          uint64_t e_sub = enumerator.CurrentStateBlock().subkey_;
+        for (Detail::SubkeyStateView subkey_state_view :
+             accessor.GetSubkeys(key_transaction.key_state_view_)) {
+          uint64_t subkey = subkey_state_view.subkey();
           bool already_handled = false;
-          while (it != it_end && it->first <= e_sub) {
+          while (it != it_end && it->first <= subkey) {
             auto& subkey_transaction = it->second;
-            if (it->first == e_sub) {
+            if (it->first == subkey) {
               // This subkey block already exists, and it's mentioned in the
               // transaction.
               // However, if this was a validation-only node, we should still
               // attempt to delete the existing subkey.
               already_handled =
                   subkey_transaction.new_payload_handle_or_deletion_marker_;
-              subkey_transaction.search_result_ = enumerator.Current();
+              subkey_transaction.subkey_state_view_ = subkey_state_view;
             }
             const bool had_payload_before_validation =
                 subkey_transaction.new_payload_handle_or_deletion_marker_
@@ -341,15 +340,15 @@ class TransactionImpl : public Transaction {
                 subkey_transaction.new_payload_handle_or_deletion_marker_) {
               // One of the possible outcomes is that the transaction tried to
               // replace a payload with an already existing payload.
-              // In this case, the validation will clear the subkey transaction.
-              // However, we still want to keep this node here, so that it
-              // avoids a cleanup (caused by the clear_before_transaction_
-              // flag).
+              // In this case, the validation will clear the subkey
+              // transaction. However, we still want to keep this node here,
+              // so that it avoids a cleanup (caused by the
+              // clear_before_transaction_ flag).
               if (!allocation_failed &&
                   subkey_transaction.new_payload_handle_or_deletion_marker_ &&
-                  subkey_transaction.search_result_.is_state_block_found()) {
+                  subkey_transaction.subkey_state_view_) {
                 allocation_failed = !accessor.ReserveSpaceForTransaction(
-                    subkey_transaction.search_result_, new_version,
+                    subkey_transaction.subkey_state_view_, new_version,
                     subkey_transaction.new_payload_handle_or_deletion_marker_
                         .is_specific_handle());
               }
@@ -361,12 +360,11 @@ class TransactionImpl : public Transaction {
           if (!already_handled) {
             // This subkey block is no mentioned in the transaction,
             // but already exists in the blob.
-            if (enumerator.latest_versioned_payload_thread_unsafe()
+            if (subkey_state_view.latest_payload_thread_unsafe()
                     .has_payload()) {
               if (!allocation_failed) {
-                SubkeyBlockStateSearchResult current = enumerator.Current();
                 allocation_failed = !accessor.ReserveSpaceForTransaction(
-                    current, new_version, false);
+                    subkey_state_view, new_version, false);
               }
               ++key_transaction.removed_subkeys_count_;
             }
@@ -382,7 +380,7 @@ class TransactionImpl : public Transaction {
       while (it != it_end) {
         SubkeyTransaction& subkey_transaction = it->second;
         if (should_search_subkeys) {
-          subkey_transaction.search_result_ =
+          subkey_transaction.subkey_state_view_ =
               accessor.FindSubkey(key_descriptor, it->first);
         }
         if (!subkey_transaction.InitializeAndValidate(*behavior_,
@@ -391,10 +389,9 @@ class TransactionImpl : public Transaction {
         }
 
         if (subkey_transaction.new_payload_handle_or_deletion_marker_) {
-          if (!allocation_failed &&
-              subkey_transaction.search_result_.is_state_block_found()) {
+          if (!allocation_failed && subkey_transaction.subkey_state_view_) {
             allocation_failed = !accessor.ReserveSpaceForTransaction(
-                subkey_transaction.search_result_, new_version,
+                subkey_transaction.subkey_state_view_, new_version,
                 subkey_transaction.new_payload_handle_or_deletion_marker_
                     .is_specific_handle());
           }
@@ -409,7 +406,7 @@ class TransactionImpl : public Transaction {
         if (is_key_state_found) {
           if (!allocation_failed) {
             allocation_failed = !accessor.ReserveSpaceForTransaction(
-                key_transaction.search_result_);
+                key_transaction.key_state_view_);
           }
         } else {
           ++extra_blocks_count;
@@ -433,9 +430,9 @@ class TransactionImpl : public Transaction {
   }
 
   void Apply(uint64_t new_version,
-             MutatingBlobAccessor& accessor) noexcept override {
-    VersionOffset version_offset =
-        MakeVersionOffset(new_version, accessor.base_version());
+             Detail::MutatingBlobAccessor& accessor) noexcept override {
+    Detail::VersionOffset version_offset =
+        Detail::MakeVersionOffset(new_version, accessor.base_version());
 
     for (auto&& [key_handle, key_transaction] : key_transactions_map_) {
       if (!key_transaction.state_block()) {
@@ -444,10 +441,10 @@ class TransactionImpl : public Transaction {
         // which will then transfer the ownership to the newly inserted
         // block.
         key_transaction.owns_key_handle_ = false;
-        key_transaction.search_result_ = accessor.InsertKeyBlock(key);
+        key_transaction.key_state_view_ = accessor.InsertKeyBlock(key);
         assert(key_transaction.state_block());
       }
-      KeyStateBlock& key_block = *key_transaction.state_block();
+      Detail::KeyStateBlock& key_block = *key_transaction.state_block();
       if (key_transaction.needs_new_version()) {
         // FIXME: add extra validation checks that the new subkeys count is
         // representable as uint32_t (which is a limitation of the current
@@ -465,7 +462,7 @@ class TransactionImpl : public Transaction {
         accessor.subkeys_count() = accessor.subkeys_count() +
                                    new_subkeys_count -
                                    key_transaction.current_subkeys_count_;
-        if (KeyVersionBlock* block = key_transaction.version_block()) {
+        if (Detail::KeyVersionBlock* block = key_transaction.version_block()) {
           block->PushSubkeysCountFromWriterThread(version_offset,
                                                   new_subkeys_count);
         } else {
@@ -478,15 +475,13 @@ class TransactionImpl : public Transaction {
       auto it = begin(subkey_transactions);
       auto it_end = end(subkey_transactions);
       if (key_transaction.clear_before_transaction_) {
-        SubkeyStateBlockEnumerator enumerator =
-            accessor.CreateSubkeyStateBlockEnumerator(
-                key_transaction.search_result_);
-        while (enumerator.MoveNext()) {
-          uint64_t e_sub = enumerator.CurrentStateBlock().subkey_;
+        for (Detail::SubkeyStateView subkey_state_view :
+             accessor.GetSubkeys(key_transaction.key_state_view_)) {
+          uint64_t subkey = subkey_state_view.subkey();
           bool already_handled = false;
-          while (it != it_end && it->first <= e_sub) {
+          while (it != it_end && it->first <= subkey) {
             auto& subkey_transaction = it->second;
-            if (it->first == e_sub) {
+            if (it->first == subkey) {
               // This subkey block already exists, and it's mentioned in the
               // transaction.
               already_handled = true;
@@ -495,12 +490,12 @@ class TransactionImpl : public Transaction {
               std::optional<PayloadHandle> new_payload =
                   subkey_transaction.new_payload_handle_or_deletion_marker_
                       .release();
-              if (SubkeyVersionBlock* block =
+              if (Detail::SubkeyVersionBlock* block =
                       subkey_transaction.version_block()) {
                 block->PushFromWriterThread(new_version, new_payload);
               } else {
                 if (!subkey_transaction.state_block()) {
-                  subkey_transaction.search_result_ =
+                  subkey_transaction.subkey_state_view_ =
                       accessor.InsertSubkeyBlock(*behavior_, key_block,
                                                  it->first);
                   assert(subkey_transaction.state_block());
@@ -512,14 +507,13 @@ class TransactionImpl : public Transaction {
             ++it;
           }
           if (!already_handled &&
-              enumerator.latest_versioned_payload_thread_unsafe()
-                  .has_payload()) {
-            if (enumerator.CurrentVersionBlock()) {
-              enumerator.CurrentVersionBlock()->PushFromWriterThread(
+              subkey_state_view.latest_payload_thread_unsafe().has_payload()) {
+            if (subkey_state_view.version_block_) {
+              subkey_state_view.version_block_->PushFromWriterThread(
                   new_version, {});
             } else {
-              enumerator.CurrentStateBlock().PushFromWriterThread(new_version,
-                                                                  {});
+              subkey_state_view.state_block_->PushFromWriterThread(new_version,
+                                                                   {});
             }
           }
         }
@@ -528,11 +522,12 @@ class TransactionImpl : public Transaction {
         SubkeyTransaction& subkey_transaction = it->second;
         std::optional<PayloadHandle> new_payload =
             subkey_transaction.new_payload_handle_or_deletion_marker_.release();
-        if (SubkeyVersionBlock* block = subkey_transaction.version_block()) {
+        if (Detail::SubkeyVersionBlock* block =
+                subkey_transaction.version_block()) {
           block->PushFromWriterThread(new_version, new_payload);
         } else {
           if (!subkey_transaction.state_block()) {
-            subkey_transaction.search_result_ =
+            subkey_transaction.subkey_state_view_ =
                 accessor.InsertSubkeyBlock(*behavior_, key_block, it->first);
             assert(subkey_transaction.state_block());
           }
@@ -550,8 +545,8 @@ class TransactionImpl : public Transaction {
   };
 
   static KeyBlockFlags GetKeyBlockFlags(
-      KeyStateBlockEnumerator& enumerator) noexcept {
-    const KeyStateBlock& key_block = enumerator.CurrentStateBlock();
+      const Detail::KeyStateView& key_state_view) noexcept {
+    const Detail::KeyStateBlock& key_block = *key_state_view.state_block_;
     // Blocks with subscriptions survive unconditionally because we want to
     // preserve the subscription even if there are no subkeys.
     bool should_survive = key_block.has_subscription();
@@ -566,14 +561,14 @@ class TransactionImpl : public Transaction {
       if (pair->second.clear_before_transaction_) {
         is_clear_before_transaction_mode = true;
       }
-    } else if (enumerator.latest_subkeys_count_thread_unsafe() != 0) {
+    } else if (key_state_view.latest_subkeys_count_thread_unsafe() != 0) {
       should_survive = true;
     }
     return {should_survive, is_clear_before_transaction_mode};
   }
 
   static bool SubkeyBlockShouldSurvive(
-      SubkeyStateBlock& subkey_block,
+      Detail::SubkeyStateBlock& subkey_block,
       bool is_clear_before_transaction_mode) noexcept {
     if (subkey_block.has_subscription()) {
       // Subkeys with subscriptions survive unconditionally because we want
@@ -581,8 +576,8 @@ class TransactionImpl : public Transaction {
       return true;
     }
     if (subkey_block.is_scratch_buffer_mode()) {
-      // The pointer could be saved to the scratch buffer only by the first loop
-      // block of CreateMergedBlob, so we know which type this is.
+      // The pointer could be saved to the scratch buffer only by the first
+      // loop block of CreateMergedBlob, so we know which type this is.
       auto* pair = reinterpret_cast<SubkeyTransactionsMap::value_type*>(
           subkey_block.GetScratchBuffer());
       if (pair->second.new_payload_handle_or_deletion_marker_
@@ -593,10 +588,10 @@ class TransactionImpl : public Transaction {
           !pair->second.new_payload_handle_or_deletion_marker_) {
         // This subkey exists to suppress is_clear_before_transaction_mode.
         // It was originally a Put command that was reverted because the
-        // existing value was the same as the new value. Just removing the node
-        // would implicitly delete this key (because of the
-        // is_clear_before_transaction_mode), so that's why this placeholder is
-        // here.
+        // existing value was the same as the new value. Just removing the
+        // node would implicitly delete this key (because of the
+        // is_clear_before_transaction_mode), so that's why this placeholder
+        // is here.
         return true;
       }
     } else if (!is_clear_before_transaction_mode &&
@@ -607,13 +602,13 @@ class TransactionImpl : public Transaction {
     return false;
   }
 
-  HeaderBlock* CreateMergedBlob(
+  Detail::HeaderBlock* CreateMergedBlob(
       uint64_t new_version,
-      MutatingBlobAccessor& existing_block_accessor,
+      Detail::MutatingBlobAccessor& existing_blob_accessor,
       size_t extra_state_blocks_to_insert) noexcept override {
     // Saving the pointers to map nodes to the scratch buffer area of the
-    // blocks (later, when we'll be iterating over all blocks, we'll know which
-    // ones have modifications).
+    // blocks (later, when we'll be iterating over all blocks, we'll know
+    // which ones have modifications).
     for (auto& key_pair : key_transactions_map_) {
       KeyTransaction& key_transaction = key_pair.second;
       if (auto* key_block = key_transaction.state_block()) {
@@ -626,19 +621,16 @@ class TransactionImpl : public Transaction {
         }
       }
     }
-    auto key_enumerator =
-        existing_block_accessor.CreateKeyStateBlockEnumerator();
 
     // Counting the number of blocks that have to be allocated.
     size_t required_blocks_count = extra_state_blocks_to_insert;
-    while (key_enumerator.MoveNext()) {
-      KeyBlockFlags key_flags = GetKeyBlockFlags(key_enumerator);
-      SubkeyStateBlockEnumerator subkey_enumerator =
-          key_enumerator.CreateSubkeyStateBlockEnumerator();
 
-      while (subkey_enumerator.MoveNext()) {
+    for (auto&& key_state_view : existing_blob_accessor) {
+      KeyBlockFlags key_flags = GetKeyBlockFlags(key_state_view);
+      for (Detail::SubkeyStateView subkey_state_view :
+           existing_blob_accessor.GetSubkeys(key_state_view)) {
         if (SubkeyBlockShouldSurvive(
-                subkey_enumerator.CurrentStateBlock(),
+                *subkey_state_view.state_block_,
                 key_flags.is_clear_before_transaction_mode)) {
           ++required_blocks_count;
           key_flags.should_survive = true;
@@ -648,28 +640,27 @@ class TransactionImpl : public Transaction {
         ++required_blocks_count;
     }
 
-    HeaderBlock* new_header_block = HeaderBlock::CreateBlob(
+    Detail::HeaderBlock* new_header_block = Detail::HeaderBlock::CreateBlob(
         *behavior_, new_version, required_blocks_count * 2);
 
     if (!new_header_block) {
       return nullptr;
     }
 
-    MutatingBlobAccessor new_accessor{*new_header_block};
+    Detail::MutatingBlobAccessor new_accessor{*new_header_block};
 
     // First, moving all surviving blocks from the existing blob.
-    key_enumerator.Reset();
 
-    while (key_enumerator.MoveNext()) {
-      auto key_flags = GetKeyBlockFlags(key_enumerator);
-      KeyStateBlock* new_key_state_block = nullptr;
+    for (auto&& old_key_state_view : existing_blob_accessor) {
+      auto key_flags = GetKeyBlockFlags(old_key_state_view);
+      Detail::KeyStateBlock* new_key_state_block = nullptr;
       auto EnsureNewKeyBlockExists = [&] {
         if (!new_key_state_block) {
-          auto& old_key_block = key_enumerator.CurrentStateBlock();
-          KeyDescriptorWithHandle key{
-              *behavior_, key_enumerator.CurrentStateBlock().key_, false};
-          KeyBlockStateSearchResult result = new_accessor.InsertKeyBlock(key);
-          new_key_state_block = result.state_block_;
+          auto& old_key_block = *old_key_state_view.state_block_;
+          KeyDescriptorWithHandle key{*behavior_, old_key_block.key_, false};
+          Detail::KeyStateView key_state_view =
+              new_accessor.InsertKeyBlock(key);
+          new_key_state_block = key_state_view.state_block_;
           assert(new_key_state_block);
           if (old_key_block.has_subscription()) {
             assert(!"Not implemented yet");
@@ -682,18 +673,18 @@ class TransactionImpl : public Transaction {
 
             // Replacing the old search result with the new search result.
             KeyTransaction& key_transaction = pair->second;
-            key_transaction.search_result_ = result;
+            key_transaction.key_state_view_ = key_state_view;
             // FIXME: check in the validation pass that it's not a narrowing
             // conversion.
             new_subkeys_count =
                 static_cast<uint32_t>(key_transaction.new_subkeys_count());
           } else {
             new_subkeys_count =
-                key_enumerator.latest_subkeys_count_thread_unsafe();
+                old_key_state_view.latest_subkeys_count_thread_unsafe();
           }
           if (new_subkeys_count) {
             new_key_state_block->PushSubkeysCountFromWriterThread(
-                VersionOffset{0}, new_subkeys_count);
+                Detail::VersionOffset{0}, new_subkeys_count);
             ++new_accessor.keys_count();
           }
         }
@@ -701,18 +692,16 @@ class TransactionImpl : public Transaction {
       if (key_flags.should_survive) {
         EnsureNewKeyBlockExists();
       }
-      auto subkey_enumerator =
-          key_enumerator.CreateSubkeyStateBlockEnumerator();
-
-      while (subkey_enumerator.MoveNext()) {
-        SubkeyStateBlock& old_subkey_state_block =
-            subkey_enumerator.CurrentStateBlock();
+      for (Detail::SubkeyStateView subkey_state_view :
+           existing_blob_accessor.GetSubkeys(old_key_state_view)) {
+        Detail::SubkeyStateBlock& old_subkey_state_block =
+            *subkey_state_view.state_block_;
         if (SubkeyBlockShouldSurvive(
                 old_subkey_state_block,
                 key_flags.is_clear_before_transaction_mode)) {
           EnsureNewKeyBlockExists();
-          const uint64_t subkey = subkey_enumerator.CurrentStateBlock().subkey_;
-          SubkeyStateBlock* new_subkey_state_block =
+          const uint64_t subkey = old_subkey_state_block.subkey_;
+          Detail::SubkeyStateBlock* new_subkey_state_block =
               new_accessor
                   .InsertSubkeyBlock(*behavior_, *new_key_state_block, subkey)
                   .state_block_;
@@ -724,8 +713,8 @@ class TransactionImpl : public Transaction {
           }
           bool preserve_old_payload = false;
           if (old_subkey_state_block.is_scratch_buffer_mode()) {
-            // The pointer could be saved to the scratch buffer only by the loop
-            // above, so we know the type.
+            // The pointer could be saved to the scratch buffer only by the
+            // loop above, so we know the type.
             auto* pair = reinterpret_cast<SubkeyTransactionsMap::value_type*>(
                 old_subkey_state_block.GetScratchBuffer());
 
@@ -740,8 +729,8 @@ class TransactionImpl : public Transaction {
               if (key_flags.is_clear_before_transaction_mode) {
                 // This subkey exists to suppress
                 // is_clear_before_transaction_mode. It was originally a Put
-                // command that was reverted because the existing value was the
-                // same as the new value. Just removing the node would
+                // command that was reverted because the existing value was
+                // the same as the new value. Just removing the node would
                 // implicitly delete this key (because of the
                 // is_clear_before_transaction_mode), so that's why this
                 // placeholder is here.
@@ -752,11 +741,10 @@ class TransactionImpl : public Transaction {
             preserve_old_payload = true;
           }
           if (preserve_old_payload) {
-            auto old_payload =
-                subkey_enumerator.latest_versioned_payload_thread_unsafe();
+            auto old_payload = subkey_state_view.latest_payload_thread_unsafe();
             if (old_payload.has_payload()) {
               new_subkey_state_block->PushFromWriterThread(
-                  new_version,
+                  old_payload.version(),
                   behavior_->DuplicateHandle(old_payload.payload()));
               ++new_accessor.subkeys_count();
             }
@@ -769,23 +757,24 @@ class TransactionImpl : public Transaction {
     // touched by the code above.
     for (auto&& [key, key_transaction] : key_transactions_map_) {
       // Can be nullptr at this point.
-      // If the block was already found, the loop above would replace it with a
-      // state block from the new blob.
-      KeyStateBlock* new_key_state_block = key_transaction.state_block();
+      // If the block was already found, the loop above would replace it with
+      // a state block from the new blob.
+      Detail::KeyStateBlock* new_key_state_block =
+          key_transaction.state_block();
       auto EnsureNewKeyBlockExists = [&] {
         if (!new_key_state_block) {
           // Transferring the ownership
           assert(key_transaction.owns_key_handle_);
           key_transaction.owns_key_handle_ = false;
           KeyDescriptorWithHandle key_descriptor{*behavior_, key, true};
-          KeyBlockStateSearchResult result =
+          Detail::KeyStateView key_state_view =
               new_accessor.InsertKeyBlock(key_descriptor);
-          new_key_state_block = result.state_block_;
+          new_key_state_block = key_state_view.state_block_;
           if (auto count = key_transaction.new_subkeys_count()) {
             // FIXME: check in the validation pass that it's not a narrowing
             // conversion.
             new_key_state_block->PushSubkeysCountFromWriterThread(
-                VersionOffset{0}, static_cast<uint32_t>(count));
+                Detail::VersionOffset{0}, static_cast<uint32_t>(count));
             ++new_accessor.keys_count();
           }
         }
@@ -793,14 +782,15 @@ class TransactionImpl : public Transaction {
 
       for (auto&& [subkey, subkey_transaction] :
            key_transaction.subkey_transactions_map_) {
-        // We are only interested in subkeys that were not handled when we were
-        // traversing over all existing keys and subkeys.
+        // We are only interested in subkeys that were not handled when we
+        // were traversing over all existing keys and subkeys.
         if (!subkey_transaction.state_block()) {
           assert(subkey_transaction.new_payload_handle_or_deletion_marker_
                      .is_specific_handle());
           EnsureNewKeyBlockExists();
-          subkey_transaction.search_result_ = new_accessor.InsertSubkeyBlock(
-              *behavior_, *new_key_state_block, subkey);
+          subkey_transaction.subkey_state_view_ =
+              new_accessor.InsertSubkeyBlock(*behavior_, *new_key_state_block,
+                                             subkey);
 
           subkey_transaction.state_block()->PushFromWriterThread(
               new_version,

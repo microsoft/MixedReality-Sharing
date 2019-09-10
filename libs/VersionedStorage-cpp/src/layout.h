@@ -4,13 +4,14 @@
 
 #pragma once
 
+#include <Microsoft/MixedReality/Sharing/VersionedStorage/Detail/Layout.h>
 #include <Microsoft/MixedReality/Sharing/VersionedStorage/enums.h>
 
 #include <cassert>
 #include <cstdint>
 #include <optional>
 
-namespace Microsoft::MixedReality::Sharing::VersionedStorage {
+namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail {
 
 // The storage consists of storage blobs.
 // Each blob is a page-aligned, and consists of small blocks
@@ -31,20 +32,16 @@ namespace Microsoft::MixedReality::Sharing::VersionedStorage {
 
 constexpr uint32_t kBlockSize = 64;
 
-enum class IndexLevel {
-  Key,
-  Subkey,
+struct IndexBlockSlot {
+  // Location of either KeyStateBlock or SubkeyStateBlock.
+  DataBlockLocation state_block_location_;
+
+  // Location of the first block of the sequence of VersionInfo blocks
+  // associated with the slot.
+  // Initially Invalid, because up to two first versions can be stored in the
+  // state block.
+  std::atomic<DataBlockLocation> version_block_location_;
 };
-
-// References a slots in the index section of the blob
-// (each block has several slots).
-enum class IndexSlotLocation : uint32_t { kInvalid = ~0u };
-
-// References blocks in the data section
-// (both the state blocks and the version blocks).
-enum class DataBlockLocation : uint32_t { kInvalid = ~0u };
-
-static constexpr uint64_t kSmallestInvalidVersion = 0x7FFF'FFFF'FFFF'FFFF;
 
 class VersionedPayloadHandle {
  public:
@@ -130,8 +127,13 @@ class KeyStateBlock;
 class KeyVersionBlock;
 class SubkeyStateBlock;
 class SubkeyVersionBlock;
-class KeyBlockStateSearchResult;
-class SubkeyBlockStateSearchResult;
+struct KeyStateView;
+struct SubkeyStateView;
+
+enum class IndexLevel {
+  Key,
+  Subkey,
+};
 
 namespace Detail {
 template <IndexLevel>
@@ -142,7 +144,7 @@ struct Types<IndexLevel::Key> {
   using ValueType = uint32_t;
   using StateBlockType = KeyStateBlock;
   using VersionBlockType = KeyVersionBlock;
-  using BlockStateSearchResultType = KeyBlockStateSearchResult;
+  using StateViewType = KeyStateView;
 };
 
 template <>
@@ -150,7 +152,7 @@ struct Types<IndexLevel::Subkey> {
   using ValueType = VersionedPayloadHandle;
   using StateBlockType = SubkeyStateBlock;
   using VersionBlockType = SubkeyVersionBlock;
-  using BlockStateSearchResultType = SubkeyBlockStateSearchResult;
+  using StateViewType = SubkeyStateView;
 };
 }  // namespace Detail
 
@@ -161,10 +163,8 @@ using StateBlock = typename Detail::Types<kLevel>::StateBlockType;
 template <IndexLevel kLevel>
 using VersionBlock = typename Detail::Types<kLevel>::VersionBlockType;
 template <IndexLevel kLevel>
-using BlockStateSearchResult =
-    typename Detail::Types<kLevel>::BlockStateSearchResultType;
+using StateView = typename Detail::Types<kLevel>::StateViewType;
 
-// FIXME: remove
 template <typename TBlock>
 inline TBlock& GetBlockAt(std::byte* data_begin,
                           DataBlockLocation location) noexcept {
@@ -173,7 +173,6 @@ inline TBlock& GetBlockAt(std::byte* data_begin,
                                     static_cast<size_t>(location) * kBlockSize);
 }
 
-// FIXME: remove
 template <typename TBlock>
 inline const TBlock& GetBlockAt(const std::byte* data_begin,
                                 DataBlockLocation location) noexcept {
@@ -181,9 +180,6 @@ inline const TBlock& GetBlockAt(const std::byte* data_begin,
   return *reinterpret_cast<const TBlock*>(
       data_begin + static_cast<size_t>(location) * kBlockSize);
 }
-
-// An small offset from some base version.
-enum class VersionOffset : uint32_t { kInvalid = ~0u };
 
 constexpr bool IsVersionConvertibleToOffset(uint64_t version,
                                             uint64_t base_version) noexcept {
@@ -214,4 +210,4 @@ constexpr bool operator<(
   return version_offset < versioned_count.version_offset;
 }
 
-}  // namespace Microsoft::MixedReality::Sharing::VersionedStorage
+}  // namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail

@@ -6,7 +6,7 @@
 
 #include "src/SubkeyVersionBlock.h"
 
-namespace Microsoft::MixedReality::Sharing::VersionedStorage {
+namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail {
 
 class SubkeyVersionBlock_Test : public ::testing::Test {
  protected:
@@ -308,4 +308,4 @@ TEST_F(SubkeyVersionBlock_Test, big_gaps) {
   }
 }
 
-}  // namespace Microsoft::MixedReality::Sharing::VersionedStorage
+}  // namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail

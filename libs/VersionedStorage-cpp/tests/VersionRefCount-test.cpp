@@ -8,7 +8,8 @@
 
 #include <vector>
 
-namespace Microsoft::MixedReality::Sharing::VersionedStorage {
+namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail {
+
 TEST(BlobDetails, VersionRefCount) {
   static_assert(sizeof(VersionRefCount) == sizeof(uint32_t));
 
@@ -62,4 +63,4 @@ TEST(BlobDetails, VersionRefCount) {
   CheckVersions({});
 }
 
-}  // namespace Microsoft::MixedReality::Sharing::VersionedStorage
+}  // namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail

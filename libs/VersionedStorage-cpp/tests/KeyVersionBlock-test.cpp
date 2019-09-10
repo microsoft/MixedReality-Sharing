@@ -6,7 +6,7 @@
 
 #include "src/KeyVersionBlock.h"
 
-namespace Microsoft::MixedReality::Sharing::VersionedStorage {
+namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail {
 
 class KeyVersionBlock_Test : public ::testing::Test {
  protected:
@@ -261,4 +261,4 @@ TEST_F(KeyVersionBlock_Test, pushing_80_fail_to_push) {
   EXPECT_EQ(stored_data_blocks_count(), 10);
 }
 
-}  // namespace Microsoft::MixedReality::Sharing::VersionedStorage
+}  // namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail

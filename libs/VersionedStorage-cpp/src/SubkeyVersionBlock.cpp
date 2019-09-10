@@ -8,7 +8,7 @@
 
 #include <algorithm>
 
-namespace Microsoft::MixedReality::Sharing::VersionedStorage {
+namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail {
 
 // Searching for a version will find the correct block first, by checking the
 // first version in the block.
@@ -336,4 +336,4 @@ DataBlockLocation SubkeyVersionBlock::AppendPayloads(
   return previous_;
 }
 
-}  // namespace Microsoft::MixedReality::Sharing::VersionedStorage
+}  // namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail

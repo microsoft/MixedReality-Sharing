@@ -8,7 +8,7 @@
 
 #include <algorithm>
 
-namespace Microsoft::MixedReality::Sharing::VersionedStorage {
+namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail {
 
 uint32_t KeyVersionBlock::GetSubkeysCount(VersionOffset version_offset) const
     noexcept {
@@ -92,4 +92,4 @@ bool KeyVersionBlock::Builder::FinalizeAndReserveOne() noexcept {
   return true;
 }
 
-}  // namespace Microsoft::MixedReality::Sharing::VersionedStorage
+}  // namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail

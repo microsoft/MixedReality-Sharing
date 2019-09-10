@@ -25,12 +25,12 @@ class WriterMutexGuard {
 
 Storage::Storage(std::shared_ptr<Behavior> behavior)
     : behavior_{std::move(behavior)},
-      latest_snapshot_{
-          std::make_shared<Snapshot>(0,
-                                     *HeaderBlock::CreateBlob(*behavior_, 0, 0),
-                                     0,
-                                     0,
-                                     behavior_)} {
+      latest_snapshot_{std::make_shared<Snapshot>(
+          0,
+          *Detail::HeaderBlock::CreateBlob(*behavior_, 0, 0),
+          0,
+          0,
+          behavior_)} {
   assert(behavior_);
 }
 
@@ -49,9 +49,9 @@ Storage::TransactionResult Storage::ApplyTransaction(
   // No need to lock latest_snapshot_reader_mutex_ here to perform the read
   // since only the writer thread can modify the latest_snapshot_ field, and
   // this method is called by the writer thread.
-  HeaderBlock& current_header_block = latest_snapshot_->header_block_;
+  Detail::HeaderBlock& current_header_block = latest_snapshot_->header_block_;
 
-  MutatingBlobAccessor accessor{current_header_block};
+  Detail::MutatingBlobAccessor accessor{current_header_block};
 
   if (!accessor.is_mutable_mode()) {
     // This can happen if at some point this storage ran out of memory, but then
@@ -84,7 +84,7 @@ Storage::TransactionResult Storage::ApplyTransaction(
       // Creating a new empty transaction to merge it with the current state
       // into the new blob (we couldn't reuse the previous blob due to the lack
       // of space there to store the new version).
-      HeaderBlock* new_header_block =
+      Detail::HeaderBlock* new_header_block =
           Transaction::Create(behavior_)->CreateMergedBlob(new_version,
                                                            accessor, 0);
       if (!new_header_block) {
@@ -92,7 +92,7 @@ Storage::TransactionResult Storage::ApplyTransaction(
       }
       auto lock = std::lock_guard{latest_snapshot_reader_mutex_};
 
-      MutatingBlobAccessor new_block_accessor{*new_header_block};
+      Detail::MutatingBlobAccessor new_block_accessor{*new_header_block};
 
       latest_snapshot_ = std::make_shared<Snapshot>(
           new_version, *new_header_block, new_block_accessor.keys_count(),
@@ -120,9 +120,9 @@ Storage::TransactionResult Storage::ApplyTransaction(
 
   accessor.SetImmutableMode();
 
-  HeaderBlock* new_header_block =
+  Detail::HeaderBlock* new_header_block =
       transaction->CreateMergedBlob(new_version, accessor, extra_blocks_count);
-  MutatingBlobAccessor new_block_accessor{*new_header_block};
+  Detail::MutatingBlobAccessor new_block_accessor{*new_header_block};
 
   if (!new_header_block) {
     return Storage::TransactionResult::FailedDueToInsufficientResources;

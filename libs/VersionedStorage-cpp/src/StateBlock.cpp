@@ -6,7 +6,7 @@
 
 #include "src/StateBlock.h"
 
-namespace Microsoft::MixedReality::Sharing::VersionedStorage {
+namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail {
 
 uint32_t KeyStateBlock::GetSubkeysCount(VersionOffset version_offset) const
     noexcept {
@@ -109,8 +109,9 @@ std::vector<VersionedPayloadHandle> SubkeyStateBlock::GetAllPayloads() const
   return {};
 }
 
-void SubkeyStateBlock::PushFromWriterThread(uint64_t version,
-                            std::optional<PayloadHandle> payload) noexcept {
+void SubkeyStateBlock::PushFromWriterThread(
+    uint64_t version,
+    std::optional<PayloadHandle> payload) noexcept {
   assert(CanPushFromWriterThread(version, payload.has_value()));
   const auto v0 = marked_version_0_.load(std::memory_order_relaxed);
 
@@ -136,4 +137,4 @@ void SubkeyStateBlock::PushFromWriterThread(uint64_t version,
   }
 }
 
-}  // namespace Microsoft::MixedReality::Sharing::VersionedStorage
+}  // namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail

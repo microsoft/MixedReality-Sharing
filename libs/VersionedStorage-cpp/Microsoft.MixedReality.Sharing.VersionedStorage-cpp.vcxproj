@@ -19,23 +19,27 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\Detail\layout.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\KeyDescriptor.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\KeyDescriptorWithHandle.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\Behavior.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\enums.h" />
-    <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\KeyEnumerator.h" />
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\KeyIterator.h" />
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\KeyView.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\Snapshot.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\Storage.h" />
-    <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\SubkeyEnumerator.h" />
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\SubkeyIterator.h" />
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\SubkeyView.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\Transaction.h" />
     <ClInclude Include="src\HeaderBlock.h" />
     <ClInclude Include="src\IndexBlock.h" />
+    <ClInclude Include="src\KeyStateView.h" />
     <ClInclude Include="src\KeyVersionBlock.h" />
     <ClInclude Include="src\layout.h" />
     <ClInclude Include="src\pch.h" />
-    <ClInclude Include="src\SearchResult.h" />
     <ClInclude Include="src\StateBlock.h" />
-    <ClInclude Include="src\StateBlockEnumerator.h" />
+    <ClInclude Include="src\BlockIterator.h" />
+    <ClInclude Include="src\SubkeyStateView.h" />
     <ClInclude Include="src\SubkeyVersionBlock.h" />
     <ClInclude Include="src\VersionRefCount.h" />
   </ItemGroup>
@@ -45,7 +49,6 @@
     <ClCompile Include="src\KeyVersionBlock.cpp" />
     <ClCompile Include="src\Snapshot.cpp" />
     <ClCompile Include="src\StateBlock.cpp" />
-    <ClCompile Include="src\StateBlockEnumerator.cpp" />
     <ClCompile Include="src\Storage.cpp" />
     <ClCompile Include="src\pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -53,7 +56,9 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="src\SubkeyIterator.cpp" />
     <ClCompile Include="src\SubkeyVersionBlock.cpp" />
+    <ClCompile Include="src\KeyView.cpp" />
     <ClCompile Include="src\Transaction.cpp" />
   </ItemGroup>
   <ItemGroup>

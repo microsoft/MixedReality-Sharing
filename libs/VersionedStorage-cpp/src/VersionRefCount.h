@@ -7,7 +7,7 @@
 
 #include <atomic>
 
-namespace Microsoft::MixedReality::Sharing::VersionedStorage {
+namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail {
 
 // Reference counters for versions associated with a blob are located at the end
 // of each blob, in the reverse order.
@@ -111,4 +111,4 @@ class VersionRefCount {
 
 static_assert(sizeof(VersionRefCount) == 4);
 
-}  // namespace Microsoft::MixedReality::Sharing::VersionedStorage
+}  // namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail

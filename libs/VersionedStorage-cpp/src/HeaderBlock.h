@@ -5,19 +5,23 @@
 #pragma once
 
 #include <Microsoft/MixedReality/Sharing/VersionedStorage/KeyDescriptor.h>
+#include <Microsoft/MixedReality/Sharing/VersionedStorage/SubkeyIterator.h>
 
+#include "src/BlockIterator.h"
 #include "src/IndexBlock.h"
-#include "src/SearchResult.h"
-#include "src/StateBlockEnumerator.h"
+#include "src/KeyStateView.h"
+#include "src/SubkeyStateView.h"
 #include "src/VersionRefCount.h"
 
 #include <cstddef>
 
 namespace Microsoft::MixedReality::Sharing::VersionedStorage {
-
 class Behavior;
-class IndexBlock;
+}
 
+namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail {
+
+class IndexBlock;
 class BlobAccessor;
 class MutatingBlobAccessor;
 
@@ -49,6 +53,10 @@ class alignas(kBlockSize) HeaderBlock {
 
   auto index_blocks_mask() const noexcept { return index_blocks_mask_; }
   auto data_blocks_capacity() const noexcept { return data_blocks_capacity_; }
+
+  IndexSlotLocation keys_list_head_acquire() const noexcept {
+    return keys_list_head_.load(std::memory_order_acquire);
+  }
 
  private:
   VersionRefCount::Accessor version_ref_count_accessor() noexcept {
@@ -111,33 +119,61 @@ class BlobAccessor {
 
   template <typename TBlock>
   TBlock& GetBlockAt(DataBlockLocation location) noexcept {
-    return VersionedStorage::GetBlockAt<TBlock>(data_begin_, location);
+    return VersionedStorage::Detail::GetBlockAt<TBlock>(data_begin_, location);
   }
 
   IndexBlock& GetIndexBlock(uint32_t index_block_id) {
     return index_begin_[index_block_id];
   }
 
-  KeyBlockStateSearchResult FindKey(const KeyDescriptor& key) noexcept;
+  KeyStateView FindKey(const KeyDescriptor& key) noexcept;
 
-  SubkeyBlockStateSearchResult FindSubkey(const KeyDescriptor& key,
+  uint32_t FindKey(uint64_t version, const KeyDescriptor& key) noexcept;
+
+  SubkeyStateView FindSubkey(const KeyDescriptor& key,
+                             uint64_t subkey) noexcept;
+
+  std::optional<PayloadHandle> FindSubkey(uint64_t version,
+                                          const KeyDescriptor& key,
                                           uint64_t subkey) noexcept;
 
-  KeySearchResult FindKey(uint64_t version, const KeyDescriptor& key) noexcept;
+  SubkeyIterator CreateSubkeyIterator(uint64_t version,
+                                      const KeyDescriptor& key) noexcept {
+    if (KeyStateView key_state_view = FindKey(key)) {
+      return {version,
+              key_state_view.state_block_->subkeys_list_head_.load(
+                  std::memory_order_acquire),
+              index_begin_, data_begin_};
+    }
+    return {};
+  }
 
-  SubkeySearchResult FindSubkey(uint64_t version,
-                                const KeyDescriptor& key,
-                                uint64_t subkey) noexcept;
+  KeyBlockIterator begin() const noexcept {
+    return {header_block_.keys_list_head_.load(std::memory_order_acquire),
+            index_begin_, data_begin_};
+  }
 
-  [[nodiscard]] KeyStateBlockEnumerator
-  CreateKeyStateBlockEnumerator() noexcept;
+  constexpr KeyBlockIterator::End end() const noexcept { return {}; }
 
-  [[nodiscard]] SubkeyStateBlockEnumerator CreateSubkeyStateBlockEnumerator(
-      const KeyBlockStateSearchResult& search_result) noexcept;
+  class SubkeysRange {
+   public:
+    SubkeysRange(const KeyStateView& key_state_view,
+                 const BlobAccessor& accessor) noexcept
+        : begin_{key_state_view
+                     ? key_state_view.state_block_->subkeys_list_head_.load(
+                           std::memory_order_acquire)
+                     : IndexSlotLocation::kInvalid,
+                 accessor.index_begin_, accessor.data_begin_} {}
 
-  [[nodiscard]] SubkeyStateBlockEnumerator CreateSubkeyStateBlockEnumerator(
-      const KeyDescriptor& key) noexcept {
-    return CreateSubkeyStateBlockEnumerator(FindKey(key));
+    constexpr SubkeyBlockIterator begin() const noexcept { return begin_; }
+    constexpr SubkeyBlockIterator::End end() const noexcept { return {}; }
+
+   private:
+    SubkeyBlockIterator begin_;
+  };
+
+  SubkeysRange GetSubkeys(const KeyStateView& key_state_view) const noexcept {
+    return {key_state_view, *this};
   }
 
   struct IndexOffsetAndSlotHashes {
@@ -162,14 +198,14 @@ class BlobAccessor {
     uint8_t slot_hash;
   };
 
+  HeaderBlock& header_block_;
+  IndexBlock* const index_begin_;
+  std::byte* const data_begin_;
+
  protected:
   template <IndexLevel kLevel, typename TSearchResult, typename TEqualPredicate>
   TSearchResult FindState(const IndexOffsetAndSlotHashes& hashes,
                           TEqualPredicate&& predicate) noexcept;
-
-  HeaderBlock& header_block_;
-  IndexBlock* const index_begin_;
-  std::byte* const data_begin_;
 };
 
 class MutatingBlobAccessor : public BlobAccessor {
@@ -198,26 +234,26 @@ class MutatingBlobAccessor : public BlobAccessor {
       noexcept;
 
   // The key must be missing and there must be enough capacity.
-  KeyBlockStateSearchResult InsertKeyBlock(KeyDescriptor& key) noexcept;
+  KeyStateView InsertKeyBlock(KeyDescriptor& key) noexcept;
 
   // The subkey must be missing and there must be enough capacity.
-  SubkeyBlockStateSearchResult InsertSubkeyBlock(Behavior& behavior,
-                                                 KeyStateBlock& key_block,
-                                                 uint64_t subkey) noexcept;
+  SubkeyStateView InsertSubkeyBlock(Behavior& behavior,
+                                    KeyStateBlock& key_block,
+                                    uint64_t subkey) noexcept;
 
   // The provided search_result will be updated if the operation had to
   // reallocate the version block. If search_result has no version block after
   // the operation, that means that the new version can be stored in the state
   // block.
   [[nodiscard]] bool ReserveSpaceForTransaction(
-      KeyBlockStateSearchResult& search_result) noexcept;
+      KeyStateView& key_state_view) noexcept;
 
   // The provided search_result will be updated if the operation had to
   // reallocate the version block. If search_result has no version block after
   // the operation, that means that the new version can be stored in the state
   // block.
   [[nodiscard]] bool ReserveSpaceForTransaction(
-      SubkeyBlockStateSearchResult& search_result,
+      SubkeyStateView& subkey_state_view,
       uint64_t new_version,
       bool has_value) noexcept;
 
@@ -245,4 +281,4 @@ class MutatingBlobAccessor : public BlobAccessor {
   }
 };
 
-}  // namespace Microsoft::MixedReality::Sharing::VersionedStorage
+}  // namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail

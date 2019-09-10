@@ -9,7 +9,7 @@
 #include <optional>
 #include <vector>
 
-namespace Microsoft::MixedReality::Sharing::VersionedStorage {
+namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail {
 
 // If the StateBlock for a subkey runs out of space to store versions,
 // one or more consecutive SubkeyVersionBlocks are allocated.
@@ -193,4 +193,4 @@ class alignas(kBlockSize) SubkeyVersionBlock {
 
 static_assert(sizeof(SubkeyVersionBlock) == kBlockSize);
 
-}  // namespace Microsoft::MixedReality::Sharing::VersionedStorage
+}  // namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail

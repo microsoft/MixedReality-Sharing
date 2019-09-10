@@ -12,7 +12,7 @@
 #include <cassert>
 #include <vector>
 
-namespace Microsoft::MixedReality::Sharing::VersionedStorage {
+namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail {
 
 // Base class of the state of either a key or a subkey belonging to a key.
 // Each block is participating in a hash collection, a linked list and a tree.
@@ -255,4 +255,4 @@ class alignas(kBlockSize) SubkeyStateBlock : public StateBlockBase {
 
 static_assert(sizeof(SubkeyStateBlock) == kBlockSize);
 
-}  // namespace Microsoft::MixedReality::Sharing::VersionedStorage
+}  // namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail
