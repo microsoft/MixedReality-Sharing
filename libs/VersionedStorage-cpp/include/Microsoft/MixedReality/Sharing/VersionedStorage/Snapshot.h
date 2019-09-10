@@ -25,19 +25,12 @@ class Storage;
 // too many may result in the storage running out of memory.
 class Snapshot {
  public:
-  ~Snapshot() noexcept;
-
   Snapshot() noexcept;
-
-  // Doesn't increment any reference counts (they should be pre-incremented).
-  Snapshot(uint64_t version,
-           Detail::HeaderBlock& header_block,
-           size_t keys_count,
-           size_t subkeys_count,
-           std::shared_ptr<Behavior> behavior) noexcept;
-
   Snapshot(Snapshot&&) noexcept;
   Snapshot(const Snapshot&) noexcept;
+
+  ~Snapshot() noexcept;
+
   Snapshot& operator=(Snapshot&&) noexcept;
   Snapshot& operator=(const Snapshot&) noexcept;
 
@@ -56,6 +49,13 @@ class Snapshot {
   KeyIteratorEnd end() const noexcept { return {}; }
 
  private:
+  // Doesn't increment any reference counts (they should be pre-incremented).
+  Snapshot(uint64_t version,
+           Detail::HeaderBlock& header_block,
+           size_t keys_count,
+           size_t subkeys_count,
+           std::shared_ptr<Behavior> behavior) noexcept;
+
   Detail::HeaderBlock* header_block_{nullptr};
   std::shared_ptr<Behavior> behavior_;
   uint64_t version_{0};
