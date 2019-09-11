@@ -44,9 +44,21 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         public UdpPeerNetwork(IPAddress broadcast, ushort port, IPAddress local = null)
         {
             broadcastEndpoint_ = new IPEndPoint(broadcast, port);
-            localAddress_ = local ?? (broadcast.AddressFamily == AddressFamily.InterNetwork ?
-                IPAddress.Any : IPAddress.IPv6Any);
+            localAddress_ = local ?? AnyAddress(broadcast.AddressFamily);
             readSegment_ = new ArraySegment<byte>(readBuffer_);
+        }
+
+        private IPAddress AnyAddress(AddressFamily family)
+        {
+            switch (family)
+            {
+                case AddressFamily.InterNetwork:
+                    return IPAddress.Any;
+                case AddressFamily.InterNetworkV6:
+                    return IPAddress.IPv6Any;
+                default:
+                    throw new ArgumentException($"Invalid family: {family}");
+            }
         }
 
         private void HandleAsyncRead(Task<SocketReceiveFromResult> task)
