@@ -98,7 +98,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 if (broadcastEndpoint_.AddressFamily == AddressFamily.InterNetwork)
                 {
                     MulticastOption mcastOption;
-                    mcastOption = new MulticastOption(broadcastEndpoint_.Address);
+                    mcastOption = new MulticastOption(broadcastEndpoint_.Address, localAddress_);
 
                     socket_.SetSocketOption(SocketOptionLevel.IP,
                                                 SocketOptionName.AddMembership,
@@ -107,8 +107,15 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 else if (broadcastEndpoint_.AddressFamily == AddressFamily.InterNetworkV6)
                 {
                     IPv6MulticastOption mcastOption;
-                    mcastOption = new IPv6MulticastOption(broadcastEndpoint_.Address);
-
+                    if (localAddress_ != IPAddress.IPv6Any)
+                    {
+                        var ifaceIdx = GetIfaceIdxFromAddress(localAddress_);
+                        mcastOption = new IPv6MulticastOption(broadcastEndpoint_.Address, ifaceIdx);
+                    }
+                    else
+                    {
+                        mcastOption = new IPv6MulticastOption(broadcastEndpoint_.Address);
+                    }
                     socket_.SetSocketOption(SocketOptionLevel.IP,
                                                 SocketOptionName.AddMembership,
                                                 mcastOption);
@@ -134,6 +141,15 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             return address.IsIPv6Multicast ||
                 (address.AddressFamily == AddressFamily.InterNetwork &&
                 (address.GetAddressBytes()[0] >> 4 == 14));
+        }
+
+        private static long GetIfaceIdxFromAddress(IPAddress localAddress)
+        {
+            var ifaces = NetworkInterface.GetAllNetworkInterfaces();
+            var found = ifaces.First(iface =>
+                        iface.GetIPProperties().UnicastAddresses.Any(
+                            addressInfo => addressInfo.Address.Equals(localAddress)));
+            return found.GetIPProperties().GetIPv6Properties().Index;
         }
 
         public void Stop()
