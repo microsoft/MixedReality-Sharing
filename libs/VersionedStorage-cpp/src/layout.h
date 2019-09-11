@@ -5,7 +5,7 @@
 #pragma once
 
 #include <Microsoft/MixedReality/Sharing/VersionedStorage/Detail/Layout.h>
-#include <Microsoft/MixedReality/Sharing/VersionedStorage/enums.h>
+#include <Microsoft/MixedReality/Sharing/VersionedStorage/VersionedPayloadHandle.h>
 
 #include <cassert>
 #include <cstdint>
@@ -41,41 +41,6 @@ struct IndexBlockSlot {
   // Initially Invalid, because up to two first versions can be stored in the
   // state block.
   std::atomic<DataBlockLocation> version_block_location_;
-};
-
-class VersionedPayloadHandle {
- public:
-  VersionedPayloadHandle() = default;
-  VersionedPayloadHandle(uint64_t version, PayloadHandle payload)
-      : version_{version}, payload_{payload} {}
-
-  constexpr bool has_payload() const noexcept {
-    return version_ < kSmallestInvalidVersion;
-  }
-
-  uint64_t version() const noexcept {
-    assert(has_payload());
-    return version_;
-  }
-
-  PayloadHandle payload() const noexcept {
-    assert(has_payload());
-    return payload_;
-  }
-
-  constexpr bool operator==(const VersionedPayloadHandle& other) const
-      noexcept {
-    return version_ == other.version_ && payload_ == other.payload_;
-  }
-
-  constexpr bool operator!=(const VersionedPayloadHandle& other) const
-      noexcept {
-    return version_ != other.version_ || payload_ != other.payload_;
-  }
-
- private:
-  uint64_t version_{kSmallestInvalidVersion};
-  PayloadHandle payload_{0};
 };
 
 // Three-state value of a payload handle, useful for requirements etc.
@@ -123,12 +88,10 @@ class OptionalPayloadStateOrDeletionMarker {
   PayloadHandle handle_{0};  // Irrelevant unless state_ is SpecificHandle
 };
 
-class KeyStateBlock;
 class KeyVersionBlock;
-class SubkeyStateBlock;
 class SubkeyVersionBlock;
-struct KeyStateView;
-struct SubkeyStateView;
+struct KeyStateAndIndexView;
+struct SubkeyStateAndIndexView;
 
 enum class IndexLevel {
   Key,
@@ -144,7 +107,7 @@ struct Types<IndexLevel::Key> {
   using ValueType = uint32_t;
   using StateBlockType = KeyStateBlock;
   using VersionBlockType = KeyVersionBlock;
-  using StateViewType = KeyStateView;
+  using StateAndIndexViewType = KeyStateAndIndexView;
 };
 
 template <>
@@ -152,8 +115,9 @@ struct Types<IndexLevel::Subkey> {
   using ValueType = VersionedPayloadHandle;
   using StateBlockType = SubkeyStateBlock;
   using VersionBlockType = SubkeyVersionBlock;
-  using StateViewType = SubkeyStateView;
+  using StateAndIndexViewType = SubkeyStateAndIndexView;
 };
+
 }  // namespace Detail
 
 template <IndexLevel kLevel>
@@ -163,7 +127,7 @@ using StateBlock = typename Detail::Types<kLevel>::StateBlockType;
 template <IndexLevel kLevel>
 using VersionBlock = typename Detail::Types<kLevel>::VersionBlockType;
 template <IndexLevel kLevel>
-using StateView = typename Detail::Types<kLevel>::StateViewType;
+using StateAndIndexView = typename Detail::Types<kLevel>::StateAndIndexViewType;
 
 template <typename TBlock>
 inline TBlock& GetBlockAt(std::byte* data_begin,

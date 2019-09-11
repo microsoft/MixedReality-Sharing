@@ -21,4 +21,7 @@ enum class KeySubscriptionHandle : uint64_t { kInvalid = 0 };
 
 enum class SubkeySubscriptionHandle : uint64_t { kInvalid = 0 };
 
+// Versions greater or equal to this value are considered to be invalid.
+static constexpr uint64_t kInvalidVersion = 0x7FFF'FFFF'FFFF'FFFF;
+
 }  // namespace Microsoft::MixedReality::Sharing::VersionedStorage

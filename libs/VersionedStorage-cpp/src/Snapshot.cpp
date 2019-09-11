@@ -86,18 +86,16 @@ Snapshot& Snapshot::operator=(const Snapshot& other) noexcept {
   return *this;
 }
 
-size_t Snapshot::GetSubkeysCount(const KeyDescriptor& key) const noexcept {
-  return header_block_
-             ? Detail::BlobAccessor{*header_block_}.FindKey(version_, key)
-             : 0;
-}
-
-std::optional<PayloadHandle> Snapshot::Get(const KeyDescriptor& key,
-                                           uint64_t subkey) const noexcept {
-  if (header_block_)
-    return Detail::BlobAccessor{
-        const_cast<Detail::HeaderBlock&>(*header_block_)}
-        .FindSubkey(version_, key, subkey);
+VersionedPayloadHandle Snapshot::Get(const KeyDescriptor& key,
+                                     uint64_t subkey) const noexcept {
+  if (header_block_) {
+    if (Detail::SubkeyStateView view =
+            Detail::BlobAccessor{
+                const_cast<Detail::HeaderBlock&>(*header_block_)}
+                .FindSubkeyState(key, subkey)) {
+      return view.GetPayload(version_);
+    }
+  }
   return {};
 }
 
@@ -108,26 +106,31 @@ std::optional<KeyView> Snapshot::Get(const KeyDescriptor& key) const noexcept {
   if (header_block_) {
     Detail::KeyStateView key_state_view =
         Detail::BlobAccessor{const_cast<Detail::HeaderBlock&>(*header_block_)}
-            .FindKey(key);
+            .FindKeyState(key);
 
     if (key_state_view) {
       if (auto subkeys_count =
               key_state_view.GetSubkeysCount(Detail::MakeVersionOffset(
                   version_, header_block_->base_version()))) {
-        return KeyView{version_, subkeys_count, key_state_view.state_block_,
-                       accessor.index_begin_, accessor.data_begin_};
+        return KeyView{
+            subkeys_count,
+            key_state_view.state_block_,
+        };
       }
     }
   }
   return {};
 }
 
-KeyIterator Snapshot::begin() const noexcept {
-  if (header_block_)
-    return {version_,
-            Detail::MakeVersionOffset(version_, header_block_->base_version()),
-            *header_block_};
-  return {};
+size_t Snapshot::GetSubkeysCount(const KeyDescriptor& key) const noexcept {
+  if (header_block_) {
+    if (Detail::KeyStateView view =
+            Detail::BlobAccessor{*header_block_}.FindKeyState(key)) {
+      return view.GetSubkeysCount(
+          Detail::MakeVersionOffset(version_, header_block_->base_version()));
+    }
+  }
+  return 0;
 }
 
 }  // namespace Microsoft::MixedReality::Sharing::VersionedStorage

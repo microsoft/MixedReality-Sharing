@@ -24,7 +24,7 @@ struct SubkeyTransaction {
       new_payload_handle_or_deletion_marker_;
   Detail::OptionalPayloadStateOrDeletionMarker
       required_payload_handle_or_deletion_marker_;
-  Detail::SubkeyStateView subkey_state_view_;
+  Detail::SubkeyStateAndIndexView subkey_state_view_;
 
   Detail::SubkeyStateBlock* state_block() const noexcept {
     return subkey_state_view_.state_block_;
@@ -71,7 +71,7 @@ struct KeyTransaction {
   bool clear_before_transaction_{false};
   std::optional<size_t> required_subkeys_count_;
   SubkeyTransactionsMap subkey_transactions_map_;
-  Detail::KeyStateView key_state_view_;
+  Detail::KeyStateAndIndexView key_state_view_;
 
   uint32_t current_subkeys_count_{0};
 
@@ -99,7 +99,8 @@ struct KeyTransaction {
   // Initializes current_subkeys_count_, checks the preconditions and simplifies
   // the transaction if possible, by removing the passed preconditions and
   // unnecessary cleanups.
-  bool InitializeAndValidate(Detail::KeyStateView key_state_view) noexcept {
+  bool InitializeAndValidate(
+      Detail::KeyStateAndIndexView key_state_view) noexcept {
     key_state_view_ = key_state_view;
     current_subkeys_count_ =
         key_state_view_.latest_subkeys_count_thread_unsafe();
@@ -130,7 +131,7 @@ struct KeyTransaction {
 inline bool SubkeyTransaction::InitializeAndValidate(
     Behavior& behavior,
     KeyTransaction& key_transaction) noexcept {
-  const Detail::VersionedPayloadHandle latest_payload =
+  const VersionedPayloadHandle latest_payload =
       subkey_state_view_.latest_payload_thread_unsafe();
   if (required_payload_handle_or_deletion_marker_) {
     if (required_payload_handle_or_deletion_marker_.is_specific_handle()) {
@@ -303,7 +304,7 @@ class TransactionImpl : public Transaction {
           key_transaction.subkey_transactions_map_;
 
       if (!key_transaction.InitializeAndValidate(
-              accessor.FindKey(key_descriptor)))
+              accessor.FindKeyStateAndIndex(key_descriptor)))
         return PrepareResult::ValidationFailed;
 
       const bool is_key_state_found =
@@ -313,7 +314,7 @@ class TransactionImpl : public Transaction {
       auto it_end = end(subkey_transactions);
 
       if (key_transaction.clear_before_transaction_) {
-        for (Detail::SubkeyStateView subkey_state_view :
+        for (Detail::SubkeyStateAndIndexView subkey_state_view :
              accessor.GetSubkeys(key_transaction.key_state_view_)) {
           uint64_t subkey = subkey_state_view.subkey();
           bool already_handled = false;
@@ -381,7 +382,7 @@ class TransactionImpl : public Transaction {
         SubkeyTransaction& subkey_transaction = it->second;
         if (should_search_subkeys) {
           subkey_transaction.subkey_state_view_ =
-              accessor.FindSubkey(key_descriptor, it->first);
+              accessor.FindSubkeyStateAndIndex(key_descriptor, it->first);
         }
         if (!subkey_transaction.InitializeAndValidate(*behavior_,
                                                       key_transaction)) {
@@ -658,7 +659,7 @@ class TransactionImpl : public Transaction {
         if (!new_key_state_block) {
           auto& old_key_block = *old_key_state_view.state_block_;
           KeyDescriptorWithHandle key{*behavior_, old_key_block.key_, false};
-          Detail::KeyStateView key_state_view =
+          Detail::KeyStateAndIndexView key_state_view =
               new_accessor.InsertKeyBlock(key);
           new_key_state_block = key_state_view.state_block_;
           assert(new_key_state_block);

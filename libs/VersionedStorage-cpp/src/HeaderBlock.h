@@ -129,27 +129,15 @@ class BlobAccessor {
     return index_begin_[index_block_id];
   }
 
-  KeyStateView FindKey(const KeyDescriptor& key) noexcept;
+  KeyStateView FindKeyState(const KeyDescriptor& key) noexcept;
 
-  uint32_t FindKey(uint64_t version, const KeyDescriptor& key) noexcept;
+  KeyStateAndIndexView FindKeyStateAndIndex(const KeyDescriptor& key) noexcept;
 
-  SubkeyStateView FindSubkey(const KeyDescriptor& key,
-                             uint64_t subkey) noexcept;
+  SubkeyStateView FindSubkeyState(const KeyDescriptor& key,
+                                  uint64_t subkey) noexcept;
 
-  std::optional<PayloadHandle> FindSubkey(uint64_t version,
-                                          const KeyDescriptor& key,
-                                          uint64_t subkey) noexcept;
-
-  SubkeyIterator CreateSubkeyIterator(uint64_t version,
-                                      const KeyDescriptor& key) noexcept {
-    if (KeyStateView key_state_view = FindKey(key)) {
-      return {version,
-              key_state_view.state_block_->subkeys_list_head_.load(
-                  std::memory_order_acquire),
-              index_begin_, data_begin_};
-    }
-    return {};
-  }
+  SubkeyStateAndIndexView FindSubkeyStateAndIndex(const KeyDescriptor& key,
+                                                  uint64_t subkey) noexcept;
 
   KeyBlockIterator begin() const noexcept {
     return {header_block_.keys_list_head_.load(std::memory_order_acquire),
@@ -237,26 +225,26 @@ class MutatingBlobAccessor : public BlobAccessor {
       noexcept;
 
   // The key must be missing and there must be enough capacity.
-  KeyStateView InsertKeyBlock(KeyDescriptor& key) noexcept;
+  KeyStateAndIndexView InsertKeyBlock(KeyDescriptor& key) noexcept;
 
   // The subkey must be missing and there must be enough capacity.
-  SubkeyStateView InsertSubkeyBlock(Behavior& behavior,
-                                    KeyStateBlock& key_block,
-                                    uint64_t subkey) noexcept;
+  SubkeyStateAndIndexView InsertSubkeyBlock(Behavior& behavior,
+                                            KeyStateBlock& key_block,
+                                            uint64_t subkey) noexcept;
 
   // The provided search_result will be updated if the operation had to
   // reallocate the version block. If search_result has no version block after
   // the operation, that means that the new version can be stored in the state
   // block.
   [[nodiscard]] bool ReserveSpaceForTransaction(
-      KeyStateView& key_state_view) noexcept;
+      KeyStateAndIndexView& key_state_and_index_view) noexcept;
 
   // The provided search_result will be updated if the operation had to
   // reallocate the version block. If search_result has no version block after
   // the operation, that means that the new version can be stored in the state
   // block.
   [[nodiscard]] bool ReserveSpaceForTransaction(
-      SubkeyStateView& subkey_state_view,
+      SubkeyStateAndIndexView& subkey_state_and_index_view,
       uint64_t new_version,
       bool has_value) noexcept;
 

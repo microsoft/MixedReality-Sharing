@@ -31,6 +31,7 @@
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\SubkeyIterator.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\SubkeyView.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\Transaction.h" />
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\VersionedPayloadHandle.h" />
     <ClInclude Include="src\HeaderBlock.h" />
     <ClInclude Include="src\IndexBlock.h" />
     <ClInclude Include="src\KeyStateView.h" />
@@ -58,7 +59,7 @@
     </ClCompile>
     <ClCompile Include="src\SubkeyIterator.cpp" />
     <ClCompile Include="src\SubkeyVersionBlock.cpp" />
-    <ClCompile Include="src\KeyView.cpp" />
+    <ClCompile Include="src\KeyIterator.cpp" />
     <ClCompile Include="src\Transaction.cpp" />
   </ItemGroup>
   <ItemGroup>

@@ -47,7 +47,7 @@ void KeyStateBlock::PushSubkeysCountFromWriterThread(
 
 VersionedPayloadHandle SubkeyStateBlock::GetVersionedPayload(
     uint64_t version) const noexcept {
-  assert(version < kSmallestInvalidVersion);
+  assert(version < kInvalidVersion);
   // We want to find the first payload with marked version that is less or equal
   // to the one we construct here. The search token has the last bit set,
   // so that a deletion marker of the same version can be found if it exists.

@@ -47,7 +47,7 @@ class SubkeyVersionBlock_Test : public ::testing::Test {
   bool IsMissingPayloadsBetween(uint64_t first_version,
                                 uint64_t last_version) const noexcept {
     assert(first_version <= last_version &&
-           last_version < kSmallestInvalidVersion);
+           last_version < kInvalidVersion);
     for (uint64_t i = 0; i < 10 && first_version + i < last_version; ++i) {
       if (first_block_.GetVersionedPayload(first_version + i).has_payload())
         return false;
@@ -70,7 +70,7 @@ class SubkeyVersionBlock_Test : public ::testing::Test {
                         uint64_t last_version,
                         uint64_t expected_handle_64) const noexcept {
     assert(first_version <= last_version &&
-           last_version < kSmallestInvalidVersion);
+           last_version < kInvalidVersion);
     VersionedPayloadHandle expected_handle{first_version,
                                            PayloadHandle{expected_handle_64}};
 

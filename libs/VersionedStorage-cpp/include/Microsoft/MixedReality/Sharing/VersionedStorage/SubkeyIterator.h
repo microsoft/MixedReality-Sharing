@@ -3,8 +3,6 @@
 // information.
 
 #pragma once
-
-//#include
 #include <Microsoft/MixedReality/Sharing/VersionedStorage/Detail/layout.h>
 #include <Microsoft/MixedReality/Sharing/VersionedStorage/SubkeyView.h>
 
@@ -13,22 +11,18 @@
 #include <iterator>
 
 namespace Microsoft::MixedReality::Sharing::VersionedStorage {
-namespace Detail {
-class SubkeyStateBlock;
-class IndexBlock;
-}  // namespace Detail
 
-// Indicates the end of the range of subkeys.
-class SubkeyIteratorEnd {};
+class Snapshot;
+class KeyView;
 
 class SubkeyIterator
     : public std::iterator<std::forward_iterator_tag, SubkeyView> {
  public:
   SubkeyIterator() noexcept = default;
-  SubkeyIterator(uint64_t version,
-                 Detail::IndexSlotLocation index_slot_location,
-                 Detail::IndexBlock* index_begin,
-                 std::byte* data_begin) noexcept;
+  SubkeyIterator(const KeyView& key_view, const Snapshot& snapshot) noexcept;
+
+  // Indicates the end of the range of subkeys.
+  class End {};
 
   SubkeyIterator& operator++() noexcept {
     Advance();
@@ -47,7 +41,7 @@ class SubkeyIterator
     return current_state_block_ == other.current_state_block_;
   }
 
-  constexpr bool operator==(SubkeyIteratorEnd) const noexcept {
+  constexpr bool operator==(End) const noexcept {
     return current_state_block_ == nullptr;
   }
 
@@ -57,7 +51,7 @@ class SubkeyIterator
     return current_state_block_ != other.current_state_block_;
   }
 
-  constexpr bool operator!=(SubkeyIteratorEnd) const noexcept {
+  constexpr bool operator!=(End) const noexcept {
     return current_state_block_ != nullptr;
   }
 
@@ -86,6 +80,19 @@ class SubkeyIterator
   Detail::SubkeyStateBlock* current_state_block_ = nullptr;
   Detail::IndexBlock* index_begin_ = nullptr;
   std::byte* data_begin_ = nullptr;
+};
+
+class SubkeyIteratorRange {
+ public:
+  constexpr SubkeyIteratorRange() noexcept = default;
+  constexpr explicit SubkeyIteratorRange(SubkeyIterator begin) noexcept
+      : begin_{begin} {}
+
+  constexpr SubkeyIterator begin() const noexcept { return begin_; }
+  constexpr SubkeyIterator::End end() const noexcept { return {}; }
+
+ private:
+  SubkeyIterator begin_;
 };
 
 }  // namespace Microsoft::MixedReality::Sharing::VersionedStorage

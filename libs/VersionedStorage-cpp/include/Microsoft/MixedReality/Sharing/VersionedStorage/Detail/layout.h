@@ -3,7 +3,7 @@
 // information.
 
 #pragma once
-#include <cstdint>
+#include <Microsoft/MixedReality/Sharing/VersionedStorage/enums.h>
 
 namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail {
 
@@ -18,7 +18,15 @@ enum class DataBlockLocation : uint32_t { kInvalid = ~0u };
 // An small offset from some base version.
 enum class VersionOffset : uint32_t { kInvalid = ~0u };
 
-// Versions greater or equal to this value are considered to be invalid.
-static constexpr uint64_t kSmallestInvalidVersion = 0x7FFF'FFFF'FFFF'FFFF;
+// Forward declarations
+
+class HeaderBlock;
+class IndexBlock;
+class KeyStateBlock;
+class SubkeyStateBlock;
+
+struct KeyHandleWrapper {
+  const KeyHandle key_;
+};
 
 }  // namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail

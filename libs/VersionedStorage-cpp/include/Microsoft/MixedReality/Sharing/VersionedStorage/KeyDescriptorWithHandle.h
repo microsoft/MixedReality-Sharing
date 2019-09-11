@@ -5,8 +5,6 @@
 #pragma once
 #include <Microsoft/MixedReality/Sharing/VersionedStorage/KeyDescriptor.h>
 
-#include <optional>
-
 namespace Microsoft::MixedReality::Sharing::VersionedStorage {
 
 class Behavior;

@@ -6,6 +6,9 @@
 
 #include <Microsoft/MixedReality/Sharing/VersionedStorage/SubkeyIterator.h>
 
+#include <Microsoft/MixedReality/Sharing/VersionedStorage/Snapshot.h>
+
+#include "src/HeaderBlock.h"
 #include "src/IndexBlock.h"
 #include "src/StateBlock.h"
 #include "src/SubkeyVersionBlock.h"
@@ -34,38 +37,39 @@ void SubkeyIterator::AdvanceUntilPayloadFound(
           Detail::GetBlockAt<Detail::SubkeyVersionBlock>(
               data_begin_, version_block_location);
 
-      Detail::VersionedPayloadHandle handle =
-          version_block.GetVersionedPayload(version_);
-
-      if (handle.has_payload()) {
-        current_subkey_view_ = {current_state_block_->subkey_, handle.version(),
-                                handle.payload()};
+      if (VersionedPayloadHandle handle =
+              version_block.GetVersionedPayload(version_)) {
+        current_subkey_view_ = {current_state_block_->subkey_, handle};
         return;
       }
-    } else {
-      Detail::VersionedPayloadHandle handle =
-          current_state_block_->GetVersionedPayload(version_);
-      if (handle.has_payload()) {
-        current_subkey_view_ = {current_state_block_->subkey_, handle.version(),
-                                handle.payload()};
-        return;
-      }
+    } else if (VersionedPayloadHandle handle =
+                   current_state_block_->GetVersionedPayload(version_)) {
+      current_subkey_view_ = {current_state_block_->subkey_, handle};
+      return;
     }
+
     location = current_state_block_->next_.load(std::memory_order_acquire);
   }
   current_state_block_ = nullptr;
 }
 
-SubkeyIterator::SubkeyIterator(uint64_t version,
-                               Detail::IndexSlotLocation index_slot_location,
-                               Detail::IndexBlock* index_begin,
-                               std::byte* data_begin) noexcept
-    : version_{version}, index_begin_{index_begin}, data_begin_{data_begin} {
-  AdvanceUntilPayloadFound(index_slot_location);
+SubkeyIterator::SubkeyIterator(const KeyView& key_view,
+                               const Snapshot& snapshot) noexcept {
+  assert(snapshot.header_block_);
+  if (key_view.subkeys_count()) {
+    version_ = snapshot.version_;
+    Detail::BlobAccessor accessor(*snapshot.header_block_);
+    index_begin_ = accessor.index_begin_;
+    data_begin_ = accessor.data_begin_;
+    auto* key_state_block =
+        static_cast<Detail::KeyStateBlock*>(key_view.key_handle_wrapper_);
+    AdvanceUntilPayloadFound(
+        key_state_block->subkeys_list_head_.load(std::memory_order_acquire));
+  }
 }
 
 void SubkeyIterator::Advance() noexcept {
-  assert(current_state_block_);
+  assert(!is_end());
   AdvanceUntilPayloadFound(
       current_state_block_->next_.load(std::memory_order_acquire));
 }

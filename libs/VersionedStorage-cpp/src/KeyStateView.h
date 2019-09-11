@@ -11,13 +11,16 @@
 namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail {
 
 struct KeyStateView {
-  KeyStateView() noexcept = default;
-  KeyStateView(IndexBlockSlot* index_block_slot,
-               KeyStateBlock* state_block,
-               KeyVersionBlock* version_block) noexcept
-      : index_block_slot_{index_block_slot},
-        state_block_{state_block},
-        version_block_{version_block} {}
+  constexpr KeyStateView() noexcept = default;
+  constexpr KeyStateView(KeyStateBlock* state_block,
+                         KeyVersionBlock* version_block) noexcept
+      : state_block_{state_block}, version_block_{version_block} {}
+
+  // Ignores the last argument
+  constexpr KeyStateView(KeyStateBlock* state_block,
+                         KeyVersionBlock* version_block,
+                         IndexBlockSlot*) noexcept
+      : state_block_{state_block}, version_block_{version_block} {}
 
   constexpr explicit operator bool() const noexcept { return state_block_; }
 
@@ -39,9 +42,19 @@ struct KeyStateView {
     return 0;
   }
 
-  IndexBlockSlot* index_block_slot_{nullptr};
   KeyStateBlock* state_block_{nullptr};
   KeyVersionBlock* version_block_{nullptr};
+};
+
+struct KeyStateAndIndexView : public KeyStateView {
+  constexpr KeyStateAndIndexView() = default;
+  constexpr KeyStateAndIndexView(KeyStateBlock* state_block,
+                                 KeyVersionBlock* version_block,
+                                 IndexBlockSlot* index_block_slot) noexcept
+      : KeyStateView{state_block, version_block},
+        index_block_slot_{index_block_slot} {}
+
+  IndexBlockSlot* index_block_slot_{nullptr};
 };
 
 }  // namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail

@@ -461,7 +461,7 @@ BlobAccessor::FindState(const IndexOffsetAndSlotHashes& hashes,
         Platform::Prefetch(&version_block);
       }
       if (predicate(state_block)) {
-        return {&slot, &state_block, version_block};
+        return {&state_block, version_block, &slot};
       }
       // Clearing the bit that we just checked.
       mask ^= 1u << first_bit_id;
@@ -481,15 +481,23 @@ BlobAccessor::FindState(const IndexOffsetAndSlotHashes& hashes,
 }
 #endif  // #ifdef MS_MR_SHARING_PLATFORM_x86_OR_x64
 
-KeyStateView BlobAccessor::FindKey(const KeyDescriptor& key) noexcept {
+KeyStateView BlobAccessor::FindKeyState(const KeyDescriptor& key) noexcept {
   return FindState<IndexLevel::Key, KeyStateView>(
       {key.hash()}, [&key](const KeyStateBlock& candidate) -> bool {
         return key.IsEqualTo(candidate.key_);
       });
 }
 
-SubkeyStateView BlobAccessor::FindSubkey(const KeyDescriptor& key,
-                                         uint64_t subkey) noexcept {
+KeyStateAndIndexView BlobAccessor::FindKeyStateAndIndex(
+    const KeyDescriptor& key) noexcept {
+  return FindState<IndexLevel::Key, KeyStateAndIndexView>(
+      {key.hash()}, [&key](const KeyStateBlock& candidate) -> bool {
+        return key.IsEqualTo(candidate.key_);
+      });
+}
+
+SubkeyStateView BlobAccessor::FindSubkeyState(const KeyDescriptor& key,
+                                              uint64_t subkey) noexcept {
   return FindState<IndexLevel::Subkey, SubkeyStateView>(
       {key.hash(), subkey},
       [&key, subkey](const SubkeyStateBlock& candidate) -> bool {
@@ -497,38 +505,22 @@ SubkeyStateView BlobAccessor::FindSubkey(const KeyDescriptor& key,
       });
 }
 
-uint32_t BlobAccessor::FindKey(uint64_t version,
-                               const KeyDescriptor& key) noexcept {
-  if (version >= header_block_.base_version_) {
-    KeyStateView state_view = FindKey(key);
-    if (state_view.version_block_) {
-      return state_view.version_block_->GetSubkeysCount(
-          MakeVersionOffset(version, header_block_.base_version_));
-    } else if (state_view.state_block_) {
-      return state_view.state_block_->GetSubkeysCount(
-          MakeVersionOffset(version, header_block_.base_version_));
-    }
-  }
-  return 0;
-}
-
-std::optional<PayloadHandle> BlobAccessor::FindSubkey(
-    uint64_t version,
+SubkeyStateAndIndexView BlobAccessor::FindSubkeyStateAndIndex(
     const KeyDescriptor& key,
     uint64_t subkey) noexcept {
-  if (version >= header_block_.base_version_) {
-    VersionedPayloadHandle handle = FindSubkey(key, subkey).GetPayload(version);
-    if (handle.has_payload())
-      return handle.payload();
-  }
-  return {};
+  return FindState<IndexLevel::Subkey, SubkeyStateAndIndexView>(
+      {key.hash(), subkey},
+      [&key, subkey](const SubkeyStateBlock& candidate) -> bool {
+        return subkey == candidate.subkey_ && key.IsEqualTo(candidate.key_);
+      });
 }
 
 bool MutatingBlobAccessor::ReserveSpaceForTransaction(
-    KeyStateView& key_state_view) noexcept {
-  assert(key_state_view);
-  KeyStateBlock& state_block = *key_state_view.state_block_;
-  KeyVersionBlock* const version_block = key_state_view.version_block_;
+    KeyStateAndIndexView& key_state_and_index_view) noexcept {
+  assert(key_state_and_index_view);
+  KeyStateBlock& state_block = *key_state_and_index_view.state_block_;
+  KeyVersionBlock* const version_block =
+      key_state_and_index_view.version_block_;
   if (version_block) {
     if (version_block->has_empty_slots_thread_unsafe()) {
       return true;
@@ -543,7 +535,8 @@ bool MutatingBlobAccessor::ReserveSpaceForTransaction(
   const DataBlockLocation new_version_block_location{
       header_block_.stored_data_blocks_count_};
 
-  IndexBlockSlot& index_block_slot = *key_state_view.index_block_slot_;
+  IndexBlockSlot& index_block_slot =
+      *key_state_and_index_view.index_block_slot_;
 
   DataBlockLocation previous_version_block_location =
       index_block_slot.version_block_location_.load(std::memory_order_relaxed);
@@ -582,19 +575,20 @@ bool MutatingBlobAccessor::ReserveSpaceForTransaction(
   // extra slot for the new version that will be inserted.
   index_block_slot.version_block_location_.store(new_version_block_location,
                                                  std::memory_order_release);
-  key_state_view.version_block_ = &new_version_block;
+  key_state_and_index_view.version_block_ = &new_version_block;
   return true;
 }
 
 bool MutatingBlobAccessor::ReserveSpaceForTransaction(
-    SubkeyStateView& subkey_state_view,
+    SubkeyStateAndIndexView& subkey_state_and_index_view,
     uint64_t new_version,
     bool has_value) noexcept {
-  assert(subkey_state_view);
+  assert(subkey_state_and_index_view);
   VersionedPayloadHandle current_payload =
-      subkey_state_view.latest_payload_thread_unsafe();
-  SubkeyStateBlock& state_block = *subkey_state_view.state_block_;
-  SubkeyVersionBlock* const version_block = subkey_state_view.version_block_;
+      subkey_state_and_index_view.latest_payload_thread_unsafe();
+  SubkeyStateBlock& state_block = *subkey_state_and_index_view.state_block_;
+  SubkeyVersionBlock* const version_block =
+      subkey_state_and_index_view.version_block_;
 
   if (version_block) {
     if (version_block->CanPushFromWriterThread(new_version, has_value)) {
@@ -612,7 +606,8 @@ bool MutatingBlobAccessor::ReserveSpaceForTransaction(
   const DataBlockLocation new_version_block_location{
       header_block_.stored_data_blocks_count_};
 
-  IndexBlockSlot& index_block_slot = *subkey_state_view.index_block_slot_;
+  IndexBlockSlot& index_block_slot =
+      *subkey_state_and_index_view.index_block_slot_;
 
   DataBlockLocation previous_version_block_location =
       index_block_slot.version_block_location_.load(std::memory_order_relaxed);
@@ -656,7 +651,7 @@ bool MutatingBlobAccessor::ReserveSpaceForTransaction(
   // extra slot for the new version that will be inserted.
   index_block_slot.version_block_location_.store(new_version_block_location,
                                                  std::memory_order_release);
-  subkey_state_view.version_block_ = &new_version_block;
+  subkey_state_and_index_view.version_block_ = &new_version_block;
   return true;
 }
 
@@ -845,24 +840,25 @@ bool MutatingBlobAccessor::CanInsertStateBlocks(
   return extra_state_blocks_count <= available_data_blocks_count();
 }
 
-KeyStateView MutatingBlobAccessor::InsertKeyBlock(KeyDescriptor& key) noexcept {
+KeyStateAndIndexView MutatingBlobAccessor::InsertKeyBlock(
+    KeyDescriptor& key) noexcept {
   assert(CanInsertStateBlocks(1));
-  assert(!FindKey(key));
+  assert(!FindKeyState(key));
   HeaderBlock::KeyBlockInserter inserter{*this, key, {key.hash()}};
-  return {&inserter.index_block_slot(), &inserter.new_block(), nullptr};
+  return {&inserter.new_block(), nullptr, &inserter.index_block_slot()};
 }
 
-SubkeyStateView MutatingBlobAccessor::InsertSubkeyBlock(
+SubkeyStateAndIndexView MutatingBlobAccessor::InsertSubkeyBlock(
     Behavior& behavior,
     KeyStateBlock& key_block,
     uint64_t subkey) noexcept {
   assert(CanInsertStateBlocks(1));
-  assert(!FindSubkey(KeyDescriptorWithHandle{behavior, key_block.key_, false},
-                     subkey));
+  assert(!FindSubkeyState(
+      KeyDescriptorWithHandle{behavior, key_block.key_, false}, subkey));
 
   HeaderBlock::SubkeyBlockInserter inserter(
       *this, key_block, subkey, {behavior.GetHash(key_block.key_), subkey});
-  return {&inserter.index_block_slot(), &inserter.new_block(), nullptr};
+  return {&inserter.new_block(), nullptr, &inserter.index_block_slot()};
 }
 
 }  // namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail

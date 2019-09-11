@@ -190,16 +190,21 @@ TEST_F(HeaderBlock_Test, populate_block_index_with_keys) {
     return accessor.GetBlockAt<KeyStateBlock>(right).key_;
   };
 
-  EXPECT_EQ(accessor.FindKey(MakeKeyDescriptor(20)).index_block_slot_, nullptr);
-  EXPECT_EQ(accessor.FindKey(MakeKeyDescriptor(20)).state_block_, nullptr);
-  EXPECT_EQ(accessor.FindKey(MakeKeyDescriptor(20)).version_block_, nullptr);
+  {
+    KeyStateAndIndexView view =
+        accessor.FindKeyStateAndIndex(MakeKeyDescriptor(20));
+    EXPECT_EQ(view.index_block_slot_, nullptr);
+    EXPECT_EQ(view.state_block_, nullptr);
+    EXPECT_EQ(view.version_block_, nullptr);
+  }
 
   // Inserting key 20. This is the simplest case, since there is no other keys,
   // and thus the key will be inserted as a head of the list and the root of the
   // tree (of keys).
   accessor.InsertKeyBlock(MakeKeyDescriptor(20));
   EXPECT_EQ(behavior_->GetKeyReferenceCount(KeyHandle{20}), 1);
-  KeyStateView view_20 = accessor.FindKey(MakeKeyDescriptor(20));
+  KeyStateAndIndexView view_20 =
+      accessor.FindKeyStateAndIndex(MakeKeyDescriptor(20));
   ASSERT_NE(view_20.state_block_, nullptr);
   EXPECT_EQ(view_20.key(), KeyHandle{20});
   EXPECT_TRUE(IsLeaf(view_20));
@@ -219,7 +224,8 @@ TEST_F(HeaderBlock_Test, populate_block_index_with_keys) {
   // The new node (10) will become the new root.
   accessor.InsertKeyBlock(MakeKeyDescriptor(10));
   EXPECT_EQ(behavior_->GetKeyReferenceCount(KeyHandle{10}), 1);
-  KeyStateView view_10 = accessor.FindKey(MakeKeyDescriptor(10));
+  KeyStateAndIndexView view_10 =
+      accessor.FindKeyStateAndIndex(MakeKeyDescriptor(10));
   ASSERT_NE(view_10.state_block_, nullptr);
   EXPECT_EQ(view_10.key(), KeyHandle{10});
 
@@ -254,7 +260,8 @@ TEST_F(HeaderBlock_Test, populate_block_index_with_keys) {
   // incremented.
   accessor.InsertKeyBlock(MakeKeyDescriptor(5));
   EXPECT_EQ(behavior_->GetKeyReferenceCount(KeyHandle{5}), 1);
-  KeyStateView view_5 = accessor.FindKey(MakeKeyDescriptor(5));
+  KeyStateAndIndexView view_5 =
+      accessor.FindKeyStateAndIndex(MakeKeyDescriptor(5));
   ASSERT_NE(view_5.state_block_, nullptr);
   EXPECT_EQ(view_5.key(), KeyHandle{5});
 
@@ -293,7 +300,8 @@ TEST_F(HeaderBlock_Test, populate_block_index_with_keys) {
   // the subtree will become skewed.
   accessor.InsertKeyBlock(MakeKeyDescriptor(4));
   EXPECT_EQ(behavior_->GetKeyReferenceCount(KeyHandle{4}), 1);
-  KeyStateView view_4 = accessor.FindKey(MakeKeyDescriptor(4));
+  KeyStateAndIndexView view_4 =
+      accessor.FindKeyStateAndIndex(MakeKeyDescriptor(4));
   ASSERT_NE(view_4.state_block_, nullptr);
   EXPECT_EQ(view_4.key(), KeyHandle{4});
 
@@ -340,7 +348,8 @@ TEST_F(HeaderBlock_Test, populate_block_index_with_keys) {
   // that children are properly preserved during the skew operation.
   accessor.InsertKeyBlock(MakeKeyDescriptor(3));
   EXPECT_EQ(behavior_->GetKeyReferenceCount(KeyHandle{3}), 1);
-  KeyStateView view_3 = accessor.FindKey(MakeKeyDescriptor(3));
+  KeyStateAndIndexView view_3 =
+      accessor.FindKeyStateAndIndex(MakeKeyDescriptor(3));
   ASSERT_NE(view_3.state_block_, nullptr);
   EXPECT_EQ(view_3.key(), KeyHandle{3});
 
@@ -395,7 +404,8 @@ TEST_F(HeaderBlock_Test, populate_block_index_with_keys) {
   // with one skew.
   accessor.InsertKeyBlock(MakeKeyDescriptor(15));
   EXPECT_EQ(behavior_->GetKeyReferenceCount(KeyHandle{15}), 1);
-  KeyStateView view_15 = accessor.FindKey(MakeKeyDescriptor(15));
+  KeyStateAndIndexView view_15 =
+      accessor.FindKeyStateAndIndex(MakeKeyDescriptor(15));
   ASSERT_NE(view_15.state_block_, nullptr);
   EXPECT_EQ(view_15.key(), KeyHandle{15});
 
@@ -462,7 +472,8 @@ TEST_F(HeaderBlock_Test, populate_block_index_with_keys) {
   // with a split operation.
   accessor.InsertKeyBlock(MakeKeyDescriptor(12));
   EXPECT_EQ(behavior_->GetKeyReferenceCount(KeyHandle{12}), 1);
-  KeyStateView view_12 = accessor.FindKey(MakeKeyDescriptor(12));
+  KeyStateAndIndexView view_12 =
+      accessor.FindKeyStateAndIndex(MakeKeyDescriptor(12));
   ASSERT_NE(view_12.state_block_, nullptr);
   EXPECT_EQ(view_12.key(), KeyHandle{12});
 
@@ -554,7 +565,8 @@ TEST_F(HeaderBlock_Test, populate_block_index_with_keys_and_subkeys) {
 
   for (uint64_t key = 0; key < 3; ++key) {
     accessor.InsertKeyBlock(MakeKeyDescriptor(key));
-    KeyStateView key_state_view = accessor.FindKey(MakeKeyDescriptor(key));
+    KeyStateAndIndexView key_state_view =
+        accessor.FindKeyStateAndIndex(MakeKeyDescriptor(key));
     ASSERT_TRUE(key_state_view.state_block_);
     EXPECT_EQ(key_state_view.key(), KeyHandle{key});
     for (uint64_t i = 0; i < 9; ++i) {
@@ -562,8 +574,8 @@ TEST_F(HeaderBlock_Test, populate_block_index_with_keys_and_subkeys) {
       accessor.InsertSubkeyBlock(*behavior_, *key_state_view.state_block_,
                                  subkey);
 
-      SubkeyStateView subkey_state_view =
-          accessor.FindSubkey(MakeKeyDescriptor(key), subkey);
+      SubkeyStateAndIndexView subkey_state_view =
+          accessor.FindSubkeyStateAndIndex(MakeKeyDescriptor(key), subkey);
 
       SubkeyStateBlock* block = subkey_state_view.state_block_;
       ASSERT_TRUE(block);
@@ -624,7 +636,8 @@ TEST_F(HeaderBlock_Test, insertion_order_fuzzing) {
     EXPECT_FALSE(accessor.CanInsertStateBlocks(kIndexCapacity + 1));
 
     accessor.InsertKeyBlock(MakeKeyDescriptor(5));
-    KeyStateView key_state_view = accessor.FindKey(MakeKeyDescriptor(5));
+    KeyStateAndIndexView key_state_view =
+        accessor.FindKeyStateAndIndex(MakeKeyDescriptor(5));
     ASSERT_TRUE(key_state_view.state_block_);
     EXPECT_EQ(key_state_view.key(), KeyHandle{5});
 
@@ -659,7 +672,7 @@ TEST_F(HeaderBlock_Test, insertion_order_fuzzing) {
 
       // The subkey can also be found directly.
       const SubkeyStateBlock* block =
-          accessor.FindSubkey(search_key, subkey).state_block_;
+          accessor.FindSubkeyState(search_key, subkey).state_block_;
       ASSERT_TRUE(block);
       EXPECT_EQ(block->key_, KeyHandle{5});
       EXPECT_EQ(block->subkey_, subkey);
@@ -710,7 +723,8 @@ TEST_F(HeaderBlock_Test, subkey_hashes_fuzzing) {
     EXPECT_FALSE(accessor.CanInsertStateBlocks(kIndexCapacity + 1));
 
     accessor.InsertKeyBlock(MakeKeyDescriptor(5));
-    KeyStateView key_state_view = accessor.FindKey(MakeKeyDescriptor(5));
+    KeyStateAndIndexView key_state_view =
+        accessor.FindKeyStateAndIndex(MakeKeyDescriptor(5));
     ASSERT_TRUE(key_state_view.state_block_);
     EXPECT_EQ(key_state_view.key(), KeyHandle{5});
 
@@ -742,7 +756,7 @@ TEST_F(HeaderBlock_Test, subkey_hashes_fuzzing) {
 
       // The subkey can also be found directly.
       const SubkeyStateBlock* block =
-          accessor.FindSubkey(search_key, subkey).state_block_;
+          accessor.FindSubkeyState(search_key, subkey).state_block_;
       ASSERT_TRUE(block);
       EXPECT_EQ(block->key_, KeyHandle{5});
       EXPECT_EQ(block->subkey_, subkey);
@@ -809,7 +823,7 @@ class PrepareTransaction_Test : public HeaderBlock_Test {
 
     // Adding a key and a few subkeys
     accessor_.InsertKeyBlock(MakeKeyDescriptor(5));
-    KeyStateView key_state_view = accessor_.FindKey(MakeKeyDescriptor(5));
+    KeyStateView key_state_view = accessor_.FindKeyState(MakeKeyDescriptor(5));
     for (uint64_t subkey = 0; subkey < 6; ++subkey) {
       accessor_.InsertSubkeyBlock(*behavior_, *key_state_view.state_block_,
                                   subkey);
@@ -825,7 +839,10 @@ class PrepareTransaction_Test : public HeaderBlock_Test {
   }
 
   uint32_t GetSubkeyCountForVersion(uint64_t version) noexcept {
-    return accessor_.FindKey(version, MakeKeyDescriptor(5));
+    if (KeyStateView view = accessor_.FindKeyState(MakeKeyDescriptor(5)))
+      return view.GetSubkeysCount(MakeVersionOffset(version, kBaseVersion));
+
+    return 0;
   }
 
   static bool KeySubkeyMatch(const SubkeyStateView& subkey_state_view,
@@ -836,13 +853,11 @@ class PrepareTransaction_Test : public HeaderBlock_Test {
            subkey_state_view.subkey() == subkey;
   }
 
-  bool HasPayload(uint64_t version, uint64_t subkey) noexcept {
-    return accessor_.FindSubkey(version, MakeKeyDescriptor(5), subkey)
-        .has_value();
-  }
-
-  PayloadHandle GetPayload(uint64_t version, uint64_t subkey) {
-    return *accessor_.FindSubkey(version, MakeKeyDescriptor(5), subkey);
+  VersionedPayloadHandle Find(uint64_t version, uint64_t subkey) {
+    if (SubkeyStateView view =
+            accessor_.FindSubkeyState(MakeKeyDescriptor(5), subkey))
+      return view.GetPayload(version);
+    return {};
   }
 
   HeaderBlock* header_block_;
@@ -851,8 +866,8 @@ class PrepareTransaction_Test : public HeaderBlock_Test {
 
 TEST_F(PrepareTransaction_Test, inserting_subkey_version) {
   uint64_t subkey = 2;
-  SubkeyStateView subkey_state_view =
-      accessor_.FindSubkey(MakeKeyDescriptor(5), subkey);
+  SubkeyStateAndIndexView subkey_state_view =
+      accessor_.FindSubkeyStateAndIndex(MakeKeyDescriptor(5), subkey);
 
   ASSERT_TRUE(accessor_.ReserveSpaceForTransaction(subkey_state_view,
                                                    kBaseVersion, true));
@@ -868,13 +883,14 @@ TEST_F(PrepareTransaction_Test, inserting_subkey_version) {
                                                        MakePayload(42));
 
   // The subkey doesn't exist before this version
-  EXPECT_FALSE(HasPayload(0, subkey));
-  EXPECT_FALSE(HasPayload(kBaseVersion - 1, subkey));
+  EXPECT_FALSE(Find(0, subkey));
+  EXPECT_FALSE(Find(kBaseVersion - 1, subkey));
 
   // The subkey exists after this version.
   for (uint64_t i = 0; i < 10; ++i) {
-    ASSERT_TRUE(HasPayload(kBaseVersion + i, subkey));
-    EXPECT_EQ(GetPayload(kBaseVersion + i, subkey), PayloadHandle{42});
+    ASSERT_TRUE(Find(kBaseVersion + i, subkey));
+    EXPECT_EQ(Find(kBaseVersion + i, subkey).payload(), PayloadHandle{42});
+    EXPECT_EQ(Find(kBaseVersion + i, subkey).version(), kBaseVersion);
   }
 
   ASSERT_TRUE(accessor_.AddVersion());
@@ -888,12 +904,14 @@ TEST_F(PrepareTransaction_Test, inserting_subkey_version) {
   subkey_state_view.state_block_->PushFromWriterThread(kBaseVersion + 1, {});
 
   // The subkey doesn't exist before the first version
-  EXPECT_FALSE(HasPayload(kBaseVersion - 1, subkey));
+  EXPECT_FALSE(Find(kBaseVersion - 1, subkey));
   // Payload 42 is still visible to the base version
-  ASSERT_TRUE(HasPayload(kBaseVersion, subkey));
-  EXPECT_EQ(GetPayload(kBaseVersion, subkey), PayloadHandle{42});
+  ASSERT_TRUE(Find(kBaseVersion, subkey));
+  EXPECT_EQ(Find(kBaseVersion, subkey).payload(), PayloadHandle{42});
+  EXPECT_EQ(Find(kBaseVersion, subkey).version(), kBaseVersion);
+
   // But in the next version it's deleted
-  EXPECT_FALSE(HasPayload(kBaseVersion + 1, subkey));
+  EXPECT_FALSE(Find(kBaseVersion + 1, subkey));
 
   // This version should allocate a new version block (with both existing
   // versions and enough space for one more version).
@@ -910,15 +928,17 @@ TEST_F(PrepareTransaction_Test, inserting_subkey_version) {
                                                          MakePayload(43));
 
   // The subkey doesn't exist before the first version.
-  EXPECT_FALSE(HasPayload(kBaseVersion - 1, subkey));
+  EXPECT_FALSE(Find(kBaseVersion - 1, subkey));
   // Payload 42 is duplicated in the new version block.
-  ASSERT_TRUE(HasPayload(kBaseVersion, subkey));
-  EXPECT_EQ(GetPayload(kBaseVersion, subkey), PayloadHandle{42});
+  ASSERT_TRUE(Find(kBaseVersion, subkey));
+  EXPECT_EQ(Find(kBaseVersion, subkey).payload(), PayloadHandle{42});
+  EXPECT_EQ(Find(kBaseVersion, subkey).version(), kBaseVersion);
   // The deletion marker for the next version is also duplicated.
-  EXPECT_FALSE(HasPayload(kBaseVersion + 1, subkey));
+  EXPECT_FALSE(Find(kBaseVersion + 1, subkey));
   // Newly published version is visible.
-  ASSERT_TRUE(HasPayload(kBaseVersion + 2, subkey));
-  EXPECT_EQ(GetPayload(kBaseVersion + 2, subkey), PayloadHandle{43});
+  ASSERT_TRUE(Find(kBaseVersion + 2, subkey));
+  EXPECT_EQ(Find(kBaseVersion + 2, subkey).payload(), PayloadHandle{43});
+  EXPECT_EQ(Find(kBaseVersion + 2, subkey).version(), kBaseVersion + 2);
 
   // This version should fit into existing version block.
   ASSERT_TRUE(accessor_.AddVersion());
@@ -932,13 +952,15 @@ TEST_F(PrepareTransaction_Test, inserting_subkey_version) {
 
   subkey_state_view.version_block_->PushFromWriterThread(kBaseVersion + 3, {});
 
-  EXPECT_FALSE(HasPayload(kBaseVersion - 1, subkey));
-  ASSERT_TRUE(HasPayload(kBaseVersion, subkey));
-  EXPECT_EQ(GetPayload(kBaseVersion, subkey), PayloadHandle{42});
-  EXPECT_FALSE(HasPayload(kBaseVersion + 1, subkey));
-  ASSERT_TRUE(HasPayload(kBaseVersion + 2, subkey));
-  EXPECT_EQ(GetPayload(kBaseVersion + 2, subkey), PayloadHandle{43});
-  EXPECT_FALSE(HasPayload(kBaseVersion + 3, subkey));
+  EXPECT_FALSE(Find(kBaseVersion - 1, subkey));
+  ASSERT_TRUE(Find(kBaseVersion, subkey));
+  EXPECT_EQ(Find(kBaseVersion, subkey).payload(), PayloadHandle{42});
+  EXPECT_EQ(Find(kBaseVersion, subkey).version(), kBaseVersion);
+  EXPECT_FALSE(Find(kBaseVersion + 1, subkey));
+  ASSERT_TRUE(Find(kBaseVersion + 2, subkey));
+  EXPECT_EQ(Find(kBaseVersion + 2, subkey).payload(), PayloadHandle{43});
+  EXPECT_EQ(Find(kBaseVersion + 2, subkey).version(), kBaseVersion + 2);
+  EXPECT_FALSE(Find(kBaseVersion + 3, subkey));
 
   // Forgetting about the version where the payload was deleted the first time.
   // This will influence which versions will survive the reallocation of the
@@ -956,24 +978,30 @@ TEST_F(PrepareTransaction_Test, inserting_subkey_version) {
   subkey_state_view.version_block_->PushFromWriterThread(kBaseVersion + 4,
                                                          MakePayload(44));
 
-  EXPECT_FALSE(HasPayload(kBaseVersion - 1, subkey));
-  ASSERT_TRUE(HasPayload(kBaseVersion, subkey));
-  EXPECT_EQ(GetPayload(kBaseVersion, subkey), PayloadHandle{42});
+  EXPECT_FALSE(Find(kBaseVersion - 1, subkey));
+  ASSERT_TRUE(Find(kBaseVersion, subkey));
+  EXPECT_EQ(Find(kBaseVersion, subkey).payload(), PayloadHandle{42});
+  EXPECT_EQ(Find(kBaseVersion, subkey).version(), kBaseVersion);
 
   // The information about this version did not migrate to the new version block
   // (because we removed the reference to this version above).
   // Because of that, we see the previous version instead of a deletion marker.
   // In the actual use case scenario we would never perform a search for an
   // unreferenced version, but here this checks the reallocation strategy.
-  ASSERT_TRUE(HasPayload(kBaseVersion + 1, subkey));
-  EXPECT_EQ(GetPayload(kBaseVersion + 1, subkey), PayloadHandle{42});
+  ASSERT_TRUE(Find(kBaseVersion + 1, subkey));
+  EXPECT_EQ(Find(kBaseVersion + 1, subkey).payload(), PayloadHandle{42});
+  // Note: inserted in the previous version (the deletion marker that was here
+  // instead is now missing).
+  EXPECT_EQ(Find(kBaseVersion + 1, subkey).version(), kBaseVersion);
 
-  ASSERT_TRUE(HasPayload(kBaseVersion + 2, subkey));
-  EXPECT_EQ(GetPayload(kBaseVersion + 2, subkey), PayloadHandle{43});
-  EXPECT_FALSE(HasPayload(kBaseVersion + 3, subkey));
+  ASSERT_TRUE(Find(kBaseVersion + 2, subkey));
+  EXPECT_EQ(Find(kBaseVersion + 2, subkey).payload(), PayloadHandle{43});
+  EXPECT_EQ(Find(kBaseVersion + 2, subkey).version(), kBaseVersion + 2);
+  EXPECT_FALSE(Find(kBaseVersion + 3, subkey));
 
-  ASSERT_TRUE(HasPayload(kBaseVersion + 4, subkey));
-  EXPECT_EQ(GetPayload(kBaseVersion + 4, subkey), PayloadHandle{44});
+  ASSERT_TRUE(Find(kBaseVersion + 4, subkey));
+  EXPECT_EQ(Find(kBaseVersion + 4, subkey).payload(), PayloadHandle{44});
+  EXPECT_EQ(Find(kBaseVersion + 4, subkey).version(), kBaseVersion + 4);
 
   header_block_->RemoveSnapshotReference(kBaseVersion, *behavior_);
   header_block_->RemoveSnapshotReference(kBaseVersion + 2, *behavior_);
@@ -985,7 +1013,8 @@ TEST_F(PrepareTransaction_Test, inserting_key_versions) {
   // First, pushing 3 subkey counts (all of them should fit into the in-place
   // storage within the state block)
   for (uint32_t i = 0; i < 3; ++i) {
-    KeyStateView key_state_view = accessor_.FindKey(MakeKeyDescriptor(5));
+    KeyStateAndIndexView key_state_view =
+        accessor_.FindKeyStateAndIndex(MakeKeyDescriptor(5));
     uint32_t new_count = 9000 + i;
     ASSERT_TRUE(accessor_.ReserveSpaceForTransaction(key_state_view));
     EXPECT_TRUE(KeyMatches(key_state_view, 5));
@@ -998,9 +1027,6 @@ TEST_F(PrepareTransaction_Test, inserting_key_versions) {
     key_state_view.state_block_->PushSubkeysCountFromWriterThread(
         VersionOffset{i}, new_count);
 
-    // There are no subkeys before the first published version
-    EXPECT_EQ(GetSubkeyCountForVersion(kBaseVersion - 1), 0);
-
     // All inserted versions are visible
     for (uint32_t j = 0; j <= i; ++j) {
       EXPECT_EQ(GetSubkeyCountForVersion(kBaseVersion + j), 9000 + j);
@@ -1011,7 +1037,8 @@ TEST_F(PrepareTransaction_Test, inserting_key_versions) {
   // The next 4 versions will use a version block.
   // (the existing 3 versions will be copied there since they are referenced).
   for (uint32_t i = 3; i < 7; ++i) {
-    KeyStateView key_state_view = accessor_.FindKey(MakeKeyDescriptor(5));
+    KeyStateAndIndexView key_state_view =
+        accessor_.FindKeyStateAndIndex(MakeKeyDescriptor(5));
     const uint32_t new_count = 9000 + i;
     ASSERT_TRUE(accessor_.ReserveSpaceForTransaction(key_state_view));
     EXPECT_TRUE(KeyMatches(key_state_view, 5));
@@ -1024,9 +1051,6 @@ TEST_F(PrepareTransaction_Test, inserting_key_versions) {
     key_state_view.version_block_->PushSubkeysCountFromWriterThread(
         VersionOffset{i}, new_count);
 
-    // There are no subkeys before the first published version
-    EXPECT_EQ(GetSubkeyCountForVersion(kBaseVersion - 1), 0);
-
     // All inserted versions are visible
     for (uint32_t j = 0; j <= i; ++j) {
       EXPECT_EQ(GetSubkeyCountForVersion(kBaseVersion + j), 9000 + j);
@@ -1037,7 +1061,8 @@ TEST_F(PrepareTransaction_Test, inserting_key_versions) {
   // Dereferencing a single version.
   header_block_->RemoveSnapshotReference(kBaseVersion + 2, *behavior_);
 
-  KeyStateView key_state_view = accessor_.FindKey(MakeKeyDescriptor(5));
+  KeyStateAndIndexView key_state_view =
+      accessor_.FindKeyStateAndIndex(MakeKeyDescriptor(5));
   ASSERT_TRUE(accessor_.ReserveSpaceForTransaction(key_state_view));
   EXPECT_TRUE(KeyMatches(key_state_view, 5));
   ASSERT_TRUE(key_state_view.version_block_);
@@ -1052,8 +1077,6 @@ TEST_F(PrepareTransaction_Test, inserting_key_versions) {
       VersionOffset{7}, 9007);
   EXPECT_EQ(key_state_view.version_block_->size_relaxed(), 7);
 
-  // There are no subkeys before the first published version
-  EXPECT_EQ(GetSubkeyCountForVersion(kBaseVersion - 1), 0);
   EXPECT_EQ(GetSubkeyCountForVersion(kBaseVersion), 9000);
   EXPECT_EQ(GetSubkeyCountForVersion(kBaseVersion + 1), 9001);
   // This version was unreferenced above and didn't migrate into the new version

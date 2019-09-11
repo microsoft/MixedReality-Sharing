@@ -12,17 +12,15 @@
 
 namespace Microsoft::MixedReality::Sharing::VersionedStorage {
 
-// Indicates the end of the range of keys.
-class KeyIteratorEnd {};
+class Snapshot;
 
 class KeyIterator : public std::iterator<std::forward_iterator_tag, KeyView> {
  public:
   KeyIterator() noexcept = default;
-  KeyIterator(uint64_t observed_version,
-              Detail::VersionOffset version_offset,
-              Detail::HeaderBlock& header_block) noexcept
-      : current_key_view_{observed_version, version_offset, header_block},
-        version_offset_{version_offset} {}
+  KeyIterator(const Snapshot& snapshot) noexcept;
+
+  // Indicates the end of the range of keys.
+  class End {};
 
   KeyIterator& operator++() noexcept {
     Advance();
@@ -37,49 +35,50 @@ class KeyIterator : public std::iterator<std::forward_iterator_tag, KeyView> {
 
   bool operator==(const KeyIterator& other) const noexcept {
     // Should only be called for iterators related to the same version.
-    assert(current_key_view_.observed_version_ ==
-           other.current_key_view_.observed_version_);
-    return current_key_view_.key_state_block_ ==
-           other.current_key_view_.key_state_block_;
+    assert(version_offset_ == other.version_offset_);
+    return current_key_view_.key_handle_wrapper_ ==
+           other.current_key_view_.key_handle_wrapper_;
   }
 
-  constexpr bool operator==(KeyIteratorEnd) const noexcept {
-    return current_key_view_.key_state_block_ == nullptr;
+  constexpr bool operator==(End) const noexcept {
+    return current_key_view_.key_handle_wrapper_ == nullptr;
   }
 
   bool operator!=(const KeyIterator& other) const noexcept {
     // Should only be called for iterators related to the same version.
-    assert(current_key_view_.observed_version_ ==
-           other.current_key_view_.observed_version_);
-    return current_key_view_.key_state_block_ !=
-           other.current_key_view_.key_state_block_;
+    assert(version_offset_ == other.version_offset_);
+    return current_key_view_.key_handle_wrapper_ !=
+           other.current_key_view_.key_handle_wrapper_;
   }
 
-  constexpr bool operator!=(KeyIteratorEnd) const noexcept {
-    return current_key_view_.key_state_block_ != nullptr;
+  constexpr bool operator!=(End) const noexcept {
+    return current_key_view_.key_handle_wrapper_ != nullptr;
   }
 
   KeyView operator*() const noexcept {
-    assert(current_key_view_.key_state_block_ != nullptr);
+    assert(current_key_view_.key_handle_wrapper_ != nullptr);
     // We have to return a copy instead of a reference because advancing the
     // iterator will update the state of current_key_view_.
     return current_key_view_;
   }
 
   const KeyView* operator->() const noexcept {
-    assert(current_key_view_.key_state_block_ != nullptr);
+    assert(current_key_view_.key_handle_wrapper_ != nullptr);
     return &current_key_view_;
   }
 
   constexpr bool is_end() const noexcept {
-    return current_key_view_.key_state_block_ == nullptr;
+    return current_key_view_.key_handle_wrapper_ == nullptr;
   }
 
  private:
-  void Advance() noexcept { current_key_view_.Advance(version_offset_); }
+  void Advance() noexcept;
+  void AdvanceUntilSubkeysFound(Detail::IndexSlotLocation location) noexcept;
 
   KeyView current_key_view_;
   Detail::VersionOffset version_offset_{0};
+  Detail::IndexBlock* index_begin_{nullptr};
+  std::byte* data_begin_{nullptr};
 };
 
 }  // namespace Microsoft::MixedReality::Sharing::VersionedStorage

@@ -81,6 +81,9 @@
     <ClInclude Include="src\BlockIterator.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\VersionedPayloadHandle.h">
+      <Filter>include/Microsoft/MixedReality/Sharing/VersionedStorage</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\pch.cpp">
@@ -113,7 +116,7 @@
     <ClCompile Include="src\SubkeyIterator.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\KeyView.cpp">
+    <ClCompile Include="src\KeyIterator.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

@@ -17,12 +17,12 @@ namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail {
 // Base class of the state of either a key or a subkey belonging to a key.
 // Each block is participating in a hash collection, a linked list and a tree.
 // See KeyStateBlock and SubkeyStateBlock below for detailed explanations.
-class StateBlockBase {
+class StateBlockBase : public KeyHandleWrapper {
  public:
   StateBlockBase(KeyHandle key,
                  uint64_t subscription_handle,
                  uint32_t inplace_versions_count_or_version_offset) noexcept
-      : key_{key},
+      : KeyHandleWrapper{key},
         subscription_and_tree_height_{subscription_handle},
         left_tree_child_{DataBlockLocation::kInvalid},
         right_tree_child_{DataBlockLocation::kInvalid},
@@ -59,8 +59,6 @@ class StateBlockBase {
     assert(is_scratch_buffer_mode());
     return writer_thread_scratch_buffer_;
   }
-
-  const KeyHandle key_;
 
   uint64_t subscription_and_tree_height_;
   union {

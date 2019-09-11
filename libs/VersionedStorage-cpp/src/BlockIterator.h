@@ -18,8 +18,8 @@ struct IndexBlockSlot;
 class IndexBlock;
 
 template <IndexLevel kLevel>
-class BlockIterator
-    : public std::iterator<std::forward_iterator_tag, StateView<kLevel>> {
+class BlockIterator : public std::iterator<std::forward_iterator_tag,
+                                           StateAndIndexView<kLevel>> {
  public:
   class End {};
 
@@ -57,12 +57,12 @@ class BlockIterator
 
   constexpr bool operator!=(End) const noexcept { return !!state_view_; }
 
-  StateView<kLevel> operator*() const noexcept {
+  StateAndIndexView<kLevel> operator*() const noexcept {
     assert(state_view_);
     return state_view_;
   }
 
-  StateView<kLevel>* operator->() noexcept {
+  StateAndIndexView<kLevel>* operator->() noexcept {
     assert(state_view_);
     return &state_view_;
   }
@@ -101,7 +101,7 @@ class BlockIterator
     }
   }
 
-  StateView<kLevel> state_view_;
+  StateAndIndexView<kLevel> state_view_;
   IndexBlock* index_begin_{nullptr};
   std::byte* data_begin_{nullptr};
 };

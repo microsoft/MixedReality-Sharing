@@ -25,7 +25,7 @@ static constexpr bool operator<(uint64_t search_token,
 
 VersionedPayloadHandle SubkeyVersionBlock::GetVersionedPayload(
     uint64_t version) const noexcept {
-  assert(version < kSmallestInvalidVersion);
+  assert(version < kInvalidVersion);
 
   // We want to find the first payload with marked version that is less or equal
   // to the one we construct here. The search token has the last bit set,
@@ -117,7 +117,7 @@ SubkeyVersionBlock::latest_versioned_payload_thread_unsafe() const noexcept {
 bool SubkeyVersionBlock::CanPushFromWriterThread(uint64_t version,
                                                  bool has_payload) const
     noexcept {
-  assert(version < kSmallestInvalidVersion);
+  assert(version < kInvalidVersion);
   assert(capacity_ >= 4);
   // memory_order_relaxed since this can only be called by the writer thread.
   uint32_t size = size_.load(std::memory_order_relaxed);
@@ -212,7 +212,7 @@ SubkeyVersionBlock::Builder::Builder(
 bool SubkeyVersionBlock::Builder::Push(
     uint64_t version,
     VersionedPayloadHandle observed_payload_for_version) noexcept {
-  assert(version < kSmallestInvalidVersion);
+  assert(version < kInvalidVersion);
   assert(capacity_ >= 4);
   if (latest_payload_ == observed_payload_for_version)
     return true;  // No change required
