@@ -236,8 +236,7 @@ namespace Matchmaking.Local.Test
     {
         static private IMatchmakingService MakeMatchmakingService(int userIndex)
         {
-            var net = new UdpPeerNetwork(new IPAddress(0xffffff7f), new IPAddress(0x0000007f + (userIndex << 24)),
-                45277, UdpPeerNetwork.Options.BindToLocalAddress);
+            var net = new UdpPeerNetwork(new IPAddress(0xffffff7f), 45277, new IPAddress(0x0000007f + (userIndex << 24)));
             return new PeerMatchmakingService(net);
         }
 
@@ -248,8 +247,7 @@ namespace Matchmaking.Local.Test
     {
         static private IMatchmakingService MakeMatchmakingService(int userIndex)
         {
-            var net = new UdpPeerNetwork(new IPAddress(0x000000e0), new IPAddress(0x0000007f + (userIndex << 24)),
-                45278, UdpPeerNetwork.Options.JoinMulticastGroup | UdpPeerNetwork.Options.BindToLocalAddress);
+            var net = new UdpPeerNetwork(new IPAddress(0x000000e0), 45278, new IPAddress(0x0000007f + (userIndex << 24)));
             return new PeerMatchmakingService(net);
         }
 

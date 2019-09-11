@@ -29,41 +29,23 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         private Socket socket_;
         private readonly IPEndPoint broadcastEndpoint_;
         private readonly IPAddress localAddress_;
-        private readonly Options options_;
         private readonly EndPoint anywhere_ = new IPEndPoint(IPAddress.Any, 0);
         private readonly byte[] readBuffer_ = new byte[1024];
         private readonly ArraySegment<byte> readSegment_;
 
         public event Action<IPeerNetwork, IPeerNetworkMessage> Message;
 
-        [Flags]
-        public enum Options
-        {
-            None = 0x0,
-
-            /// <summary>
-            /// If set, the broadcast address is treated as a multicast group and joined.
-            /// </summary>
-            JoinMulticastGroup = 0x1,
-
-            /// <summary>
-            /// If set, the used socket will bind to the passed local address (otherwise to INADDR_ANY).
-            /// </summary>
-            BindToLocalAddress = 0x2
-        }
-
         /// <summary>
         /// Create a new network.
         /// </summary>
         /// <param name="broadcast">Broadcast or multicast address used to send packets to other hosts.</param>
-        /// <param name="local">Local address. Ignored if <paramref name="options"/> is <see cref="Options.None"/>.</param>
+        /// <param name="local">Local address. TODO.</param>
         /// <param name="port">Port used to send and receive broadcast packets.</param>
-        /// <param name="options">See <see cref="Options"/>.</param>
-        public UdpPeerNetwork(IPAddress broadcast, IPAddress local, ushort port, Options options = Options.None)
+        public UdpPeerNetwork(IPAddress broadcast, ushort port, IPAddress local = null)
         {
             broadcastEndpoint_ = new IPEndPoint(broadcast, port);
-            localAddress_ = local;
-            options_ = options;
+            localAddress_ = local ?? (broadcast.AddressFamily == AddressFamily.InterNetwork ?
+                IPAddress.Any : IPAddress.IPv6Any);
             readSegment_ = new ArraySegment<byte>(readBuffer_);
         }
 
@@ -96,21 +78,15 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             socket_ = new Socket(broadcastEndpoint_.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
 
             // Bind to the broadcast port.
-            IPAddress bindAddress = socket_.AddressFamily == AddressFamily.InterNetwork ?
-                IPAddress.Any : IPAddress.IPv6Any;
-            if (options_.HasFlag(Options.BindToLocalAddress))
-            {
-                bindAddress = localAddress_;
-            }
-            socket_.Bind(new IPEndPoint(bindAddress, broadcastEndpoint_.Port));
+            socket_.Bind(new IPEndPoint(localAddress_, broadcastEndpoint_.Port));
 
             // Optionally join a multicast group
-            if (options_.HasFlag(Options.JoinMulticastGroup))
+            if (IsMulticast(broadcastEndpoint_.Address))
             {
                 if (broadcastEndpoint_.AddressFamily == AddressFamily.InterNetwork)
                 {
                     MulticastOption mcastOption;
-                    mcastOption = new MulticastOption(broadcastEndpoint_.Address, localAddress_);
+                    mcastOption = new MulticastOption(broadcastEndpoint_.Address);
 
                     socket_.SetSocketOption(SocketOptionLevel.IP,
                                                 SocketOptionName.AddMembership,
@@ -119,8 +95,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 else if (broadcastEndpoint_.AddressFamily == AddressFamily.InterNetworkV6)
                 {
                     IPv6MulticastOption mcastOption;
-                    var ifaceIdx = GetIfaceIdxFromAddress(localAddress_);
-                    mcastOption = new IPv6MulticastOption(broadcastEndpoint_.Address, ifaceIdx);
+                    mcastOption = new IPv6MulticastOption(broadcastEndpoint_.Address);
 
                     socket_.SetSocketOption(SocketOptionLevel.IP,
                                                 SocketOptionName.AddMembership,
@@ -142,13 +117,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 .ContinueWith(HandleAsyncRead);
         }
 
-        private static long GetIfaceIdxFromAddress(IPAddress localAddress)
+        private static bool IsMulticast(IPAddress address)
         {
-            var ifaces = NetworkInterface.GetAllNetworkInterfaces();
-            var found = ifaces.First(iface =>
-                        iface.GetIPProperties().UnicastAddresses.Any(
-                            addressInfo => addressInfo.Address.Equals(localAddress)));
-            return found.GetIPProperties().GetIPv6Properties().Index;
+            return address.IsIPv6Multicast ||
+                (address.AddressFamily == AddressFamily.InterNetwork &&
+                (address.GetAddressBytes()[0] >> 4 == 14));
         }
 
         public void Stop()
