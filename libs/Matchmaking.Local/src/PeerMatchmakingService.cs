@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -12,6 +13,15 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
     internal static class Extensions
     {
+        internal static long PosixFromFileTime(long fileTime)
+        {
+            return (fileTime - 11644473600L) / 10000000; //11644473600L = DateTime.UnixEpoch
+        }
+        internal static long PosixTimeNow()
+        {
+            return PosixFromFileTime(DateTime.UtcNow.ToFileTime());
+        }
+
         // Return true if (Count(a)<= 1) or (isOk( a[n], a[n+1] ) is true for all n).
         internal static bool CheckAdjacenctElements<T>(IEnumerable<T> a, Func<T, T, bool> isOk)
         {
@@ -190,10 +200,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         internal Task<IRoom> CreateRoomAsync(
             string category,
             string connection,
+            int expirySeconds,
             IReadOnlyDictionary<string, string> attributes = null,
             CancellationToken token = default)
         {
-            var room = new LocalRoom(category, connection,
+            var room = new LocalRoom(category, connection, expirySeconds,
                 attributes != null ? attributes : new Dictionary<string, string>());
             lock (this)
             {
@@ -211,27 +222,30 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         // Room which has been created locally. And is owned locally.
         class LocalRoom : IRoom
         {
-            public LocalRoom(string category, string connection, IReadOnlyDictionary<string, string> attrs)
+            public LocalRoom(string category, string connection, int expirySeconds, IReadOnlyDictionary<string, string> attrs)
             {
                 Category = category;
                 UniqueId = Guid.NewGuid();
                 Connection = connection;
+                ExpirySeconds = expirySeconds;
                 Attributes = attrs;
             }
 
             public string Category { get; }
             public Guid UniqueId { get; }
+            public int ExpirySeconds { get; } // Relative time. Interval from announce to expiration.
             public string Connection { get; }
             public IReadOnlyDictionary<string, string> Attributes { get; }
         }
 
         // Network helpers
 
-        void SendAnnounceBody(BinaryWriter w, IRoom room)
+        void SendAnnounceBody(BinaryWriter w, LocalRoom room)
         {
             w.Write(room.Category);
             w.Write(room.UniqueId.ToByteArray());
             w.Write(room.Connection);
+            w.Write(Extensions.PosixTimeNow() + room.ExpirySeconds);
             w.Write(room.Attributes.Count);
             foreach (var kvp in room.Attributes)
             {
@@ -293,11 +307,17 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// The network
         IPeerNetwork net_;
 
+        /// Timer for expiring rooms.
+        Timer timer_;
+        /// Time when the timer will fire or -1 if the timer is unset.
+        long timerExpiryPosixTime = -1;
+
         /// The list of all local rooms of all categories
         IDictionary<string, CategoryInfo> infoFromCategory_ = new Dictionary<string, CategoryInfo>();
 
         internal Client(IPeerNetwork net)
         {
+            timer_ = new Timer(OnTimerExpired, null, Timeout.Infinite, Timeout.Infinite); // initially disabled
             net_ = net;
             net_.Message += ClientOnMessage;
         }
@@ -334,14 +354,16 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         // Room which we've heard about from a remote
         private class RemoteRoom : IRoom
         {
-            public RemoteRoom(string category, Guid uniqueId, string connection, IReadOnlyDictionary<string, string> attrs)
+            public RemoteRoom(string category, Guid uniqueId, string connection, IReadOnlyDictionary<string, string> attrs, long expirationPosixTime)
             {
                 Category = category;
                 UniqueId = uniqueId;
                 Connection = connection;
                 Attributes = attrs;
+                ExpirationPosixTime = expirationPosixTime;
             }
 
+            public long ExpirationPosixTime; // Absolute time
             public string Category { get; set; }
             public Guid UniqueId { get; }
             public string Connection { get; set; }
@@ -434,6 +456,65 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
         }
 
+        private void SetTimerPosix(long posixTime)
+        {
+            lock (this)
+            {
+                var expiryDate = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(posixTime);
+                timerExpiryPosixTime = Extensions.PosixFromFileTime(expiryDate.ToFileTime());
+                var deltaMs = (long)DateTime.UtcNow.Subtract(expiryDate).TotalMilliseconds;
+                deltaMs = Math.Max(deltaMs + 1, 0); // round up to the next ms
+                timer_.Change(deltaMs, Timeout.Infinite);
+            }
+        }
+
+        private void OnTimerExpired(object state)
+        {
+            var updatedTasks = new List<DiscoveryTask>();
+            long nextExpiryPosix = -1;
+            lock (this)
+            {
+                // Search and delete any expired rooms.
+                // Also check the next expiry so we can reset the timer.
+                DateTime nowDate = DateTime.UtcNow;
+                long nowPosix = Extensions.PosixFromFileTime(nowDate.ToFileTime());
+                foreach (var info in infoFromCategory_.Values)
+                {
+                    var expired = new List<Guid>();
+                    foreach (var kvp in info.roomsRemote_)
+                    {
+                        if (kvp.Value.ExpirationPosixTime <= nowPosix) //room expired?
+                        {
+                            expired.Add(kvp.Key);
+                        }
+                        else if (kvp.Value.ExpirationPosixTime < nextExpiryPosix) // room next to expire?
+                        {
+                            nextExpiryPosix = kvp.Value.ExpirationPosixTime;
+                        }
+                    }
+                    if (expired.Any())
+                    {
+                        info.roomSerial_ += 1;
+                        foreach (var exp in expired)
+                        {
+                            info.roomsRemote_.Remove(exp);
+                        }
+                        updatedTasks.AddRange(info.tasks_);
+                    }
+                }
+            }
+            // Notify any tasks if we've removed rooms
+            foreach (var up in updatedTasks)
+            {
+                up.FireUpdated();
+            }
+
+            if (nextExpiryPosix >= 0)
+            {
+                SetTimerPosix(nextExpiryPosix);
+            }
+        }
+
         // The body of ServerHello and ServerReply is identical so we reuse the code.
         private void HandleAnnounce(byte[] packet)
         {
@@ -445,6 +526,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 var cat = br.ReadString();
                 var uid = new Guid(br.ReadBytes(16));
                 var con = br.ReadString();
+                var expires = br.ReadInt32();
+                if (expires < Extensions.PosixTimeNow())
+                {
+                    return;
+                }
                 var cnt = br.ReadInt32();
                 var attrs = cnt != 0 ? new Dictionary<string, string>() : null;
                 for (int i = 0; i < cnt; ++i)
@@ -467,9 +553,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     bool updated = false;
                     if (!info.roomsRemote_.TryGetValue(uid, out room)) // new room
                     {
-                        room = new RemoteRoom(cat, uid, con, attrs);
+                        room = new RemoteRoom(cat, uid, con, attrs, expires);
                         info.roomsRemote_[uid] = room;
-                        info.roomSerial_ += 1;
                         updated = true;
                     }
                     else // existing room, has it changed?
@@ -489,9 +574,19 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                             room.Attributes = attrs;
                             updated = true;
                         }
+                        if (room.ExpirationPosixTime != expires)
+                        {
+                            room.ExpirationPosixTime = expires;
+                        }
+                    }
+                    // If this expiry is sooner than the current timer, we need to reset the timer.
+                    if (expires < timerExpiryPosixTime)
+                    {
+                        SetTimerPosix(expires);
                     }
                     if (updated)
                     {
+                        info.roomSerial_ += 1;
                         tasksUpdated = info.tasks_.ToArray();
                     }
                 }
@@ -598,6 +693,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         public Task<IRoom> CreateRoomAsync(
             string category,
             string connection,
+            int expirySeconds,
             IReadOnlyDictionary<string, string> attributes = null,
             CancellationToken token = default)
         {
@@ -608,7 +704,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     server_ = new Server(network_);
                 }
             }
-            return server_.CreateRoomAsync(category, connection, attributes, token);
+            return server_.CreateRoomAsync(category, connection, expirySeconds, attributes, token);
         }
 
         public void Dispose()
