@@ -331,3 +331,6 @@ ASALocalRun/
 
 # MFractors (Xamarin productivity tool) working folder 
 .mfractor/
+
+# VTune Amplifier Results
+**/VTune Amplifier Results
