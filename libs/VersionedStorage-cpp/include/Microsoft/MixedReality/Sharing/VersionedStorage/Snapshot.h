@@ -22,9 +22,9 @@ class Behavior;
 // too many may result in the storage running out of memory.
 //
 // In addition to getters, any snapshot can be iterated over, as if it was a
-// range o KeyView objects (see begin() and end() below), in which case the
+// range of KeyView objects (see begin() and end() below), in which case the
 // iteration will traverse over all keys that have at least one subkey in this
-// version. Then GetSubkeysCount() can be used to iterate over subkeys of each
+// version. Then GetSubkeys() can be used to iterate over subkeys of each
 // found key.
 class Snapshot {
  public:
