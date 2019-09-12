@@ -3,7 +3,6 @@
 // information.
 
 #pragma once
-
 #include <Microsoft/MixedReality/Sharing/VersionedStorage/Detail/Layout.h>
 #include <Microsoft/MixedReality/Sharing/VersionedStorage/VersionedPayloadHandle.h>
 
@@ -19,7 +18,7 @@ namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail {
 // The layout of the blob is:
 // * Header block [1 block]
 // * Index blocks [2^k blocks]
-// * Data blocks
+// * Data blocks:
 //   - State blocks and version blocks (allocated from the beginning of the data
 //     blocks area). They are referenced by index blocks and each other.
 //   - Blocks with reference counts for versions stored in the blob  (allocated

@@ -3,7 +3,6 @@
 // information.
 
 #pragma once
-
 #include <Microsoft/MixedReality/Sharing/VersionedStorage/KeyView.h>
 
 #include <cassert>
@@ -33,29 +32,29 @@ class KeyIterator : public std::iterator<std::forward_iterator_tag, KeyView> {
     return result;
   }
 
-  bool operator==(const KeyIterator& other) const noexcept {
+  [[nodiscard]] bool operator==(const KeyIterator& other) const noexcept {
     // Should only be called for iterators related to the same version.
     assert(version_offset_ == other.version_offset_);
     return current_key_view_.key_handle_wrapper_ ==
            other.current_key_view_.key_handle_wrapper_;
   }
 
-  constexpr bool operator==(End) const noexcept {
+  [[nodiscard]] constexpr bool operator==(End) const noexcept {
     return current_key_view_.key_handle_wrapper_ == nullptr;
   }
 
-  bool operator!=(const KeyIterator& other) const noexcept {
+  [[nodiscard]] bool operator!=(const KeyIterator& other) const noexcept {
     // Should only be called for iterators related to the same version.
     assert(version_offset_ == other.version_offset_);
     return current_key_view_.key_handle_wrapper_ !=
            other.current_key_view_.key_handle_wrapper_;
   }
 
-  constexpr bool operator!=(End) const noexcept {
+  [[nodiscard]] constexpr bool operator!=(End) const noexcept {
     return current_key_view_.key_handle_wrapper_ != nullptr;
   }
 
-  KeyView operator*() const noexcept {
+  [[nodiscard]] KeyView operator*() const noexcept {
     assert(current_key_view_.key_handle_wrapper_ != nullptr);
     // We have to return a copy instead of a reference because advancing the
     // iterator will update the state of current_key_view_.
@@ -67,7 +66,7 @@ class KeyIterator : public std::iterator<std::forward_iterator_tag, KeyView> {
     return &current_key_view_;
   }
 
-  constexpr bool is_end() const noexcept {
+  [[nodiscard]] constexpr bool is_end() const noexcept {
     return current_key_view_.key_handle_wrapper_ == nullptr;
   }
 

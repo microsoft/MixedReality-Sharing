@@ -3,7 +3,6 @@
 // information.
 
 #pragma once
-
 #include <Microsoft/MixedReality/Sharing/VersionedStorage/Behavior.h>
 #include <Microsoft/MixedReality/Sharing/VersionedStorage/KeyDescriptor.h>
 

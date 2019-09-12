@@ -63,7 +63,7 @@ class Storage {
   // outcomes above).
   // The operation may call LockWriterMutex()/UnlockWriterMutex() on the
   // Behavior object, but the callers should not rely on this.
-  TransactionResult ApplyTransaction(
+  [[nodiscard]] TransactionResult ApplyTransaction(
       std::unique_ptr<Transaction> transaction) noexcept;
 
  private:

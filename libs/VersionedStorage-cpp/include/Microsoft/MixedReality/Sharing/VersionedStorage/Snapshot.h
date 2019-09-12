@@ -3,7 +3,6 @@
 // information.
 
 #pragma once
-
 #include <Microsoft/MixedReality/Sharing/VersionedStorage/KeyIterator.h>
 #include <Microsoft/MixedReality/Sharing/VersionedStorage/SubkeyIterator.h>
 #include <Microsoft/MixedReality/Sharing/VersionedStorage/VersionedPayloadHandle.h>

@@ -3,7 +3,6 @@
 // information.
 
 #pragma once
-
 #include "src/IndexBlock.h"
 #include "src/SubkeyStateView.h"
 
@@ -45,17 +44,23 @@ class BlockIterator : public std::iterator<std::forward_iterator_tag,
     return result;
   }
 
-  constexpr bool operator==(const BlockIterator& other) const noexcept {
+  [[nodiscard]] constexpr bool operator==(const BlockIterator& other) const
+      noexcept {
     return state_view_.index_block_slot_ == other.state_view_.index_block_slot_;
   }
 
-  constexpr bool operator==(End) const noexcept { return !state_view_; }
+  [[nodiscard]] constexpr bool operator==(End) const noexcept {
+    return !state_view_;
+  }
 
-  constexpr bool operator!=(const BlockIterator& other) const noexcept {
+  [[nodiscard]] constexpr bool operator!=(const BlockIterator& other) const
+      noexcept {
     return state_view_.index_block_slot_ != other.state_view_.index_block_slot_;
   }
 
-  constexpr bool operator!=(End) const noexcept { return !!state_view_; }
+  [[nodiscard]] constexpr bool operator!=(End) const noexcept {
+    return !!state_view_;
+  }
 
   StateAndIndexView<kLevel> operator*() const noexcept {
     assert(state_view_);
@@ -81,11 +86,10 @@ class BlockIterator : public std::iterator<std::forward_iterator_tag,
           slot.version_block_location_.load(std::memory_order_acquire);
       if (location != DataBlockLocation::kInvalid) {
         // Almost all possible use cases will need to access the version block
-        // soon
-        // after the state block, so it makes sense to start prefetching it here
-        // unconditionally. Normal iterators (over snapshots etc.) will care
-        // about it because they have to check if the key/subkey is even present
-        // in the version. Special internal cases, such as the code that
+        // soon after the state block, so it makes sense to start prefetching it
+        // here unconditionally. Normal iterators (over snapshots etc.) will
+        // care about it because they have to check if the key/subkey is even
+        // present in the version. Special internal cases, such as the code that
         // reallocates the blob, will almost always want to know the most recent
         // version (and for that they will have to read the version block).
         state_view_.version_block_ =

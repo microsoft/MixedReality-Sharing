@@ -92,10 +92,10 @@ class alignas(kBlockSize) IndexBlock {
   // Bits [3..5]: number of subkeys in the block.
   //   Subkeys will be occupying slots in descending order.
   // Bit [6]: indicates that there were slots that didn't fit into this index
-  //        block and were inserted in one of the next blocks.
-  // Bit [7]: indicates that some of the previous blocks was not able to insert
-  //        its elements into itself or this block, so the search should
-  //        continue. Note that it's orthogonal to Bit 6.
+  //          block and were inserted in one of the next blocks.
+  // Bit [7]: indicates that some of the previous blocks were not able to insert
+  //          their elements into itself or this block, so the search should
+  //          continue. Note that this is orthogonal to Bit 6.
   // Bytes [1..7] 8-bit hashes for 7 slots (see below).
   //
   // This doesn't have to be initialized since the pages are initially zeroed.

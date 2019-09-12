@@ -29,12 +29,12 @@ class VersionedPayloadHandle {
     return version_ < kInvalidVersion;
   }
 
-  // Returns kInvalidVersion
+  // Returns kInvalidVersion if the handle doesn't have a payload.
   uint64_t version() const noexcept { return version_; }
 
   // VersionedPayloadHandle objects returned by methods that can fail to find a
-  // payload (such as Snapshot::Get()) must call
-  // has_payload() or operator bool() first to check that the payload exists.
+  // payload (such as Snapshot::Get()) must call has_payload()
+  // or operator bool() first to check that the payload exists.
   PayloadHandle payload() const noexcept {
     assert(has_payload());
     return payload_;
