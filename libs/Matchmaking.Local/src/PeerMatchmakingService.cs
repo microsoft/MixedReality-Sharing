@@ -187,7 +187,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             });
         }
 
-        internal Task<IRoom> CreateRoomAsync(
+        internal Task<ILocalRoom> CreateRoomAsync(
             string category,
             string connection,
             IReadOnlyDictionary<string, string> attributes = null,
@@ -205,11 +205,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 SendAnnounceBody(w, room);
             });
 
-            return Task<IRoom>.FromResult((IRoom)room);
+            return Task<ILocalRoom>.FromResult((ILocalRoom)room);
         }
 
         // Room which has been created locally. And is owned locally.
-        class LocalRoom : IRoom
+        class LocalRoom : ILocalRoom
         {
             public LocalRoom(string category, string connection, IReadOnlyDictionary<string, string> attrs)
             {
@@ -223,6 +223,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             public Guid UniqueId { get; }
             public string Connection { get; }
             public IReadOnlyDictionary<string, string> Attributes { get; }
+
+            public void AddAttribute(string key, string value) { /*TODO*/ }
+            public void AddOrReplaceAttribute(string key, string value) { /*TODO*/ }
+            public bool RemoveAttribute(string key) { /*TODO*/ return true; }
         }
 
         // Network helpers
@@ -595,7 +599,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             return client_.StartDiscovery(category);
         }
 
-        public Task<IRoom> CreateRoomAsync(
+        public Task<ILocalRoom> CreateRoomAsync(
             string category,
             string connection,
             IReadOnlyDictionary<string, string> attributes = null,

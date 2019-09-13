@@ -32,4 +32,26 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// </summary>
         IReadOnlyDictionary<string, string> Attributes { get; }
     }
+
+    /// <summary>
+    /// Information about a locally created matchmaking room.
+    /// </summary>
+    public interface ILocalRoom : IRoom
+    {
+        /// <summary>
+        /// Add a new key value pair to the attributes.
+        /// </summary>
+        /// <exception cref="ArgumentException">An attribute with the same key already exists.</exception>
+        void AddAttribute(string key, string value);
+
+        /// <summary>
+        /// Add or replace a key value pair to the attributes.
+        /// </summary>
+        void AddOrReplaceAttribute(string key, string value);
+
+        /// <summary>
+        /// Return true if the attribute was removed, otherwise false.
+        /// </summary>
+        bool RemoveAttribute(string key);
+    }
 }
