@@ -44,13 +44,13 @@ namespace Matchmaking.Local.Test
             using (var cts = new CancellationTokenSource(TestTimeoutMs))
             using (var svc1 = matchmakingServiceFactory_(1))
             {
-                var room1 = svc1.CreateRoomAsync("CreateRoom", "http://room1", 10, null, cts.Token).Result;
+                var room1 = svc1.CreateRoomAsync("CreateRoom", "http://room1", null, cts.Token).Result;
 
                 Assert.Equal("http://room1", room1.Connection);
                 Assert.Empty(room1.Attributes);
 
                 var attributes = new Dictionary<string, string> { ["prop1"] = "1", ["prop2"] = "2" };
-                var room2 = svc1.CreateRoomAsync("CreateRoom", "foo://room2", 10, attributes, cts.Token).Result;
+                var room2 = svc1.CreateRoomAsync("CreateRoom", "foo://room2", attributes, cts.Token).Result;
 
                 Assert.Equal("foo://room2", room2.Connection);
                 Assert.Equal("1", room2.Attributes["prop1"]);
@@ -142,9 +142,9 @@ namespace Matchmaking.Local.Test
             {
                 // Create some rooms in the first one
                 const string category = "FindRoomsLocalAndRemote";
-                var room1 = svc1.CreateRoomAsync(category, "Conn1", 10, null, cts.Token).Result;
-                var room2 = svc1.CreateRoomAsync(category, "Conn2", 10, null, cts.Token).Result;
-                var room3 = svc1.CreateRoomAsync(category, "Conn3", 10, null, cts.Token).Result;
+                var room1 = svc1.CreateRoomAsync(category, "Conn1", null, cts.Token).Result;
+                var room2 = svc1.CreateRoomAsync(category, "Conn2", null, cts.Token).Result;
+                var room3 = svc1.CreateRoomAsync(category, "Conn3", null, cts.Token).Result;
 
                 // Discover them from the first service
                 {
@@ -183,7 +183,7 @@ namespace Matchmaking.Local.Test
                     Assert.Empty(task1.Rooms);
                     Assert.Empty(task2.Rooms);
 
-                    var room1 = svc1.CreateRoomAsync(category, "foo1", 10, null, cts.Token).Result;
+                    var room1 = svc1.CreateRoomAsync(category, "foo1", null, cts.Token).Result;
 
                     // local
                     var res1 = QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Any(), cts.Token);
@@ -212,7 +212,7 @@ namespace Matchmaking.Local.Test
                 using (var svc2 = matchmakingServiceFactory_(2))
                 {
                     // Create rooms from svc2
-                    var room1 = svc2.CreateRoomAsync(category, "conn1", 10, null, cts.Token).Result;
+                    var room1 = svc2.CreateRoomAsync(category, "conn1", null, cts.Token).Result;
 
                     // It should show up in svc1
                     {
@@ -230,6 +230,7 @@ namespace Matchmaking.Local.Test
             }
         }
 
+#if false
         [Fact]
         public void RoomExpiresOnTime()
         {
@@ -244,7 +245,7 @@ namespace Matchmaking.Local.Test
                 {
                     // Create rooms from svc2
                     // SET TIMEOUT 2s
-                    var room1 = svc2.CreateRoomAsync(category, "conn1", 10, null, cts.Token).Result;
+                    var room1 = svc2.CreateRoomAsync(category, "conn1",  null, cts.Token).Result;
 
                     // It should show up in svc1
                     {
@@ -264,6 +265,7 @@ namespace Matchmaking.Local.Test
                 }
             }
         }
+#endif
     }
 
     public class LocalMatchmakingTestUdp : LocalMatchmakingTest

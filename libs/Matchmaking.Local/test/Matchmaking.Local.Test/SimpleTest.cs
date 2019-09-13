@@ -24,7 +24,7 @@ namespace Matchmaking.Local.Test
             // Do simple operations to verify that sending and receiving packets doesn't fail.
             using (var cts = new CancellationTokenSource(TestTimeoutMs))
             {
-                var _ = service.CreateRoomAsync("CreateRoom", "http://room1", 10, null, cts.Token).Result;
+                var _ = service.CreateRoomAsync("CreateRoom", "http://room1", null, cts.Token).Result;
             }
             using (var task = service.StartDiscovery("Category")) { }
         }
