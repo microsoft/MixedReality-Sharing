@@ -167,11 +167,44 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// The list of all local rooms of all categories
         SortedSet<LocalRoom> localRooms_ = new SortedSet<LocalRoom>(new Extensions.RoomComparer());
 
+        /// Timer for re-announcing rooms.
+        Timer timer_;
+        /// Time when the timer will fire or MaxValue if the timer is unset.
+        DateTime timerExpiryTime = DateTime.MaxValue;
+
         internal Server(IPeerNetwork net)
         {
             net_ = net;
             net_.Message += ServerOnMessage;
+            timer_ = new Timer(OnServerTimerExpired);
         }
+
+        internal void OnServerTimerExpired(object state)
+        {
+            var now = DateTime.UtcNow;
+            var updated = new List<LocalRoom>();
+            lock(this)
+            {
+                foreach(var r in localRooms_)
+                {
+                    if( r.NextAnnounceTime < now )
+                    {
+                        r.LastAnnouncedTime = now;
+                        updated.Add(r);
+                    }
+                }
+				UpdateAnnounceTimer();
+            }
+            foreach (var room in updated)
+            {
+                Extensions.Broadcast(net_, (BinaryWriter w) =>
+                {
+                    w.Write(Proto.ServerHello);
+                    SendAnnounceBody(w, room);
+                });
+            }
+        }
+
 
         internal void Stop()
         {
@@ -188,6 +221,24 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             });
         }
 
+        internal void UpdateAnnounceTimer()
+        {
+            Debug.Assert(Monitor.IsEntered(this)); // Caller should have lock(this)
+            var next = localRooms_.Min(r => r.NextAnnounceTime);
+            if (next != null)
+            {
+                var now = DateTime.UtcNow;
+                var delta = next.Subtract(now);
+                timerExpiryTime = next;
+                timer_.Change((int)Math.Max(delta.TotalMilliseconds+1, 0), -1);
+            }
+			else // no more rooms
+            {
+                timer_.Change(-1, -1);
+                timerExpiryTime = DateTime.MaxValue;
+            }
+        }
+
         internal Task<IRoom> CreateRoomAsync(
             string category,
             string connection,
@@ -200,12 +251,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             lock (this)
             {
                 localRooms_.Add(room); // new local rooms get a new guid, always unique
+                UpdateAnnounceTimer();
             }
-            Extensions.Broadcast(net_, (BinaryWriter w) =>
-            {
-                w.Write(Proto.ServerHello);
-                SendAnnounceBody(w, room);
-            });
 
             return Task<IRoom>.FromResult((IRoom)room);
         }
@@ -225,8 +272,15 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             public string Category { get; }
             public Guid UniqueId { get; }
             public int ExpirySeconds { get; } // Relative time. Interval from announce to expiration.
+            public DateTime LastAnnouncedTime = DateTime.MinValue; // Absolute FileTime.
             public string Connection { get; }
             public IReadOnlyDictionary<string, string> Attributes { get; }
+            public DateTime NextAnnounceTime
+            {
+                // Reannounce at 45% of expiry time. On an unreliable network, that gives 2 chances
+                // for clients to refresh before expiring.
+                get => LastAnnouncedTime.AddSeconds(0.45 * ExpirySeconds);
+            }
         }
 
         // Network helpers
@@ -308,7 +362,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         internal Client(IPeerNetwork net)
         {
-            timer_ = new Timer(OnTimerExpired, null, Timeout.Infinite, Timeout.Infinite); // initially disabled
+            timer_ = new Timer(OnClientTimerExpired);
             net_ = net;
             net_.Message += ClientOnMessage;
         }
@@ -461,10 +515,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
         }
 
-        private void OnTimerExpired(object state)
+        private void OnClientTimerExpired(object state)
         {
             var updatedTasks = new List<DiscoveryTask>();
-            long nextExpiryFileTime = -1;
+            long nextExpiryFileTime = long.MaxValue;
             lock (this)
             {
                 // Search and delete any expired rooms.
@@ -502,7 +556,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 up.FireUpdated();
             }
 
-            if (nextExpiryFileTime >= 0)
+            if (nextExpiryFileTime != long.MaxValue)
             {
                 SetExpirationTimer(nextExpiryFileTime);
             }
