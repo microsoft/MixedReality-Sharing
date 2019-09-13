@@ -183,17 +183,17 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         {
             var now = DateTime.UtcNow;
             var updated = new List<LocalRoom>();
-            lock(this)
+            lock (this)
             {
-                foreach(var r in localRooms_)
+                foreach (var r in localRooms_)
                 {
-                    if( r.NextAnnounceTime < now )
+                    if (r.NextAnnounceTime < now)
                     {
                         r.LastAnnouncedTime = now;
                         updated.Add(r);
                     }
                 }
-				UpdateAnnounceTimer();
+                UpdateAnnounceTimer();
             }
             foreach (var room in updated)
             {
@@ -230,9 +230,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 var now = DateTime.UtcNow;
                 var delta = next.Subtract(now);
                 timerExpiryTime = next;
-                timer_.Change((int)Math.Max(delta.TotalMilliseconds+1, 0), -1);
+                timer_.Change((int)Math.Max(delta.TotalMilliseconds + 1, 0), -1);
             }
-			else // no more rooms
+            else // no more rooms
             {
                 timer_.Change(-1, -1);
                 timerExpiryTime = DateTime.MaxValue;
