@@ -318,10 +318,12 @@ class HeaderBlock::BlockInserter {
 class HeaderBlock::KeyBlockInserter : public HeaderBlock::BlockInserter {
  public:
   KeyBlockInserter(MutatingBlobAccessor& accessor,
-                   KeyDescriptor& key_descriptor,
+                   KeyHandle key_handle,
+                   const Behavior& behavior,
                    const BlobAccessor::IndexOffsetAndSlotHashes& hashes)
       : HeaderBlock::BlockInserter{accessor, hashes.index_offset_hash},
-        key_descriptor_{key_descriptor} {
+        key_handle_{key_handle},
+        behavior_{behavior} {
     const auto keys_count_in_slot =
         IndexBlock::GetKeysCount(counts_and_hashes_);
     index_slot_location_ = IndexBlock::MakeIndexSlotLocation(
@@ -329,8 +331,8 @@ class HeaderBlock::KeyBlockInserter : public HeaderBlock::BlockInserter {
     IndexBlock& index = accessor_.GetIndexBlock(index_block_id_);
     index.InitSlot(keys_count_in_slot, new_block_data_location_);
 
-    new (&new_block_) KeyStateBlock{key_descriptor.MakeHandle(),
-                                    KeySubscriptionHandle::kInvalid};
+    new (&new_block_)
+        KeyStateBlock{key_handle, KeySubscriptionHandle::kInvalid};
     PublishToSortedList(accessor.header_block().keys_tree_root_,
                         accessor.header_block().keys_list_head_);
     // Incrementing the keys count and writing the hash byte
@@ -349,11 +351,12 @@ class HeaderBlock::KeyBlockInserter : public HeaderBlock::BlockInserter {
 
  protected:
   bool IsNewBlockLessThan(const StateBlockBase& other) const noexcept override {
-    return key_descriptor_.IsLessThan(other.key_);
+    return behavior_.Less(key_handle_, other.key_);
   }
 
  private:
-  const KeyDescriptor& key_descriptor_;
+  KeyHandle key_handle_;
+  const Behavior& behavior_;
 };
 
 class HeaderBlock::SubkeyBlockInserter : public HeaderBlock::BlockInserter {
@@ -841,10 +844,12 @@ bool MutatingBlobAccessor::CanInsertStateBlocks(
 }
 
 KeyStateAndIndexView MutatingBlobAccessor::InsertKeyBlock(
-    KeyDescriptor& key) noexcept {
+    Behavior& behavior,
+    KeyHandle key_handle) noexcept {
   assert(CanInsertStateBlocks(1));
-  assert(!FindKeyState(key));
-  HeaderBlock::KeyBlockInserter inserter{*this, key, {key.hash()}};
+  assert(!FindKeyState(KeyDescriptorWithHandle{behavior, key_handle, false}));
+  HeaderBlock::KeyBlockInserter inserter{
+      *this, key_handle, behavior, {behavior.GetHash(key_handle)}};
   return {&inserter.new_block(), nullptr, &inserter.index_block_slot()};
 }
 

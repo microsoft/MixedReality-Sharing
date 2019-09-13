@@ -201,7 +201,7 @@ TEST_F(HeaderBlock_Test, populate_block_index_with_keys) {
   // Inserting key 20. This is the simplest case, since there is no other keys,
   // and thus the key will be inserted as a head of the list and the root of the
   // tree (of keys).
-  accessor.InsertKeyBlock(MakeKeyDescriptor(20));
+  accessor.InsertKeyBlock(*behavior_, behavior_->MakeKey(20));
   EXPECT_EQ(behavior_->GetKeyReferenceCount(KeyHandle{20}), 1);
   KeyStateAndIndexView view_20 =
       accessor.FindKeyStateAndIndex(MakeKeyDescriptor(20));
@@ -222,7 +222,7 @@ TEST_F(HeaderBlock_Test, populate_block_index_with_keys) {
   // as a left child of the key 20. Then the AA-tree invariant should become
   // broken, and the skew operation will be performed, repairing the tree.
   // The new node (10) will become the new root.
-  accessor.InsertKeyBlock(MakeKeyDescriptor(10));
+  accessor.InsertKeyBlock(*behavior_, behavior_->MakeKey(10));
   EXPECT_EQ(behavior_->GetKeyReferenceCount(KeyHandle{10}), 1);
   KeyStateAndIndexView view_10 =
       accessor.FindKeyStateAndIndex(MakeKeyDescriptor(10));
@@ -258,7 +258,7 @@ TEST_F(HeaderBlock_Test, populate_block_index_with_keys) {
   // the root has the right child, the invariant can't be repaired by
   // skewing the tree. Instead, the level of the root will be
   // incremented.
-  accessor.InsertKeyBlock(MakeKeyDescriptor(5));
+  accessor.InsertKeyBlock(*behavior_, behavior_->MakeKey(5));
   EXPECT_EQ(behavior_->GetKeyReferenceCount(KeyHandle{5}), 1);
   KeyStateAndIndexView view_5 =
       accessor.FindKeyStateAndIndex(MakeKeyDescriptor(5));
@@ -298,7 +298,7 @@ TEST_F(HeaderBlock_Test, populate_block_index_with_keys) {
   // already present. Therefore the insertion should recurse into adding
   // it as a child to 5. But then the invariant will become broken, and
   // the subtree will become skewed.
-  accessor.InsertKeyBlock(MakeKeyDescriptor(4));
+  accessor.InsertKeyBlock(*behavior_, behavior_->MakeKey(4));
   EXPECT_EQ(behavior_->GetKeyReferenceCount(KeyHandle{4}), 1);
   KeyStateAndIndexView view_4 =
       accessor.FindKeyStateAndIndex(MakeKeyDescriptor(4));
@@ -346,7 +346,7 @@ TEST_F(HeaderBlock_Test, populate_block_index_with_keys) {
   // time it will be repaired by incrementing the level, the second time
   // the skew operation will be performed. This test should validate
   // that children are properly preserved during the skew operation.
-  accessor.InsertKeyBlock(MakeKeyDescriptor(3));
+  accessor.InsertKeyBlock(*behavior_, behavior_->MakeKey(3));
   EXPECT_EQ(behavior_->GetKeyReferenceCount(KeyHandle{3}), 1);
   KeyStateAndIndexView view_3 =
       accessor.FindKeyStateAndIndex(MakeKeyDescriptor(3));
@@ -402,7 +402,7 @@ TEST_F(HeaderBlock_Test, populate_block_index_with_keys) {
 
   // Inserting key 15. It should recurse into the right subtree and be inserted
   // with one skew.
-  accessor.InsertKeyBlock(MakeKeyDescriptor(15));
+  accessor.InsertKeyBlock(*behavior_, behavior_->MakeKey(15));
   EXPECT_EQ(behavior_->GetKeyReferenceCount(KeyHandle{15}), 1);
   KeyStateAndIndexView view_15 =
       accessor.FindKeyStateAndIndex(MakeKeyDescriptor(15));
@@ -470,7 +470,7 @@ TEST_F(HeaderBlock_Test, populate_block_index_with_keys) {
   // the level of the key 15, but then the level of the node 4(1) will be the
   // same as the level of its right grandchild (key 15). This will be repaired
   // with a split operation.
-  accessor.InsertKeyBlock(MakeKeyDescriptor(12));
+  accessor.InsertKeyBlock(*behavior_, behavior_->MakeKey(12));
   EXPECT_EQ(behavior_->GetKeyReferenceCount(KeyHandle{12}), 1);
   KeyStateAndIndexView view_12 =
       accessor.FindKeyStateAndIndex(MakeKeyDescriptor(12));
@@ -564,7 +564,7 @@ TEST_F(HeaderBlock_Test, populate_block_index_with_keys_and_subkeys) {
   // Each key will have 9 subkeys
 
   for (uint64_t key = 0; key < 3; ++key) {
-    accessor.InsertKeyBlock(MakeKeyDescriptor(key));
+    accessor.InsertKeyBlock(*behavior_, behavior_->MakeKey(key));
     KeyStateAndIndexView key_state_view =
         accessor.FindKeyStateAndIndex(MakeKeyDescriptor(key));
     ASSERT_TRUE(key_state_view.state_block_);
@@ -635,7 +635,7 @@ TEST_F(HeaderBlock_Test, insertion_order_fuzzing) {
     EXPECT_TRUE(accessor.CanInsertStateBlocks(kIndexCapacity));
     EXPECT_FALSE(accessor.CanInsertStateBlocks(kIndexCapacity + 1));
 
-    accessor.InsertKeyBlock(MakeKeyDescriptor(5));
+    accessor.InsertKeyBlock(*behavior_, behavior_->MakeKey(5));
     KeyStateAndIndexView key_state_view =
         accessor.FindKeyStateAndIndex(MakeKeyDescriptor(5));
     ASSERT_TRUE(key_state_view.state_block_);
@@ -722,7 +722,7 @@ TEST_F(HeaderBlock_Test, subkey_hashes_fuzzing) {
     EXPECT_TRUE(accessor.CanInsertStateBlocks(kIndexCapacity));
     EXPECT_FALSE(accessor.CanInsertStateBlocks(kIndexCapacity + 1));
 
-    accessor.InsertKeyBlock(MakeKeyDescriptor(5));
+    accessor.InsertKeyBlock(*behavior_, behavior_->MakeKey(5));
     KeyStateAndIndexView key_state_view =
         accessor.FindKeyStateAndIndex(MakeKeyDescriptor(5));
     ASSERT_TRUE(key_state_view.state_block_);
@@ -822,7 +822,7 @@ class PrepareTransaction_Test : public HeaderBlock_Test {
     EXPECT_EQ(accessor_.available_data_blocks_count(), 61);
 
     // Adding a key and a few subkeys
-    accessor_.InsertKeyBlock(MakeKeyDescriptor(5));
+    accessor_.InsertKeyBlock(*behavior_, behavior_->MakeKey(5));
     KeyStateView key_state_view = accessor_.FindKeyState(MakeKeyDescriptor(5));
     for (uint64_t subkey = 0; subkey < 6; ++subkey) {
       accessor_.InsertSubkeyBlock(*behavior_, *key_state_view.state_block_,

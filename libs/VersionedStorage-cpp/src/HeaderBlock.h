@@ -224,7 +224,8 @@ class MutatingBlobAccessor : public BlobAccessor {
       noexcept;
 
   // The key must be missing and there must be enough capacity.
-  KeyStateAndIndexView InsertKeyBlock(KeyDescriptor& key) noexcept;
+  KeyStateAndIndexView InsertKeyBlock(Behavior& behavior,
+                                      KeyHandle key_handle) noexcept;
 
   // The subkey must be missing and there must be enough capacity.
   SubkeyStateAndIndexView InsertSubkeyBlock(Behavior& behavior,

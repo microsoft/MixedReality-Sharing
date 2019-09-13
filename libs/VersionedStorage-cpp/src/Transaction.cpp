@@ -437,12 +437,9 @@ class TransactionImpl : public Transaction {
 
     for (auto&& [key_handle, key_transaction] : key_transactions_map_) {
       if (!key_transaction.state_block()) {
-        KeyDescriptorWithHandle key{*behavior_, key_handle, true};
-        // The key handle is now owned by KeyDescriptorWithHandle,
-        // which will then transfer the ownership to the newly inserted
-        // block.
         key_transaction.owns_key_handle_ = false;
-        key_transaction.key_state_view_ = accessor.InsertKeyBlock(key);
+        key_transaction.key_state_view_ =
+            accessor.InsertKeyBlock(*behavior_, key_handle);
         assert(key_transaction.state_block());
       }
       Detail::KeyStateBlock& key_block = *key_transaction.state_block();
@@ -658,9 +655,9 @@ class TransactionImpl : public Transaction {
       auto EnsureNewKeyBlockExists = [&] {
         if (!new_key_state_block) {
           auto& old_key_block = *old_key_state_view.state_block_;
-          KeyDescriptorWithHandle key{*behavior_, old_key_block.key_, false};
           Detail::KeyStateAndIndexView key_state_view =
-              new_accessor.InsertKeyBlock(key);
+              new_accessor.InsertKeyBlock(
+                  *behavior_, behavior_->DuplicateHandle(old_key_block.key_));
           new_key_state_block = key_state_view.state_block_;
           assert(new_key_state_block);
           if (old_key_block.has_subscription()) {
@@ -767,9 +764,8 @@ class TransactionImpl : public Transaction {
           // Transferring the ownership
           assert(key_transaction.owns_key_handle_);
           key_transaction.owns_key_handle_ = false;
-          KeyDescriptorWithHandle key_descriptor{*behavior_, key, true};
           Detail::KeyStateView key_state_view =
-              new_accessor.InsertKeyBlock(key_descriptor);
+              new_accessor.InsertKeyBlock(*behavior_, key);
           new_key_state_block = key_state_view.state_block_;
           if (auto count = key_transaction.new_subkeys_count()) {
             // FIXME: check in the validation pass that it's not a narrowing
