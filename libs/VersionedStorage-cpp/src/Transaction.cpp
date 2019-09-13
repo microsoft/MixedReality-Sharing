@@ -455,8 +455,6 @@ class TransactionImpl : public Transaction {
         } else if (key_transaction.current_subkeys_count_ == 0) {
           ++accessor.keys_count();
         }
-        assert(accessor.subkeys_count() >=
-               key_transaction.current_subkeys_count_);
         accessor.subkeys_count() = accessor.subkeys_count() +
                                    new_subkeys_count -
                                    key_transaction.current_subkeys_count_;
