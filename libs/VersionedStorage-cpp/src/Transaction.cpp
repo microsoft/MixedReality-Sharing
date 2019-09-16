@@ -564,18 +564,18 @@ class TransactionImpl : public Transaction {
   }
 
   static bool SubkeyBlockShouldSurvive(
-      Detail::SubkeyStateBlock& subkey_block,
+      const Detail::SubkeyStateView& view,
       bool is_clear_before_transaction_mode) noexcept {
-    if (subkey_block.has_subscription()) {
+    if (view.state_block_->has_subscription()) {
       // Subkeys with subscriptions survive unconditionally because we want
       // to preserve the subscription even if there is no alive payload.
       return true;
     }
-    if (subkey_block.is_scratch_buffer_mode()) {
+    if (view.state_block_->is_scratch_buffer_mode()) {
       // The pointer could be saved to the scratch buffer only by the first
       // loop block of CreateMergedBlob, so we know which type this is.
       auto* pair = reinterpret_cast<SubkeyTransactionsMap::value_type*>(
-          subkey_block.GetScratchBuffer());
+          view.state_block_->GetScratchBuffer());
       if (pair->second.new_payload_handle_or_deletion_marker_
               .is_specific_handle()) {
         return true;
@@ -591,8 +591,7 @@ class TransactionImpl : public Transaction {
         return true;
       }
     } else if (!is_clear_before_transaction_mode &&
-               subkey_block.latest_versioned_payload_thread_unsafe()
-                   .has_payload()) {
+               view.latest_payload_thread_unsafe().has_payload()) {
       return true;
     }
     return false;
@@ -626,7 +625,7 @@ class TransactionImpl : public Transaction {
       for (Detail::SubkeyStateView subkey_state_view :
            existing_blob_accessor.GetSubkeys(key_state_view)) {
         if (SubkeyBlockShouldSurvive(
-                *subkey_state_view.state_block_,
+                subkey_state_view,
                 key_flags.is_clear_before_transaction_mode)) {
           ++required_blocks_count;
           key_flags.should_survive = true;
@@ -693,7 +692,7 @@ class TransactionImpl : public Transaction {
         Detail::SubkeyStateBlock& old_subkey_state_block =
             *subkey_state_view.state_block_;
         if (SubkeyBlockShouldSurvive(
-                old_subkey_state_block,
+                subkey_state_view,
                 key_flags.is_clear_before_transaction_mode)) {
           EnsureNewKeyBlockExists();
           const uint64_t subkey = old_subkey_state_block.subkey_;
