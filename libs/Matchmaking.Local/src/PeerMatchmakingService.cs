@@ -150,13 +150,118 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
     }
 
-    static class Proto
+    class Proto
     {
         internal const int ServerHello = ('S' << 24) | ('E' << 16) | ('L' << 8) | 'O';
         internal const int ServerByeBye = ('S' << 24) | ('B' << 16) | ('Y' << 8) | 'E';
 
         internal const int ServerReply = ('S' << 24) | ('R' << 16) | ('P' << 8) | 'L';
         internal const int ClientQuery = ('C' << 24) | ('Q' << 16) | ('R' << 8) | 'Y';
+
+        internal delegate void ServerAnnounceCallback(IPeerNetworkMessage msg, string category, Guid guid, string connection, long expiresFileTime, Dictionary<string, string> attributes);
+        internal delegate void ServerByeByeCallback(IPeerNetworkMessage msg, string[] category, Guid[] guid);
+        internal delegate void ClientQueryCallback(IPeerNetworkMessage msg, string category);
+
+        internal ServerAnnounceCallback OnServerHello;
+        internal ServerByeByeCallback OnServerByeBye;
+        internal ServerAnnounceCallback OnServerReply;
+        internal ClientQueryCallback OnClientQuery;
+
+        private static void DecodeServerAnnounce(ServerAnnounceCallback callback, IPeerNetworkMessage msg)
+        {
+            using (var ms = new MemoryStream(msg.Message, 4, msg.Message.Length - 4, false))
+            using (var br = new BinaryReader(ms))
+            {
+                var cat = br.ReadString();
+                var uid = new Guid(br.ReadBytes(16));
+                var con = br.ReadString();
+                var expiresDelta = br.ReadInt32();
+                if (expiresDelta < 0)
+                {
+                    return;
+                }
+                var expires = DateTime.UtcNow.AddSeconds(expiresDelta).Ticks;
+                var cnt = br.ReadInt32();
+                var attrs = cnt != 0 ? new Dictionary<string, string>() : null;
+                for (int i = 0; i < cnt; ++i)
+                {
+                    var k = br.ReadString();
+                    var v = br.ReadString();
+                    attrs.Add(k, v);
+                }
+                callback(msg, cat, uid, con, expires, attrs);
+            }
+        }
+
+        private static void DecodeServerByeBye(ServerByeByeCallback callback, IPeerNetworkMessage msg)
+        {
+            using (var ms = new MemoryStream(msg.Message, 4, msg.Message.Length - 4, false))
+            using (var br = new BinaryReader(ms))
+            {
+                int numRemoved = br.ReadInt32();
+                var categories = new string[numRemoved];
+                var guids = new Guid[numRemoved];
+                for (int i = 0; i < numRemoved; ++i)
+                {
+                    categories[i] = br.ReadString();
+                    guids[i] = new Guid(br.ReadBytes(16));
+                }
+                callback(msg, categories, guids);
+            }
+        }
+
+        private static void DecodeClientQuery(ClientQueryCallback callback, IPeerNetworkMessage msg)
+        {
+            using (var ms = new MemoryStream(msg.Message, 4, msg.Message.Length - 4, false))
+            using (var br = new BinaryReader(ms))
+            {
+                var category = br.ReadString();
+                callback(msg, category);
+            }
+        }
+
+        internal void Dispatch(IPeerNetworkMessage msg)
+        {
+            if (msg.Message.Length < 4)
+            {
+                return; // throw
+            }
+            switch (BitConverter.ToInt32(msg.Message, 0))
+            {
+                case Proto.ServerHello:
+                {
+                    if (OnServerHello != null)
+                    {
+                        DecodeServerAnnounce(OnServerHello, msg);
+                    }
+                    break;
+                }
+                case Proto.ServerByeBye:
+                {
+                    if (OnServerByeBye != null)
+                    {
+                        DecodeServerByeBye(OnServerByeBye, msg);
+                    }
+                    break;
+                }
+                case Proto.ServerReply:
+                {
+                    if (OnServerReply != null)
+                    {
+                        DecodeServerAnnounce(OnServerReply, msg);
+                    }
+                    break;
+                }
+                case Proto.ClientQuery:
+                {
+                    if (OnClientQuery != null)
+                    {
+                        DecodeClientQuery(OnClientQuery, msg);
+                    }
+                    break;
+                }
+            }
+        }
     }
 
     class Server
@@ -172,11 +277,34 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// Time when the timer will fire or MaxValue if the timer is unset.
         DateTime timerExpiryTime = DateTime.MaxValue;
 
+        /// Protocol handler.
+        Proto proto_ = new Proto();
+
         internal Server(IPeerNetwork net)
         {
+            proto_.OnClientQuery = OnClientQuery;
             net_ = net;
             net_.Message += ServerOnMessage;
             timer_ = new Timer(OnServerTimerExpired);
+        }
+
+        void OnClientQuery(IPeerNetworkMessage msg, string category)
+        {
+            LocalRoom[] matching;
+            lock (this)
+            {
+                matching = (from lr in localRooms_
+                            where lr.Category == category
+                            select lr).ToArray();
+            }
+            foreach (var room in matching)
+            {
+                Extensions.Reply(net_, msg, (BinaryWriter w) =>
+                {
+                    w.Write(Proto.ServerReply);
+                    SendAnnounceBody(w, room);
+                });
+            }
         }
 
         internal void OnServerTimerExpired(object state)
@@ -309,41 +437,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         // we need to expect duplicate messages.
         private void ServerOnMessage(IPeerNetwork comms, IPeerNetworkMessage msg)
         {
-            byte[] packet = msg.Message;
-            switch (BitConverter.ToInt32(packet, 0))
-            {
-                case Proto.ServerHello:
-                case Proto.ServerByeBye:
-                case Proto.ServerReply:
-                {
-                    break;
-                }
-                case Proto.ClientQuery:
-                {
-                    var ms = new MemoryStream(packet);
-                    ms.Position += 4;
-                    using (var br = new BinaryReader(ms))
-                    {
-                        var category = br.ReadString();
-                        LocalRoom[] matching;
-                        lock (this)
-                        {
-                            matching = (from lr in localRooms_
-                                        where lr.Category == category
-                                        select lr).ToArray();
-                        }
-                        foreach (var room in matching)
-                        {
-                            Extensions.Reply(net_, msg, (BinaryWriter w) =>
-                            {
-                                w.Write(Proto.ServerReply);
-                                SendAnnounceBody(w, room);
-                            });
-                        }
-                    }
-                    break;
-                }
-            }
+            proto_.Dispatch(msg);
         }
     }
 
@@ -360,8 +454,14 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// The list of all local rooms of all categories
         IDictionary<string, CategoryInfo> infoFromCategory_ = new Dictionary<string, CategoryInfo>();
 
+        /// Protocol handler.
+        Proto proto_ = new Proto();
+
         internal Client(IPeerNetwork net)
         {
+            proto_.OnServerHello = OnServerAnnounce;
+            proto_.OnServerByeBye = OnServerByeBye;
+            proto_.OnServerReply = OnServerAnnounce;
             timer_ = new Timer(OnClientTimerExpired);
             net_ = net;
             net_.Message += ClientOnMessage;
@@ -563,110 +663,79 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         }
 
         // The body of ServerHello and ServerReply is identical so we reuse the code.
-        private void HandleAnnounce(byte[] packet)
+        private void OnServerAnnounce(IPeerNetworkMessage msg, string category, Guid guid, string connection, long expiresFileTime, Dictionary<string, string> attributes)
         {
-            var ms = new MemoryStream(packet);
-            ms.Position += 4;
-            using (var br = new BinaryReader(ms))
+            DiscoveryTask[] tasksUpdated = null;
+            lock (this)
             {
-                // deserialize packet
-                var cat = br.ReadString();
-                var uid = new Guid(br.ReadBytes(16));
-                var con = br.ReadString();
-                var expiresDelta = br.ReadInt32();
-                if (expiresDelta < 0)
+                // see if the category is relevant to us, we created an info in StartDiscovery if so.
+                CategoryInfo info;
+                if (!infoFromCategory_.TryGetValue(category, out info))
                 {
-                    return;
+                    return; // we don't care about this category
                 }
-                var expires = DateTime.UtcNow.AddSeconds(expiresDelta).Ticks;
-                var cnt = br.ReadInt32();
-                var attrs = cnt != 0 ? new Dictionary<string, string>() : null;
-                for (int i = 0; i < cnt; ++i)
+                RemoteRoom room;
+                bool updated = false;
+                if (!info.roomsRemote_.TryGetValue(guid, out room)) // new room
                 {
-                    var k = br.ReadString();
-                    var v = br.ReadString();
-                    attrs.Add(k, v);
+                    room = new RemoteRoom(category, guid, connection, attributes, expiresFileTime);
+                    info.roomsRemote_[guid] = room;
+                    updated = true;
                 }
-
-                DiscoveryTask[] tasksUpdated = null;
-                lock (this)
+                else // existing room, has it changed?
                 {
-                    // see if the category is relevant to us, we created a info in StartDiscovery if so.
-                    CategoryInfo info;
-                    if (!infoFromCategory_.TryGetValue(cat, out info))
+                    if (room.Category != category)
                     {
-                        return; // we don't care about this category
-                    }
-                    RemoteRoom room;
-                    bool updated = false;
-                    if (!info.roomsRemote_.TryGetValue(uid, out room)) // new room
-                    {
-                        room = new RemoteRoom(cat, uid, con, attrs, expires);
-                        info.roomsRemote_[uid] = room;
+                        room.Category = category;
                         updated = true;
                     }
-                    else // existing room, has it changed?
+                    if (room.Connection != connection)
                     {
-                        if (room.Category != cat)
-                        {
-                            room.Category = cat;
-                            updated = true;
-                        }
-                        if (room.Connection != con)
-                        {
-                            room.Connection = con;
-                            updated = true;
-                        }
-                        if (!Extensions.DictionariesEqual(room.Attributes, attrs))
-                        {
-                            room.Attributes = attrs;
-                            updated = true;
-                        }
-                        if (room.ExpirationFileTime != expires)
-                        {
-                            room.ExpirationFileTime = expires;
-                        }
+                        room.Connection = connection;
+                        updated = true;
                     }
-                    // If this expiry is sooner than the current timer, we need to reset the timer.
-                    if (expires < timerExpiryFileTime)
+                    if (!Extensions.DictionariesEqual(room.Attributes, attributes))
                     {
-                        SetExpirationTimer(expires);
+                        room.Attributes = attributes;
+                        updated = true;
                     }
-                    if (updated)
+                    if (room.ExpirationFileTime != expiresFileTime)
                     {
-                        info.roomSerial_ += 1;
-                        tasksUpdated = info.tasks_.ToArray();
+                        room.ExpirationFileTime = expiresFileTime;
                     }
                 }
-                if (tasksUpdated != null) // outside the lock
+                // If this expiry is sooner than the current timer, we need to reset the timer.
+                if (expiresFileTime < timerExpiryFileTime)
                 {
-                    foreach (var t in tasksUpdated)
-                    {
-                        t.FireUpdated();
-                    }
+                    SetExpirationTimer(expiresFileTime);
+                }
+                if (updated)
+                {
+                    info.roomSerial_ += 1;
+                    tasksUpdated = info.tasks_.ToArray();
+                }
+            }
+            if (tasksUpdated != null) // outside the lock
+            {
+                foreach (var t in tasksUpdated)
+                {
+                    t.FireUpdated();
                 }
             }
         }
 
-        private void HandleByeBye(byte[] packet)
+        private void OnServerByeBye(IPeerNetworkMessage msg, string[] category, Guid[] guid)
         {
-            var ms = new MemoryStream(packet);
-            ms.Position += 4;
-            using (var br = new BinaryReader(ms))
+            Debug.Assert(category.Length == guid.Length);
+            lock (this)
             {
-                int numRemoved = br.ReadInt32();
-                lock (this)
+                for (int i = 0; i < category.Length; ++i)
                 {
-                    for (int i = 0; i < numRemoved; ++i)
+                    CategoryInfo info;
+                    if (infoFromCategory_.TryGetValue(category[i], out info))
                     {
-                        string cat = br.ReadString();
-                        byte[] uid = br.ReadBytes(16);
-                        CategoryInfo info;
-                        if (infoFromCategory_.TryGetValue(cat, out info))
-                        {
-                            info.roomsRemote_.Remove(new Guid(uid));
-                            info.roomSerial_ += 1;
-                        }
+                        info.roomsRemote_.Remove(guid[i]);
+                        info.roomSerial_ += 1;
                     }
                 }
             }
@@ -682,29 +751,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         // we need to expect duplicate messages.
         private void ClientOnMessage(IPeerNetwork comms, IPeerNetworkMessage msg)
         {
-            byte[] packet = msg.Message;
-            switch (BitConverter.ToInt32(packet, 0))
-            {
-                case Proto.ClientQuery:
-                {
-                    break;
-                }
-                case Proto.ServerHello:
-                {
-                    HandleAnnounce(packet);
-                    break;
-                }
-                case Proto.ServerReply:
-                {
-                    HandleAnnounce(packet);
-                    break;
-                }
-                case Proto.ServerByeBye:
-                {
-                    HandleByeBye(packet);
-                    break;
-                }
-            }
+            Debug.Assert(comms == net_);
+            proto_.Dispatch(msg);
         }
     }
 
