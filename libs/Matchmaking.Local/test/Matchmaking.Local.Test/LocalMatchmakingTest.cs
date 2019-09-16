@@ -3,13 +3,12 @@
 
 using Microsoft.MixedReality.Sharing.Matchmaking;
 using System;
-using System.Net;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Threading;
 using Xunit;
-using Xunit.Sdk;
 
 namespace Matchmaking.Local.Test
 {
@@ -230,6 +229,43 @@ namespace Matchmaking.Local.Test
                 }
             }
         }
+
+#if false
+        [Fact]
+        public void RoomExpiresOnTime()
+        {
+            using (var cts = new CancellationTokenSource(TestTimeoutMs))
+            using (var svc1 = matchmakingServiceFactory_(1))
+            {
+                const string category = "RoomExpiresOnTime";
+                var rooms1 = svc1.StartDiscovery(category);
+                Assert.Empty(rooms1.Rooms);
+
+                using (var svc2 = matchmakingServiceFactory_(2))
+                {
+                    // Create rooms from svc2
+                    // SET TIMEOUT 2s
+                    var room1 = svc2.CreateRoomAsync(category, "conn1",  null, cts.Token).Result;
+
+                    // It should show up in svc1
+                    {
+                        var res1 = QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Any(), cts.Token);
+                        Assert.Single(res1);
+                        Assert.Equal(room1.UniqueId, res1.First().UniqueId);
+                    }
+
+                    // how to stop svc2 from announcing without bye
+
+                    // 
+                    {
+                        var res1 = QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Count() == 0, cts.Token);
+                        Assert.Single(res1);
+                        Assert.Equal(room1.UniqueId, res1.First().UniqueId);
+                    }
+                }
+            }
+        }
+#endif
     }
 
     public class LocalMatchmakingTestUdp : LocalMatchmakingTest
