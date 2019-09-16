@@ -239,7 +239,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
         }
 
-        internal Task<ILocalRoom> CreateRoomAsync(
+        internal Task<IRoom> CreateRoomAsync(
             string category,
             string connection,
             int expirySeconds,
@@ -254,11 +254,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 UpdateAnnounceTimer();
             }
 
-            return Task<ILocalRoom>.FromResult((ILocalRoom)room);
+            return Task<IRoom>.FromResult((IRoom)room);
         }
 
         // Room which has been created locally. And is owned locally.
-        class LocalRoom : ILocalRoom
+        class LocalRoom : IRoom, IRoomEditor
         {
             public LocalRoom(string category, string connection, int expirySeconds, IReadOnlyDictionary<string, string> attrs)
             {
@@ -282,8 +282,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 get => LastAnnouncedTime.AddSeconds(0.45 * ExpirySeconds);
             }
 
-            public void AddAttribute(string key, string value) { /*TODO*/ }
-            public void AddOrReplaceAttribute(string key, string value) { /*TODO*/ }
+            public IRoomEditor RequestEdit() { return this; }
+            public void Commit() { /*TODO*/; }
+            public void PutAttribute(string key, string value) { /*TODO*/ }
             public bool RemoveAttribute(string key) { /*TODO*/ return true; }
         }
 
@@ -417,6 +418,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             public Guid UniqueId { get; }
             public string Connection { get; set; }
             public IReadOnlyDictionary<string, string> Attributes { get; set; }
+            public IRoomEditor RequestEdit() { return null; }
         }
 
         // Internal class which holds the latest results for each category.
@@ -742,7 +744,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             return client_.StartDiscovery(category);
         }
 
-        public Task<ILocalRoom> CreateRoomAsync(
+        public Task<IRoom> CreateRoomAsync(
             string category,
             string connection,
             IReadOnlyDictionary<string, string> attributes = null,

@@ -44,7 +44,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// <returns>
         /// The newly created room.
         /// </returns>
-        Task<ILocalRoom> CreateRoomAsync(
+        Task<IRoom> CreateRoomAsync(
             string category,
             string connection,
             IReadOnlyDictionary<string, string> attributes = null,

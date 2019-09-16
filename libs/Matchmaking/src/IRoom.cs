@@ -31,23 +31,28 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// and to store data which can be retrieved by any participant.
         /// </summary>
         IReadOnlyDictionary<string, string> Attributes { get; }
+		
+		/// <summary>
+        /// If the backend allows it, return an interface to edit this room. Otherwise return null.
+        /// </summary>
+		IRoomEditor RequestEdit();
     }
 
     /// <summary>
-    /// Information about a locally created matchmaking room.
+    /// Interface to edit a room.
     /// </summary>
-    public interface ILocalRoom : IRoom
+    public interface IRoomEditor
     {
         /// <summary>
-        /// Add a new key value pair to the attributes.
+        /// Commit the edits made through this interface.
         /// </summary>
-        /// <exception cref="ArgumentException">An attribute with the same key already exists.</exception>
-        void AddAttribute(string key, string value);
+		//TODO - failure codes? retry?
+        void Commit();
 
         /// <summary>
         /// Add or replace a key value pair to the attributes.
         /// </summary>
-        void AddOrReplaceAttribute(string key, string value);
+        void PutAttribute(string key, string value);
 
         /// <summary>
         /// Return true if the attribute was removed, otherwise false.
