@@ -31,11 +31,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// and to store data which can be retrieved by any participant.
         /// </summary>
         IReadOnlyDictionary<string, string> Attributes { get; }
-		
-		/// <summary>
+
+        /// <summary>
         /// If the backend allows it, return an interface to edit this room. Otherwise return null.
         /// </summary>
-		IRoomEditor RequestEdit();
+        IRoomEditor RequestEdit();
     }
 
     /// <summary>
