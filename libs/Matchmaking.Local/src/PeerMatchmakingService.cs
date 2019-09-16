@@ -182,7 +182,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         internal void OnServerTimerExpired(object state)
         {
             var now = DateTime.UtcNow;
-            var updated = new List<LocalRoom>();
+            var todo = new List<LocalRoom>();
             lock (this)
             {
                 foreach (var r in localRooms_)
@@ -190,12 +190,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     if (r.NextAnnounceTime < now)
                     {
                         r.LastAnnouncedTime = now;
-                        updated.Add(r);
+                        todo.Add(r);
                     }
                 }
                 UpdateAnnounceTimer();
             }
-            foreach (var room in updated)
+            foreach (var room in todo)
             {
                 Extensions.Broadcast(net_, (BinaryWriter w) =>
                 {
@@ -221,7 +221,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             });
         }
 
-        internal void UpdateAnnounceTimer()
+        private void UpdateAnnounceTimer()
         {
             Debug.Assert(Monitor.IsEntered(this)); // Caller should have lock(this)
             var next = localRooms_.Min(r => r.NextAnnounceTime);
@@ -290,7 +290,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             w.Write(room.Category);
             w.Write(room.UniqueId.ToByteArray());
             w.Write(room.Connection);
-            w.Write(DateTime.UtcNow.AddSeconds(room.ExpirySeconds).Ticks);
+            w.Write(room.ExpirySeconds);
             w.Write(room.Attributes.Count);
             foreach (var kvp in room.Attributes)
             {
@@ -573,11 +573,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 var cat = br.ReadString();
                 var uid = new Guid(br.ReadBytes(16));
                 var con = br.ReadString();
-                var expires = br.ReadInt64();
-                if (expires < DateTime.UtcNow.ToFileTime())
+                var expiresDelta = br.ReadInt32();
+                if (expiresDelta < 0)
                 {
                     return;
                 }
+                var expires = DateTime.UtcNow.AddSeconds(expiresDelta).Ticks;
                 var cnt = br.ReadInt32();
                 var attrs = cnt != 0 ? new Dictionary<string, string>() : null;
                 for (int i = 0; i < cnt; ++i)
