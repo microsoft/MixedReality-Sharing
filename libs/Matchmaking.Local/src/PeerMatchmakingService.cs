@@ -205,7 +205,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             using (var br = new BinaryReader(ms))
             {
                 int numRemoved = br.ReadInt32();
-                if( numRemoved <= 0)
+                if (numRemoved <= 0)
                 {
                     return;
                 }
