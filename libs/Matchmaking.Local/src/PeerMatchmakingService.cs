@@ -379,7 +379,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         {
             proto_ = new Proto(net);
             proto_.OnClientQuery = OnClientQuery;
-            timer_ = new Timer(OnServerTimerExpired);
+            timer_ = new Timer(OnServerTimerExpired, null, Timeout.Infinite, Timeout.Infinite);
         }
 
         void OnClientQuery(IPeerNetworkMessage msg, string category)
@@ -512,7 +512,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             proto_.OnServerHello = OnServerAnnounce;
             proto_.OnServerByeBye = OnServerByeBye;
             proto_.OnServerReply = OnServerAnnounce;
-            timer_ = new Timer(OnClientTimerExpired);
+            timer_ = new Timer(OnClientTimerExpired, null, Timeout.Infinite, Timeout.Infinite);
         }
 
         internal IDiscoveryTask StartDiscovery(string category)
@@ -654,7 +654,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 // Round up to the next ms to ensure the (finer grained) fileTime has passed.
                 // Also ensure we have a positive delta or the timer will not work.
                 deltaMs = Math.Max(deltaMs + 1, 0);
-                timer_.Change(deltaMs, Timeout.Infinite);
+                // Cast to int since UWP does not implement long ctor.
+                var deltaMsInt = (int)Math.Min(deltaMs, int.MaxValue);
+                timer_.Change(deltaMsInt, Timeout.Infinite);
                 timerExpiryFileTime = fileTime;
             }
         }
