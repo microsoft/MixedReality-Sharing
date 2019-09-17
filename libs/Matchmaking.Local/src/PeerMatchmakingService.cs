@@ -158,6 +158,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         internal const int ServerReply = ('S' << 24) | ('R' << 16) | ('P' << 8) | 'L';
         internal const int ClientQuery = ('C' << 24) | ('Q' << 16) | ('R' << 8) | 'Y';
 
+        internal const int MaxNumAttrs = 1024;
+
         internal delegate void ServerAnnounceCallback(IPeerNetworkMessage msg, string category, Guid guid, string connection, long expiresFileTime, Dictionary<string, string> attributes);
         internal delegate void ServerByeByeCallback(IPeerNetworkMessage msg, string[] category, Guid[] guid);
         internal delegate void ClientQueryCallback(IPeerNetworkMessage msg, string category);
@@ -182,7 +184,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 }
                 var expires = DateTime.UtcNow.AddSeconds(expiresDelta).Ticks;
                 var cnt = br.ReadInt32();
-                var attrs = cnt != 0 ? new Dictionary<string, string>() : null;
+                if (cnt < 0 || cnt > MaxNumAttrs)
+                {
+                    return;
+                }
+                var attrs = new Dictionary<string, string>(cnt);
                 for (int i = 0; i < cnt; ++i)
                 {
                     var k = br.ReadString();
@@ -199,6 +205,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             using (var br = new BinaryReader(ms))
             {
                 int numRemoved = br.ReadInt32();
+                if( numRemoved <= 0)
+                {
+                    return;
+                }
                 var categories = new string[numRemoved];
                 var guids = new Guid[numRemoved];
                 for (int i = 0; i < numRemoved; ++i)
