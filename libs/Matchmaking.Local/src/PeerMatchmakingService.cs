@@ -150,24 +150,55 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
     }
 
+    // The protocol is a hybrid announce+query which allows for quick response without large amounts
+    // of traffic. Servers both broadcast announce messages at a low frequency and also unicast replies
+    // directly in response to client queries.
+    // Clients broadcast ClientQuery on startup and servers unicast reply with ServerReply.
+    // Clients also listen for announce messages.
+    // Servers broadcast ServerHello/ServerByeBye on service startup/shutdown respectively.
+    // If the underlying transport is lossy, it may choose to send packets multiple times so
+    // we need to expect duplicate messages.
     class Proto
     {
-        internal const int ServerHello = ('S' << 24) | ('E' << 16) | ('L' << 8) | 'O';
-        internal const int ServerByeBye = ('S' << 24) | ('B' << 16) | ('Y' << 8) | 'E';
-
-        internal const int ServerReply = ('S' << 24) | ('R' << 16) | ('P' << 8) | 'L';
-        internal const int ClientQuery = ('C' << 24) | ('Q' << 16) | ('R' << 8) | 'Y';
-
-        internal const int MaxNumAttrs = 1024;
+        private const int ServerHello = ('S' << 24) | ('E' << 16) | ('L' << 8) | 'O';
+        private const int ServerByeBye = ('S' << 24) | ('B' << 16) | ('Y' << 8) | 'E';
+        private const int ServerReply = ('S' << 24) | ('R' << 16) | ('P' << 8) | 'L';
+        private const int ClientQuery = ('C' << 24) | ('Q' << 16) | ('R' << 8) | 'Y';
+        private const int MaxNumAttrs = 1024;
 
         internal delegate void ServerAnnounceCallback(IPeerNetworkMessage msg, string category, Guid guid, string connection, long expiresFileTime, Dictionary<string, string> attributes);
         internal delegate void ServerByeByeCallback(IPeerNetworkMessage msg, string[] category, Guid[] guid);
         internal delegate void ClientQueryCallback(IPeerNetworkMessage msg, string category);
 
+        IPeerNetwork net_;
         internal ServerAnnounceCallback OnServerHello;
         internal ServerByeByeCallback OnServerByeBye;
         internal ServerAnnounceCallback OnServerReply;
         internal ClientQueryCallback OnClientQuery;
+
+        internal Proto(IPeerNetwork net)
+        {
+            net_ = net;
+            Start();
+        }
+
+        internal void Start()
+        {
+            net_.Message += OnNetMessage;
+        }
+
+        internal void Stop()
+        {
+            net_.Message -= OnNetMessage;
+        }
+
+        // Receiving
+
+        private void OnNetMessage(IPeerNetwork net, IPeerNetworkMessage msg)
+        {
+            Debug.Assert(net == net_);
+            Dispatch(msg);
+        }
 
         private static void DecodeServerAnnounce(ServerAnnounceCallback callback, IPeerNetworkMessage msg)
         {
@@ -230,6 +261,63 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
         }
 
+        // Sending
+
+        internal void SendServerReply(IPeerNetworkMessage msg, string category, Guid uniqueId, string connection, int expirySeconds, IReadOnlyCollection<KeyValuePair<string, string>> attributes)
+        {
+            Extensions.Reply(net_, msg, w =>
+            {
+                w.Write(Proto.ServerReply);
+                _SendRoomInfo(w, category, uniqueId, connection, expirySeconds, attributes);
+            });
+        }
+
+        internal void SendServerHello(string category, Guid uniqueId, string connection, int expirySeconds, IReadOnlyCollection<KeyValuePair<string, string>> attributes)
+        {
+            Extensions.Broadcast(net_, w =>
+            {
+                w.Write(Proto.ServerReply);
+                _SendRoomInfo(w, category, uniqueId, connection, expirySeconds, attributes);
+            });
+        }
+
+        private void _SendRoomInfo(BinaryWriter w, string category, Guid uniqueId, string connection, int expirySeconds, IReadOnlyCollection<KeyValuePair<string, string>> attributes)
+        {
+            w.Write(category);
+            w.Write(uniqueId.ToByteArray());
+            w.Write(connection);
+            w.Write(expirySeconds);
+            w.Write(attributes.Count);
+            foreach (var kvp in attributes)
+            {
+                w.Write(kvp.Key);
+                w.Write(kvp.Value);
+            }
+        }
+
+        internal void SendServerByeBye(ICollection<(string, Guid)> rooms)
+        {
+            Extensions.Broadcast(net_, w =>
+            {
+                w.Write(Proto.ServerByeBye);
+                w.Write(rooms.Count);
+                foreach (var room in rooms)
+                {
+                    w.Write(room.Item1);
+                    w.Write(room.Item2.ToByteArray());
+                }
+            });
+        }
+
+        internal void SendClientQuery(string category)
+        {
+            Extensions.Broadcast(net_, (BinaryWriter w) =>
+            {
+                w.Write(Proto.ClientQuery);
+                w.Write(category);
+            });
+        }
+
         internal void Dispatch(IPeerNetworkMessage msg)
         {
             if (msg.Message.Length < 4)
@@ -276,9 +364,6 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
     class Server
     {
-        /// The network for this matchmaking
-        IPeerNetwork net_;
-
         /// The list of all local rooms of all categories
         SortedSet<LocalRoom> localRooms_ = new SortedSet<LocalRoom>(new Extensions.RoomComparer());
 
@@ -288,13 +373,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         DateTime timerExpiryTime = DateTime.MaxValue;
 
         /// Protocol handler.
-        Proto proto_ = new Proto();
+        Proto proto_;
 
         internal Server(IPeerNetwork net)
         {
+            proto_ = new Proto(net);
             proto_.OnClientQuery = OnClientQuery;
-            net_ = net;
-            net_.Message += ServerOnMessage;
             timer_ = new Timer(OnServerTimerExpired);
         }
 
@@ -309,11 +393,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
             foreach (var room in matching)
             {
-                Extensions.Reply(net_, msg, (BinaryWriter w) =>
-                {
-                    w.Write(Proto.ServerReply);
-                    SendAnnounceBody(w, room);
-                });
+                proto_.SendServerReply(msg, room.Category, room.UniqueId, room.Connection, room.ExpirySeconds, room.Attributes);
             }
         }
 
@@ -335,28 +415,19 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
             foreach (var room in todo)
             {
-                Extensions.Broadcast(net_, (BinaryWriter w) =>
-                {
-                    w.Write(Proto.ServerHello);
-                    SendAnnounceBody(w, room);
-                });
+                proto_.SendServerHello(room.Category, room.UniqueId, room.Connection, room.ExpirySeconds, room.Attributes);
             }
         }
 
-
         internal void Stop()
         {
-            net_.Message -= ServerOnMessage;
-            Extensions.Broadcast(net_, (BinaryWriter w) =>
+            var data = new List<(string, Guid)>(localRooms_.Count);
+            foreach(var r in localRooms_)
             {
-                w.Write(Proto.ServerByeBye);
-                w.Write(localRooms_.Count);
-                foreach (var room in localRooms_)
-                {
-                    w.Write(room.Category);
-                    w.Write(room.UniqueId.ToByteArray());
-                }
-            });
+                data.Add((r.Category, r.UniqueId));
+            }
+            proto_.SendServerByeBye(data);
+            proto_.Stop();
         }
 
         private void UpdateAnnounceTimer()
@@ -420,42 +491,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 get => LastAnnouncedTime.AddSeconds(0.45 * ExpirySeconds);
             }
         }
-
-        // Network helpers
-
-        void SendAnnounceBody(BinaryWriter w, LocalRoom room)
-        {
-            w.Write(room.Category);
-            w.Write(room.UniqueId.ToByteArray());
-            w.Write(room.Connection);
-            w.Write(room.ExpirySeconds);
-            w.Write(room.Attributes.Count);
-            foreach (var kvp in room.Attributes)
-            {
-                w.Write(kvp.Key);
-                w.Write(kvp.Value);
-            }
-        }
-
-        // The protocol is a hybrid announce+query which allows for quick response without large amounts
-        // of traffic. Servers both broadcast announce messages at a low frequency and also unicast replies
-        // directly in response to client queries.
-        // Clients broadcast ClientQuery on startup and servers unicast reply with ServerReply.
-        // Clients also listen for announce messages.
-        // Servers broadcast ServerHello/ServerByeBye on service startup/shutdown respectively.
-        // If the underlying transport is lossy, it may choose to send packets multiple times so
-        // we need to expect duplicate messages.
-        private void ServerOnMessage(IPeerNetwork comms, IPeerNetworkMessage msg)
-        {
-            proto_.Dispatch(msg);
-        }
     }
 
     class Client
     {
-        /// The network
-        IPeerNetwork net_;
-
         /// Timer for expiring rooms.
         Timer timer_;
         /// Time when the timer will fire or -1 if the timer is unset.
@@ -465,16 +504,15 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         IDictionary<string, CategoryInfo> infoFromCategory_ = new Dictionary<string, CategoryInfo>();
 
         /// Protocol handler.
-        Proto proto_ = new Proto();
+        Proto proto_;
 
         internal Client(IPeerNetwork net)
         {
+            proto_ = new Proto(net);
             proto_.OnServerHello = OnServerAnnounce;
             proto_.OnServerByeBye = OnServerByeBye;
             proto_.OnServerReply = OnServerAnnounce;
             timer_ = new Timer(OnClientTimerExpired);
-            net_ = net;
-            net_.Message += ClientOnMessage;
         }
 
         internal IDiscoveryTask StartDiscovery(string category)
@@ -488,11 +526,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     info = new CategoryInfo(category);
                     infoFromCategory_.Add(category, info);
 
-                    Extensions.Broadcast(net_, (BinaryWriter w) =>
-                    {
-                        w.Write(Proto.ClientQuery);
-                        w.Write(category);
-                    });
+                    proto_.SendClientQuery(category);
                 }
                 // start a new task in the category
                 var res = new DiscoveryTask(this, info);
@@ -503,7 +537,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         internal void Stop()
         {
-            net_.Message -= ClientOnMessage;
+            proto_.Stop();
         }
 
         // Room which we've heard about from a remote
@@ -749,20 +783,6 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     }
                 }
             }
-        }
-
-        // The protocol is a hybrid announce+query which allows for quick response without large amounts
-        // of traffic. Servers both broadcast announce messages at a low frequency and also unicast replies
-        // directly in response to client queries.
-        // Clients broadcast ClientQuery on startup and servers unicast reply with ServerReply.
-        // Clients also listen for announce messages.
-        // Servers broadcast ServerHello/ServerByeBye on service startup/shutdown respectively.
-        // If the underlying transport is lossy, it may choose to send packets multiple times so
-        // we need to expect duplicate messages.
-        private void ClientOnMessage(IPeerNetwork comms, IPeerNetworkMessage msg)
-        {
-            Debug.Assert(comms == net_);
-            proto_.Dispatch(msg);
         }
     }
 
