@@ -13,7 +13,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     /// </remarks>
     public interface IPeerNetworkMessage
     {
-        byte[] Message { get; }
+        ArraySegment<byte> Contents { get; }
     }
 
     /// <summary>
@@ -40,11 +40,15 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// <summary>
         /// Send a message to all others in this network.
         /// </summary>
-        void Broadcast(byte[] message);
+        /// <param name="message">The buffer containing the message to send</param>
+        /// <param name="size">The number of bytes to send</param>
+        void Broadcast(byte[] message, int size);
 
         /// <summary>
         /// Reply to a message. (Typically a broadcast message)
         /// </summary>
-        void Reply(IPeerNetworkMessage inResponseTo, byte[] message);
+        /// <param name="message">The buffer containing the message to send</param>
+        /// <param name="size">The number of bytes to send</param>
+        void Reply(IPeerNetworkMessage inResponseTo, byte[] message, int size);
     }
 }

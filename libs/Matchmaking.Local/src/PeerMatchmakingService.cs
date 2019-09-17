@@ -130,24 +130,26 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         internal static void Broadcast(IPeerNetwork net, Action<BinaryWriter> cb)
         {
-            var str = new MemoryStream();
+            byte[] buffer = new byte[1024];
+            using (var str = new MemoryStream(buffer))
             using (var writer = new BinaryWriter(str))
             {
+
                 cb.Invoke(writer);
+                net.Broadcast(buffer, (int)str.Length);
             }
-            net.Broadcast(str.ToArray());
         }
 
         internal static void Reply(IPeerNetwork net, IPeerNetworkMessage msg, Action<BinaryWriter> cb)
         {
-            var str = new MemoryStream();
+            byte[] buffer = new byte[1024];
+            using (var str = new MemoryStream(buffer))
             using (var writer = new BinaryWriter(str))
             {
                 cb.Invoke(writer);
+                net.Reply(msg, buffer, (int)str.Length);
             }
-            net.Reply(msg, str.ToArray());
         }
-
     }
 
     // The protocol is a hybrid announce+query which allows for quick response without large amounts
@@ -202,7 +204,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         private static void DecodeServerAnnounce(ServerAnnounceCallback callback, IPeerNetworkMessage msg)
         {
-            using (var ms = new MemoryStream(msg.Message, 4, msg.Message.Length - 4, false))
+            using (var ms = new MemoryStream(msg.Contents.Array, msg.Contents.Offset + 4, msg.Contents.Count - 4, false))
             using (var br = new BinaryReader(ms))
             {
                 var cat = br.ReadString();
@@ -232,7 +234,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         private static void DecodeServerByeBye(ServerByeByeCallback callback, IPeerNetworkMessage msg)
         {
-            using (var ms = new MemoryStream(msg.Message, 4, msg.Message.Length - 4, false))
+            using (var ms = new MemoryStream(msg.Contents.Array, msg.Contents.Offset + 4, msg.Contents.Count - 4, false))
             using (var br = new BinaryReader(ms))
             {
                 int numRemoved = br.ReadInt32();
@@ -253,7 +255,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         private static void DecodeClientQuery(ClientQueryCallback callback, IPeerNetworkMessage msg)
         {
-            using (var ms = new MemoryStream(msg.Message, 4, msg.Message.Length - 4, false))
+            using (var ms = new MemoryStream(msg.Contents.Array, msg.Contents.Offset + 4, msg.Contents.Count - 4, false))
             using (var br = new BinaryReader(ms))
             {
                 var category = br.ReadString();
@@ -320,11 +322,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         internal void Dispatch(IPeerNetworkMessage msg)
         {
-            if (msg.Message.Length < 4)
+            if (msg.Contents.Count < 4)
             {
                 return; // throw
             }
-            switch (BitConverter.ToInt32(msg.Message, 0))
+            switch (BitConverter.ToInt32(msg.Contents.Array, msg.Contents.Offset))
             {
                 case Proto.ServerHello:
                 {
@@ -540,7 +542,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         internal void Stop()
         {
-            lock(this)
+            lock (this)
             {
                 timer_.Change(Timeout.Infinite, Timeout.Infinite);
                 timerExpiryFileTime_ = -1;

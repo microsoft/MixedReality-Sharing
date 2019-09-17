@@ -15,10 +15,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
     class UdpPeerNetworkMessage : IPeerNetworkMessage
     {
-        public byte[] Message { get; }
-        internal UdpPeerNetworkMessage(EndPoint sender, byte[] msg)
+        public ArraySegment<byte> Contents { get; }
+        internal UdpPeerNetworkMessage(EndPoint sender, ArraySegment<byte> msg)
         {
-            Message = msg;
+            Contents = msg;
             sender_ = sender;
         }
         internal EndPoint sender_;
@@ -75,9 +75,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
             // Dispatch the message.
             var result = task.Result;
-            var buf = new byte[result.ReceivedBytes];
-            Array.Copy(readBuffer_, 0, buf, 0, buf.Length);
-            Message?.Invoke(this, new UdpPeerNetworkMessage(result.RemoteEndPoint, buf));
+            Debug.Assert(readSegment_.Offset == 0);
+            Message?.Invoke(this, new UdpPeerNetworkMessage(result.RemoteEndPoint, new ArraySegment<byte>(readSegment_.Array, 0, result.ReceivedBytes)));
 
             // Listen again.
             socket_.ReceiveFromAsync(readSegment_, SocketFlags.None, anywhere_)
@@ -157,15 +156,15 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             socket_.Dispose();
         }
 
-        public void Broadcast(byte[] msg)
+        public void Broadcast(byte[] buffer, int size)
         {
-            socket_.SendTo(msg, broadcastEndpoint_);
+            socket_.SendTo(buffer, size, SocketFlags.None, broadcastEndpoint_);
         }
 
-        public void Reply(IPeerNetworkMessage req, byte[] msg)
+        public void Reply(IPeerNetworkMessage req, byte[] buffer, int size)
         {
             var umsg = req as UdpPeerNetworkMessage;
-            socket_.SendTo(msg, umsg.sender_);
+            socket_.SendTo(buffer, size, SocketFlags.None, umsg.sender_);
         }
     }
 }

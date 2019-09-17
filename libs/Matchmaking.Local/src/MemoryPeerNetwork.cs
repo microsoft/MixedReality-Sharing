@@ -11,13 +11,14 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
     class MemoryPeerNetworkMessage : IPeerNetworkMessage
     {
-        public byte[] Message { get; }
-        internal MemoryPeerNetworkMessage(MemoryPeerNetwork sender, byte[] msg)
-        {
-            Message = msg;
-            sender_ = sender;
-        }
         internal MemoryPeerNetwork sender_;
+        public ArraySegment<byte> Contents { get; }
+
+        internal MemoryPeerNetworkMessage(MemoryPeerNetwork sender, ArraySegment<byte> contents)
+        {
+            sender_ = sender;
+            Contents = contents;
+        }
     }
 
     public class MemoryPeerNetwork : IPeerNetwork
@@ -63,9 +64,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         public event Action<IPeerNetwork, IPeerNetworkMessage> Message;
 
-        public void Broadcast(byte[] message)
+        public void Broadcast(byte[] buffer, int size)
         {
-            var m = new MemoryPeerNetworkMessage(this, message);
+            var m = new MemoryPeerNetworkMessage(this, new ArraySegment<byte>(buffer, 0, size));
             foreach (var c in instances_)
             {
                 c.incoming_.Enqueue(m);
@@ -73,10 +74,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             PumpNetwork();
         }
 
-        public void Reply(IPeerNetworkMessage req, byte[] message)
+        public void Reply(IPeerNetworkMessage req, byte[] buffer, int size)
         {
             var r = req as MemoryPeerNetworkMessage;
-            var m = new MemoryPeerNetworkMessage(this, message);
+            var m = new MemoryPeerNetworkMessage(this, new ArraySegment<byte>(buffer, 0, size));
             r.sender_.incoming_.Enqueue(m);
             PumpNetwork();
         }
@@ -115,7 +116,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             while (true)
             {
                 int orig = networkStatus_;
-                if( (orig & NetworkQueuedSome) != 0 )
+                if ((orig & NetworkQueuedSome) != 0)
                 {
                     return;
                 }
@@ -129,7 +130,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     }
                     return;
                 }
-            }           
+            }
         }
     }
 }
