@@ -167,7 +167,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         private const int MaxNumAttrs = 1024;
 
         internal delegate void ServerAnnounceCallback(IPeerNetworkMessage msg, string category, Guid guid, string connection, long expiresFileTime, Dictionary<string, string> attributes);
-        internal delegate void ServerByeByeCallback(IPeerNetworkMessage msg, string[] category, Guid[] guid);
+        internal delegate void ServerByeByeCallback(IPeerNetworkMessage msg, RoomsToRemove[] room);
         internal delegate void ClientQueryCallback(IPeerNetworkMessage msg, string category);
 
         IPeerNetwork net_;
@@ -175,6 +175,18 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         internal ServerByeByeCallback OnServerByeBye;
         internal ServerAnnounceCallback OnServerReply;
         internal ClientQueryCallback OnClientQuery;
+
+        internal class RoomsToRemove
+        {
+            public readonly string Category;
+            public readonly Guid[] Guids;
+
+            public RoomsToRemove(string category, Guid[] guids)
+            {
+                Category = category;
+                Guids = guids;
+            }
+        }
 
         internal Proto(IPeerNetwork net)
         {
@@ -235,19 +247,28 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             using (var ms = new MemoryStream(msg.Message, 4, msg.Message.Length - 4, false))
             using (var br = new BinaryReader(ms))
             {
-                int numRemoved = br.ReadInt32();
-                if (numRemoved <= 0)
+                int numCatRemoved = br.ReadInt32();
+                if (numCatRemoved <= 0)
                 {
                     return;
                 }
-                var categories = new string[numRemoved];
-                var guids = new Guid[numRemoved];
-                for (int i = 0; i < numRemoved; ++i)
+                var categories = new RoomsToRemove[numCatRemoved];
+                for (int catIdx = 0; catIdx < numCatRemoved; ++catIdx)
                 {
-                    categories[i] = br.ReadString();
-                    guids[i] = new Guid(br.ReadBytes(16));
+                    var category = br.ReadString();
+                    var numIds = br.ReadInt32();
+                    if (numIds < 0)
+                    {
+                        return;
+                    }
+                    var guids = new Guid[numIds];
+                    for (int idIdx = 0; idIdx < numIds; ++idIdx)
+                    {
+                        guids[idIdx] = new Guid(br.ReadBytes(16));
+                    }
+                    categories[catIdx] = new RoomsToRemove(category, guids);
                 }
-                callback(msg, categories, guids);
+                callback(msg, categories);
             }
         }
 
@@ -295,16 +316,20 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
         }
 
-        internal void SendServerByeBye(ICollection<(string, Guid)> rooms)
+        internal void SendServerByeBye(ICollection<RoomsToRemove> rooms)
         {
             Extensions.Broadcast(net_, w =>
             {
                 w.Write(Proto.ServerByeBye);
                 w.Write(rooms.Count);
-                foreach (var room in rooms)
+                foreach (var group in rooms)
                 {
-                    w.Write(room.Item1);
-                    w.Write(room.Item2.ToByteArray());
+                    w.Write(group.Category);
+                    w.Write(group.Guids.Length);
+                    foreach(var id in group.Guids)
+                    {
+                        w.Write(id.ToByteArray());
+                    }
                 }
             });
         }
@@ -421,13 +446,15 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         internal void Stop()
         {
-            (string, Guid)[] data;
+            Proto.RoomsToRemove[] data;
             lock (this)
             {
                 timer_.Change(Timeout.Infinite, Timeout.Infinite);
                 timerExpiryTime_ = DateTime.MaxValue;
 
-                data = localRooms_.Select(r => (r.Category, r.UniqueId)).ToArray();
+                data = localRooms_.GroupBy(r => r.Category, r => r.UniqueId,
+                    (category, guids) => new Proto.RoomsToRemove(category, guids.ToArray()))
+                    .ToArray();
             }
             proto_.SendServerByeBye(data);
             proto_.Stop();
@@ -778,18 +805,20 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
         }
 
-        private void OnServerByeBye(IPeerNetworkMessage msg, string[] category, Guid[] guid)
+        private void OnServerByeBye(IPeerNetworkMessage msg, IEnumerable<Proto.RoomsToRemove> rooms)
         {
-            Debug.Assert(category.Length == guid.Length);
             lock (this)
             {
-                for (int i = 0; i < category.Length; ++i)
+                foreach (var category in rooms)
                 {
                     CategoryInfo info;
-                    if (infoFromCategory_.TryGetValue(category[i], out info))
+                    if (infoFromCategory_.TryGetValue(category.Category, out info))
                     {
-                        info.roomsRemote_.Remove(guid[i]);
-                        info.roomSerial_ += 1;
+                        foreach (var id in category.Guids)
+                        {
+                            info.roomsRemote_.Remove(id);
+                            info.roomSerial_ += 1;
+                        }
                     }
                 }
             }
