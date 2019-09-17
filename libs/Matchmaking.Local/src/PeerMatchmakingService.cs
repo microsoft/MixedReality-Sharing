@@ -421,15 +421,13 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         internal void Stop()
         {
-            var data = new List<(string, Guid)>(localRooms_.Count);
+            (string, Guid)[] data;
             lock (this)
             {
                 timer_.Change(Timeout.Infinite, Timeout.Infinite);
                 timerExpiryTime_ = DateTime.MaxValue;
-                foreach(var r in localRooms_)
-                {
-                    data.Add((r.Category, r.UniqueId));
-                }
+
+                data = localRooms_.Select(r => (r.Category, r.UniqueId)).ToArray();
             }
             proto_.SendServerByeBye(data);
             proto_.Stop();
