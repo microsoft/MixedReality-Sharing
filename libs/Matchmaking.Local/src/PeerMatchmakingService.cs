@@ -370,7 +370,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// Timer for re-announcing rooms.
         Timer timer_;
         /// Time when the timer will fire or MaxValue if the timer is unset.
-        DateTime timerExpiryTime = DateTime.MaxValue;
+        DateTime timerExpiryTime_ = DateTime.MaxValue;
 
         /// Protocol handler.
         Proto proto_;
@@ -422,9 +422,14 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         internal void Stop()
         {
             var data = new List<(string, Guid)>(localRooms_.Count);
-            foreach(var r in localRooms_)
+            lock (this)
             {
-                data.Add((r.Category, r.UniqueId));
+                timer_.Change(Timeout.Infinite, Timeout.Infinite);
+                timerExpiryTime_ = DateTime.MaxValue;
+                foreach(var r in localRooms_)
+                {
+                    data.Add((r.Category, r.UniqueId));
+                }
             }
             proto_.SendServerByeBye(data);
             proto_.Stop();
@@ -438,13 +443,13 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             {
                 var now = DateTime.UtcNow;
                 var delta = next.Subtract(now);
-                timerExpiryTime = next;
+                timerExpiryTime_ = next;
                 timer_.Change((int)Math.Max(delta.TotalMilliseconds + 1, 0), -1);
             }
             else // no more rooms
             {
-                timer_.Change(-1, -1);
-                timerExpiryTime = DateTime.MaxValue;
+                timer_.Change(Timeout.Infinite, Timeout.Infinite);
+                timerExpiryTime_ = DateTime.MaxValue;
             }
         }
 
@@ -498,7 +503,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// Timer for expiring rooms.
         Timer timer_;
         /// Time when the timer will fire or -1 if the timer is unset.
-        long timerExpiryFileTime = -1;
+        long timerExpiryFileTime_ = -1;
 
         /// The list of all local rooms of all categories
         IDictionary<string, CategoryInfo> infoFromCategory_ = new Dictionary<string, CategoryInfo>();
@@ -537,6 +542,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         internal void Stop()
         {
+            lock(this)
+            {
+                timer_.Change(Timeout.Infinite, Timeout.Infinite);
+                timerExpiryFileTime_ = -1;
+            }
             proto_.Stop();
         }
 
@@ -657,7 +667,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 // Cast to int since UWP does not implement long ctor.
                 var deltaMsInt = (int)Math.Min(deltaMs, int.MaxValue);
                 timer_.Change(deltaMsInt, Timeout.Infinite);
-                timerExpiryFileTime = fileTime;
+                timerExpiryFileTime_ = fileTime;
             }
         }
 
@@ -751,7 +761,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     }
                 }
                 // If this expiry is sooner than the current timer, we need to reset the timer.
-                if (expiresFileTime < timerExpiryFileTime)
+                if (expiresFileTime < timerExpiryFileTime_)
                 {
                     SetExpirationTimer(expiresFileTime);
                 }
