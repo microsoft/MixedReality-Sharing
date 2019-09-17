@@ -586,6 +586,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 }
                 var expires = DateTime.UtcNow.AddSeconds(expiresDelta).Ticks;
                 var cnt = br.ReadInt32();
+                if (cnt < 0)
+                {
+                    return;
+                }
                 var attrs = cnt != 0 ? new Dictionary<string, string>() : null;
                 for (int i = 0; i < cnt; ++i)
                 {
@@ -661,6 +665,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             using (var br = new BinaryReader(ms))
             {
                 int numRemoved = br.ReadInt32();
+                if( numRemoved <= 0)
+                {
+                    return;
+                }
                 lock (this)
                 {
                     for (int i = 0; i < numRemoved; ++i)
