@@ -795,7 +795,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     bool roomsDeletedFromThisCategory = false;
 
                     // Sort the current category.
-                    var curSortedRoomGuids = info.roomsRemote_.Keys.OrderBy(g => g).ToArray();
+                    var curSortedRoomGuids = info.roomsRemote_.Keys.ToArray();
 
                     // Walk the lists together.
                     var node = remainingToRemove.First;
