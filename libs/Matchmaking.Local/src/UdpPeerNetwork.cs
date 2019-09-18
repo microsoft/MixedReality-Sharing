@@ -156,15 +156,15 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             socket_.Dispose();
         }
 
-        public void Broadcast(byte[] buffer, int size)
+        public void Broadcast(ArraySegment<byte> message)
         {
-            socket_.SendTo(buffer, size, SocketFlags.None, broadcastEndpoint_);
+            socket_.SendTo(message.Array, message.Offset, message.Count, SocketFlags.None, broadcastEndpoint_);
         }
 
-        public void Reply(IPeerNetworkMessage req, byte[] buffer, int size)
+        public void Reply(IPeerNetworkMessage req, ArraySegment<byte> message)
         {
             var umsg = req as UdpPeerNetworkMessage;
-            socket_.SendTo(buffer, size, SocketFlags.None, umsg.sender_);
+            socket_.SendTo(message.Array, message.Offset, message.Count, SocketFlags.None, umsg.sender_);
         }
     }
 }

@@ -134,9 +134,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             using (var str = new MemoryStream(buffer))
             using (var writer = new BinaryWriter(str))
             {
-
                 cb.Invoke(writer);
-                net.Broadcast(buffer, (int)str.Length);
+                net.Broadcast(new ArraySegment<byte>(buffer, 0, (int)str.Length));
             }
         }
 
@@ -147,7 +146,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             using (var writer = new BinaryWriter(str))
             {
                 cb.Invoke(writer);
-                net.Reply(msg, buffer, (int)str.Length);
+                net.Reply(msg, new ArraySegment<byte>(buffer, 0, (int)str.Length));
             }
         }
     }

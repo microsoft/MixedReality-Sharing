@@ -41,14 +41,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// Send a message to all others in this network.
         /// </summary>
         /// <param name="message">The buffer containing the message to send</param>
-        /// <param name="size">The number of bytes to send</param>
-        void Broadcast(byte[] message, int size);
+        void Broadcast(ArraySegment<byte> message);
 
         /// <summary>
         /// Reply to a message. (Typically a broadcast message)
         /// </summary>
         /// <param name="message">The buffer containing the message to send</param>
-        /// <param name="size">The number of bytes to send</param>
-        void Reply(IPeerNetworkMessage inResponseTo, byte[] message, int size);
+        void Reply(IPeerNetworkMessage inResponseTo, ArraySegment<byte> message);
     }
 }
