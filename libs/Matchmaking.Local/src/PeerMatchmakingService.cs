@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -168,7 +169,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         private const int MaxNumAttrs = 1024;
 
         internal delegate void ServerAnnounceCallback(IPeerNetworkMessage msg, string category, Guid guid, string connection, long expiresFileTime, Dictionary<string, string> attributes);
-        internal delegate void ServerByeByeCallback(IPeerNetworkMessage msg, string[] category, Guid[] guid);
+        internal delegate void ServerByeByeCallback(IPeerNetworkMessage msg, Guid[] rooms);
         internal delegate void ClientQueryCallback(IPeerNetworkMessage msg, string category);
 
         IPeerNetwork net_;
@@ -241,14 +242,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 {
                     return;
                 }
-                var categories = new string[numRemoved];
-                var guids = new Guid[numRemoved];
+                var toRemove = new Guid[numRemoved];
                 for (int i = 0; i < numRemoved; ++i)
                 {
-                    categories[i] = br.ReadString();
-                    guids[i] = new Guid(br.ReadBytes(16));
+                    toRemove[i] = new Guid(br.ReadBytes(16));
                 }
-                callback(msg, categories, guids);
+                callback(msg, toRemove);
             }
         }
 
@@ -296,16 +295,15 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
         }
 
-        internal void SendServerByeBye(ICollection<(string, Guid)> rooms)
+        internal void SendServerByeBye(ICollection<Guid> rooms)
         {
             Extensions.Broadcast(net_, w =>
             {
                 w.Write(Proto.ServerByeBye);
                 w.Write(rooms.Count);
-                foreach (var room in rooms)
+                foreach(var id in rooms)
                 {
-                    w.Write(room.Item1);
-                    w.Write(room.Item2.ToByteArray());
+                    w.Write(id.ToByteArray());
                 }
             });
         }
@@ -422,13 +420,13 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         internal void Stop()
         {
-            (string, Guid)[] data;
+            Guid[] data;
             lock (this)
             {
                 timer_.Change(Timeout.Infinite, Timeout.Infinite);
                 timerExpiryTime_ = DateTime.MaxValue;
 
-                data = localRooms_.Select(r => (r.Category, r.UniqueId)).ToArray();
+                data = localRooms_.Select(r => r.UniqueId).ToArray();
             }
             proto_.SendServerByeBye(data);
             proto_.Stop();
@@ -577,7 +575,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             internal IList<DiscoveryTask> tasks_ = new List<DiscoveryTask>();
 
             // Currently known remote rooms. Each time it is updated, we update roomSerial_ also so that tasks can cache efficiently.
-            internal IDictionary<Guid, RemoteRoom> roomsRemote_ = new SortedDictionary<Guid, RemoteRoom>();
+            internal SortedDictionary<Guid, RemoteRoom> roomsRemote_ = new SortedDictionary<Guid, RemoteRoom>();
 
             // This is incremented on each change to the category
             internal int roomSerial_ = 0;
@@ -779,20 +777,70 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
         }
 
-        private void OnServerByeBye(IPeerNetworkMessage msg, string[] category, Guid[] guid)
+        private void OnServerByeBye(IPeerNetworkMessage msg, Guid[] rooms)
         {
-            Debug.Assert(category.Length == guid.Length);
+            if (rooms.Length == 0)
+            {
+                return;
+            }
+
+            // Search for all the rooms in the local map and remove them. Sort the rooms to make it faster.
+            // todo: move to utilities, add unit tests
+            Array.Sort(rooms);
+            var remainingToRemove = new LinkedList<Guid>(rooms);
+            var tasksUpdated = new List<DiscoveryTask>();
             lock (this)
             {
-                for (int i = 0; i < category.Length; ++i)
+                foreach (var pair in infoFromCategory_)
                 {
-                    CategoryInfo info;
-                    if (infoFromCategory_.TryGetValue(category[i], out info))
+                    CategoryInfo info = pair.Value;
+                    bool roomsDeletedFromThisCategory = false;
+
+                    SortedDictionary<Guid, RemoteRoom> catRooms = info.roomsRemote_;
+                    var curSortedRoomGuids = catRooms.Keys.ToArray();
+
+                    // Walk the lists together.
+                    var node = remainingToRemove.First;
+                    foreach (var guid in curSortedRoomGuids)
                     {
-                        info.roomsRemote_.Remove(guid[i]);
-                        info.roomSerial_ += 1;
+                        while (node != null && node.Value.CompareTo(guid) < 0)
+                        {
+                            node = node.Next;
+                        }
+                        if (node == null)
+                        {
+                            break;
+                        }
+                        if (node.Value == guid)
+                        {
+                            // Found match.
+                            // Remove from local map.
+                            info.roomsRemote_.Remove(guid);
+                            info.roomSerial_ += 1;
+
+                            // Remove from list too so we don't search for this .
+                            var next = node.Next;
+                            remainingToRemove.Remove(node);
+                            node = next;
+
+                            roomsDeletedFromThisCategory = true;
+                        }
+                    }
+
+                    if (roomsDeletedFromThisCategory)
+                    {
+                        tasksUpdated.AddRange(info.tasks_);
+                    }
+
+                    if (!remainingToRemove.Any())
+                    {
+                        break;
                     }
                 }
+            }
+            foreach (var t in tasksUpdated) // outside the lock
+            {
+                t.FireUpdated();
             }
         }
     }
