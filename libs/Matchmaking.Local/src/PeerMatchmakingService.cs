@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -573,7 +574,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             internal IList<DiscoveryTask> tasks_ = new List<DiscoveryTask>();
 
             // Currently known remote rooms. Each time it is updated, we update roomSerial_ also so that tasks can cache efficiently.
-            internal IDictionary<Guid, RemoteRoom> roomsRemote_ = new SortedDictionary<Guid, RemoteRoom>();
+            internal SortedDictionary<Guid, RemoteRoom> roomsRemote_ = new SortedDictionary<Guid, RemoteRoom>();
 
             // This is incremented on each change to the category
             internal int roomSerial_ = 0;
@@ -794,8 +795,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     CategoryInfo info = pair.Value;
                     bool roomsDeletedFromThisCategory = false;
 
-                    // Sort the current category.
-                    var curSortedRoomGuids = info.roomsRemote_.Keys.ToArray();
+                    SortedDictionary<Guid, RemoteRoom> catRooms = info.roomsRemote_;
+                    var curSortedRoomGuids = catRooms.Keys.ToArray();
 
                     // Walk the lists together.
                     var node = remainingToRemove.First;
