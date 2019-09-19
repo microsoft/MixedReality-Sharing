@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
@@ -44,10 +45,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     public interface IRoomEditor
     {
         /// <summary>
-        /// Commit the edits made through this interface.
+        /// Try to commit the edits made through this interface.
         /// </summary>
-		//TODO - failure codes? retry?
-        void Commit();
+        Task CommitAsync();
 
         /// <summary>
         /// Add or replace a key value pair to the attributes.
@@ -55,8 +55,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         void PutAttribute(string key, string value);
 
         /// <summary>
-        /// Return true if the attribute was removed, otherwise false.
+        /// Remove the attribute with the given key.
         /// </summary>
-        bool RemoveAttribute(string key);
+        void RemoveAttribute(string key);
     }
 }

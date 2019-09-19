@@ -459,8 +459,15 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             IReadOnlyDictionary<string, string> attributes = null,
             CancellationToken token = default)
         {
-            var room = new LocalRoom(category, connection, expirySeconds,
-                attributes != null ? attributes : new Dictionary<string, string>());
+            var attrs = new Dictionary<string, string>();
+            if( attributes!= null) // copy so user can't change them behind our back
+            {
+                foreach(var kvp in attributes)
+                {
+                    attrs[kvp.Key] = kvp.Value;
+                }
+            }
+            var room = new LocalRoom(category, connection, expirySeconds, attrs);
             lock (this)
             {
                 localRooms_.Add(room); // new local rooms get a new guid, always unique
@@ -471,15 +478,20 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         }
 
         // Room which has been created locally. And is owned locally.
-        class LocalRoom : IRoom, IRoomEditor
+        class LocalRoom : IRoom
         {
-            public LocalRoom(string category, string connection, int expirySeconds, IReadOnlyDictionary<string, string> attrs)
+			// Each committed edit bumps this serial number.
+			// If the serial number of an edit does not match this, then we can detect stale edits.
+            private int editSerialNumber_ = 0;
+            private Dictionary<string, string> attributes_;
+
+            public LocalRoom(string category, string connection, int expirySeconds, Dictionary<string, string> attrs)
             {
                 Category = category;
                 UniqueId = Guid.NewGuid();
                 Connection = connection;
                 ExpirySeconds = expirySeconds;
-                Attributes = attrs;
+                attributes_ = attrs;
             }
 
             public string Category { get; }
@@ -487,7 +499,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             public int ExpirySeconds { get; } // Relative time. Interval from announce to expiration.
             public DateTime LastAnnouncedTime = DateTime.MinValue; // Absolute FileTime.
             public string Connection { get; }
-            public IReadOnlyDictionary<string, string> Attributes { get; }
+            public IReadOnlyDictionary<string, string> Attributes { get => attributes_; }
             public DateTime NextAnnounceTime
             {
                 // Reannounce at 45% of expiry time. On an unreliable network, that gives 2 chances
@@ -495,10 +507,53 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 get => LastAnnouncedTime.AddSeconds(0.45 * ExpirySeconds);
             }
 
-            public IRoomEditor RequestEdit() { return this; }
-            public void Commit() { /*TODO*/; }
-            public void PutAttribute(string key, string value) { /*TODO*/ }
-            public bool RemoveAttribute(string key) { /*TODO*/ return true; }
+            class RaceEditException : Exception
+            {
+                internal RaceEditException() : base("Another edit was made against the same baseline but commited before this one.") { }
+            }
+
+            internal Task ApplyEdit(int serial, List<string> removeAttrs, Dictionary<string, string> putAttrs)
+            {
+                lock (this)
+                {
+                    if (editSerialNumber_ != serial)
+                    {
+                        return Task.FromException(new RaceEditException());
+                    }
+                    editSerialNumber_ += 1;
+                    foreach (var rem in removeAttrs)
+                    {
+                        attributes_.Remove(rem);
+                    }
+                    foreach (var put in putAttrs)
+                    {
+                        attributes_[put.Key] = put.Value;
+                    }
+                    return Task.CompletedTask;
+                }
+            }
+
+            class Editor : IRoomEditor
+            {
+                LocalRoom room_;
+                int serial_;
+                List<string> removeAttrs_ = new List<string>();
+                Dictionary<string, string> putAttrs_ = new Dictionary<string, string>();
+
+                internal Editor(LocalRoom room, int serial)
+                {
+                    room_ = room;
+                    serial_ = serial;
+                }
+                public Task CommitAsync() { return room_.ApplyEdit(serial_, removeAttrs_, putAttrs_); }
+                public void PutAttribute(string key, string value) { putAttrs_[key] = value; }
+                public void RemoveAttribute(string key) { removeAttrs_.Add(key); }
+            }
+
+            public IRoomEditor RequestEdit()
+            {
+                return new Editor(this, editSerialNumber_);
+            }
         }
     }
 
