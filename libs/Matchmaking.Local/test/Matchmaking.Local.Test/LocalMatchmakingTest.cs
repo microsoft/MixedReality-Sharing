@@ -30,7 +30,7 @@ namespace Matchmaking.Local.Test
             }
         }
 
-        private static void AssertSameDictionary(IReadOnlyDictionary<string,string> a, IReadOnlyDictionary<string, string> b)
+        private static void AssertSameDictionary(IReadOnlyDictionary<string, string> a, IReadOnlyDictionary<string, string> b)
         {
             Assert.Equal(a.Count, b.Count);
             foreach (var entry in a)
@@ -257,14 +257,14 @@ namespace Matchmaking.Local.Test
                         Assert.Equal(TaskStatus.RanToCompletion, task.Status);
                     }
 
-                    { 
+                    {
                         var newAttrs = new Dictionary<string, string> { { "keyB", "updatedB" } };
 
                         // Edits should show locally
                         AssertSameDictionary(room2.Attributes, newAttrs);
 
-                        // And remotely
-                        var res1 = QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Any(), cts.Token);
+                        // And remotely. This currently waits for the attributes to change. It would be nice if we could inspect the network instead.
+                        var res1 = QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Any() && rl.First().Attributes.Count == 1, cts.Token);
                         Assert.Single(res1);
                         var room1 = res1.First();
                         Assert.Equal(room2.UniqueId, room1.UniqueId);

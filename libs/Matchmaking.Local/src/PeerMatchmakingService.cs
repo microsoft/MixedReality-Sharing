@@ -460,14 +460,15 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             CancellationToken token = default)
         {
             var attrs = new Dictionary<string, string>();
-            if( attributes!= null) // copy so user can't change them behind our back
+            if (attributes != null) // copy so user can't change them behind our back
             {
-                foreach(var kvp in attributes)
+                foreach (var kvp in attributes)
                 {
                     attrs[kvp.Key] = kvp.Value;
                 }
             }
             var room = new LocalRoom(category, connection, expirySeconds, attrs);
+            room.Updated = OnRoomUpdated;
             lock (this)
             {
                 localRooms_.Add(room); // new local rooms get a new guid, always unique
@@ -477,11 +478,17 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             return Task<IRoom>.FromResult((IRoom)room);
         }
 
+        private void OnRoomUpdated(LocalRoom room)
+        {
+            room.LastAnnouncedTime = DateTime.UtcNow;
+            proto_.SendServerHello(room.Category, room.UniqueId, room.Connection, room.ExpirySeconds, room.Attributes);
+        }
+
         // Room which has been created locally. And is owned locally.
         class LocalRoom : IRoom
         {
-			// Each committed edit bumps this serial number.
-			// If the serial number of an edit does not match this, then we can detect stale edits.
+            // Each committed edit bumps this serial number.
+            // If the serial number of an edit does not match this, then we can detect stale edits.
             private int editSerialNumber_ = 0;
             private Dictionary<string, string> attributes_;
 
@@ -494,6 +501,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 attributes_ = attrs;
             }
 
+            public Action<LocalRoom> Updated;
             public string Category { get; }
             public Guid UniqueId { get; }
             public int ExpirySeconds { get; } // Relative time. Interval from announce to expiration.
@@ -529,6 +537,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     {
                         attributes_[put.Key] = put.Value;
                     }
+                    Updated?.Invoke(this);
                     return Task.CompletedTask;
                 }
             }
