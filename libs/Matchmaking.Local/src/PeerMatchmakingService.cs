@@ -490,7 +490,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             // Each committed edit bumps this serial number.
             // If the serial number of an edit does not match this, then we can detect stale edits.
             private int editSerialNumber_ = 0;
-            private Dictionary<string, string> attributes_;
+            private volatile Dictionary<string, string> attributes_;
 
             public LocalRoom(string category, string connection, int expirySeconds, Dictionary<string, string> attrs)
             {
@@ -529,14 +529,17 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                         return Task.FromException(new RaceEditException());
                     }
                     editSerialNumber_ += 1;
+                    // copy and replace attributes so we don't break existing readers
+                    var attrs = new Dictionary<string, string>(attributes_);
                     foreach (var rem in removeAttrs)
                     {
-                        attributes_.Remove(rem);
+                        attrs.Remove(rem);
                     }
                     foreach (var put in putAttrs)
                     {
-                        attributes_[put.Key] = put.Value;
+                        attrs[put.Key] = put.Value;
                     }
+                    attributes_ = attrs;
                     Updated?.Invoke(this);
                     return Task.CompletedTask;
                 }
