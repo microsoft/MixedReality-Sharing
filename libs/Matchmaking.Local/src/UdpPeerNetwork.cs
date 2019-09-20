@@ -36,7 +36,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         private readonly byte[] readBuffer_ = new byte[1024];
         private readonly ArraySegment<byte> readSegment_;
 
-        // Map the ID of each stream for which we are sending messages to the latest used sequence number.
+        // Map the ID of each stream for which we are sending messages to the next sequence number to use.
         private readonly Dictionary<Guid, int> sendStreams_ = new Dictionary<Guid, int>();
 
         private class ReceiveStream
