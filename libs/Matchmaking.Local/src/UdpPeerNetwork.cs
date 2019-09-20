@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
@@ -15,10 +16,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
     class UdpPeerNetworkMessage : IPeerNetworkMessage
     {
+        public Guid StreamId { get; }
         public ArraySegment<byte> Contents { get; }
-        internal UdpPeerNetworkMessage(EndPoint sender, ArraySegment<byte> msg)
+        internal UdpPeerNetworkMessage(EndPoint sender, Guid streamId, ArraySegment<byte> msg)
         {
             Contents = msg;
+            StreamId = streamId;
             sender_ = sender;
         }
         internal EndPoint sender_;
@@ -32,6 +35,18 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         private readonly EndPoint anywhere_ = new IPEndPoint(IPAddress.Any, 0);
         private readonly byte[] readBuffer_ = new byte[1024];
         private readonly ArraySegment<byte> readSegment_;
+
+        // Map the ID of each stream for which we are sending messages to the latest used sequence number.
+        private readonly Dictionary<Guid, int> sendStreams_ = new Dictionary<Guid, int>();
+        
+        private class ReceiveStream
+        {
+            public int SeqNum = 0;
+            public DateTime LastHeard = DateTime.UtcNow; //< TODO use to purge old entries
+        }
+        
+        // Map the ID of each stream for which we are receiving messages to the highest seen sequence number.
+        private readonly Dictionary<Guid, ReceiveStream> receiveStreams_ = new Dictionary<Guid, ReceiveStream>();
 
         public event Action<IPeerNetwork, IPeerNetworkMessage> Message;
 
@@ -76,7 +91,37 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             // Dispatch the message.
             var result = task.Result;
             Debug.Assert(readSegment_.Offset == 0);
-            Message?.Invoke(this, new UdpPeerNetworkMessage(result.RemoteEndPoint, new ArraySegment<byte>(readSegment_.Array, 0, result.ReceivedBytes)));
+
+            Guid streamId;
+            int seqNum;
+            using (var str = new MemoryStream(readSegment_.Array, readSegment_.Offset, readSegment_.Count, false))
+            using (var reader = new BinaryReader(str))
+            {
+                streamId = new Guid(reader.ReadBytes(16));
+                seqNum = reader.ReadInt32();
+            }
+
+            bool handleMessage = false; ;
+            if (receiveStreams_.TryGetValue(streamId, out ReceiveStream streamData))
+            {
+                if (seqNum > streamData.SeqNum)
+                {
+                    handleMessage = true;
+                    streamData.SeqNum = seqNum;
+                    streamData.LastHeard = DateTime.UtcNow;
+                }
+            }
+            else
+            {
+                handleMessage = true;
+                receiveStreams_.Add(streamId, new ReceiveStream { SeqNum = seqNum });
+            }
+
+            if (handleMessage)
+            {
+                Message?.Invoke(this, new UdpPeerNetworkMessage(result.RemoteEndPoint,
+                    streamId, new ArraySegment<byte>(readSegment_.Array, 16 + sizeof(int), result.ReceivedBytes)));
+            }
 
             // Listen again.
             socket_.ReceiveFromAsync(readSegment_, SocketFlags.None, anywhere_)
@@ -156,15 +201,46 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             socket_.Dispose();
         }
 
-        public void Broadcast(ArraySegment<byte> message)
+        // Prepend stream ID and sequence number.
+        byte[] PrependHeader(Guid guid, ArraySegment<byte> message)
         {
-            socket_.SendTo(message.Array, message.Offset, message.Count, SocketFlags.None, broadcastEndpoint_);
+            int size = 16 + sizeof(int) + message.Count;
+            var res = new byte[size];
+            int seqId;
+            // TODO use concurrent dictionary
+            lock (sendStreams_)
+            {
+                if (sendStreams_.TryGetValue(guid, out seqId))
+                {
+                    ++sendStreams_[guid];
+                }
+                else
+                {
+                    seqId = 0;
+                    sendStreams_.Add(guid, 0);
+                }
+            }
+            using (var str = new MemoryStream(res))
+            using (var writer = new BinaryWriter(str))
+            {
+                writer.Write(guid.ToByteArray());
+                writer.Write(seqId);
+                writer.Write(message.Array, message.Offset, message.Count);
+            }
+            return res;
         }
 
-        public void Reply(IPeerNetworkMessage req, ArraySegment<byte> message)
+        public void Broadcast(Guid guid, ArraySegment<byte> message)
+        {
+            var buffer = PrependHeader(guid, message);
+            socket_.SendTo(buffer, SocketFlags.None, broadcastEndpoint_);
+        }
+
+        public void Reply(IPeerNetworkMessage req, Guid guid, ArraySegment<byte> message)
         {
             var umsg = req as UdpPeerNetworkMessage;
-            socket_.SendTo(message.Array, message.Offset, message.Count, SocketFlags.None, umsg.sender_);
+            var buffer = PrependHeader(guid, message);
+            socket_.SendTo(buffer, SocketFlags.None, umsg.sender_);
         }
     }
 }

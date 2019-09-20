@@ -129,25 +129,27 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         // network helpers
 
-        internal static void Broadcast(IPeerNetwork net, Action<BinaryWriter> cb)
+        internal static void Broadcast(IPeerNetwork net, Guid streamId, Action<BinaryWriter> cb)
         {
             byte[] buffer = new byte[1024];
             using (var str = new MemoryStream(buffer))
             using (var writer = new BinaryWriter(str))
             {
                 cb.Invoke(writer);
-                net.Broadcast(new ArraySegment<byte>(buffer, 0, (int)str.Length));
+                writer.Flush();
+                net.Broadcast(streamId, new ArraySegment<byte>(buffer, 0, (int)str.Position));
             }
         }
 
-        internal static void Reply(IPeerNetwork net, IPeerNetworkMessage msg, Action<BinaryWriter> cb)
+        internal static void Reply(IPeerNetwork net, IPeerNetworkMessage msg, Guid streamId, Action<BinaryWriter> cb)
         {
             byte[] buffer = new byte[1024];
             using (var str = new MemoryStream(buffer))
             using (var writer = new BinaryWriter(str))
             {
                 cb.Invoke(writer);
-                net.Reply(msg, new ArraySegment<byte>(buffer, 0, (int)str.Length));
+                writer.Flush();
+                net.Reply(msg, streamId, new ArraySegment<byte>(buffer, 0, (int)str.Position));
             }
         }
     }
@@ -208,7 +210,6 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             using (var br = new BinaryReader(ms))
             {
                 var cat = br.ReadString();
-                var uid = new Guid(br.ReadBytes(16));
                 var con = br.ReadString();
                 var expiresDelta = br.ReadInt32();
                 if (expiresDelta < 0)
@@ -228,7 +229,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     var v = br.ReadString();
                     attrs.Add(k, v);
                 }
-                callback(msg, cat, uid, con, expires, attrs);
+                callback(msg, cat, msg.StreamId, con, expires, attrs);
             }
         }
 
@@ -265,26 +266,25 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         internal void SendServerReply(IPeerNetworkMessage msg, string category, Guid uniqueId, string connection, int expirySeconds, IReadOnlyCollection<KeyValuePair<string, string>> attributes)
         {
-            Extensions.Reply(net_, msg, w =>
+            Extensions.Reply(net_, msg, uniqueId, w =>
             {
                 w.Write(Proto.ServerReply);
-                _SendRoomInfo(w, category, uniqueId, connection, expirySeconds, attributes);
+                _SendRoomInfo(w, category, connection, expirySeconds, attributes);
             });
         }
 
         internal void SendServerHello(string category, Guid uniqueId, string connection, int expirySeconds, IReadOnlyCollection<KeyValuePair<string, string>> attributes)
         {
-            Extensions.Broadcast(net_, w =>
+            Extensions.Broadcast(net_, uniqueId, w =>
             {
                 w.Write(Proto.ServerReply);
-                _SendRoomInfo(w, category, uniqueId, connection, expirySeconds, attributes);
+                _SendRoomInfo(w, category, connection, expirySeconds, attributes);
             });
         }
 
-        private void _SendRoomInfo(BinaryWriter w, string category, Guid uniqueId, string connection, int expirySeconds, IReadOnlyCollection<KeyValuePair<string, string>> attributes)
+        private void _SendRoomInfo(BinaryWriter w, string category, string connection, int expirySeconds, IReadOnlyCollection<KeyValuePair<string, string>> attributes)
         {
             w.Write(category);
-            w.Write(uniqueId.ToByteArray());
             w.Write(connection);
             w.Write(expirySeconds);
             w.Write(attributes.Count);
@@ -297,7 +297,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         internal void SendServerByeBye(ICollection<Guid> rooms)
         {
-            Extensions.Broadcast(net_, w =>
+            Extensions.Broadcast(net_, Guid.NewGuid() /* TODO */, w =>
             {
                 w.Write(Proto.ServerByeBye);
                 w.Write(rooms.Count);
@@ -310,7 +310,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         internal void SendClientQuery(string category)
         {
-            Extensions.Broadcast(net_, (BinaryWriter w) =>
+            Extensions.Broadcast(net_, Guid.NewGuid() /* TODO */, (BinaryWriter w) =>
             {
                 w.Write(Proto.ClientQuery);
                 w.Write(category);
