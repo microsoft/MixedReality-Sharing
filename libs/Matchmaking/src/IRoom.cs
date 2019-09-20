@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
@@ -31,5 +32,31 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// and to store data which can be retrieved by any participant.
         /// </summary>
         IReadOnlyDictionary<string, string> Attributes { get; }
+
+        /// <summary>
+        /// If the backend allows it, return an interface to edit this room. Otherwise return null.
+        /// </summary>
+        IRoomEditor RequestEdit();
+    }
+
+    /// <summary>
+    /// Interface to edit a room.
+    /// </summary>
+    public interface IRoomEditor
+    {
+        /// <summary>
+        /// Try to commit the edits made through this interface.
+        /// </summary>
+        Task CommitAsync();
+
+        /// <summary>
+        /// Add or replace a key value pair to the attributes.
+        /// </summary>
+        void PutAttribute(string key, string value);
+
+        /// <summary>
+        /// Remove the attribute with the given key.
+        /// </summary>
+        void RemoveAttribute(string key);
     }
 }
