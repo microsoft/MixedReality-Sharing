@@ -38,13 +38,13 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         // Map the ID of each stream for which we are sending messages to the latest used sequence number.
         private readonly Dictionary<Guid, int> sendStreams_ = new Dictionary<Guid, int>();
-        
+
         private class ReceiveStream
         {
             public int SeqNum = 0;
             public DateTime LastHeard = DateTime.UtcNow; //< TODO use to purge old entries
         }
-        
+
         // Map the ID of each stream for which we are receiving messages to the highest seen sequence number.
         private readonly Dictionary<Guid, ReceiveStream> receiveStreams_ = new Dictionary<Guid, ReceiveStream>();
 
@@ -217,7 +217,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 else
                 {
                     seqId = 0;
-                    sendStreams_.Add(guid, 0);
+                    sendStreams_.Add(guid, 1);
                 }
             }
             using (var str = new MemoryStream(res))
