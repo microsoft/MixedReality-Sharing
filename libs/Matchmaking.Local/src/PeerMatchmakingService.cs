@@ -1,11 +1,11 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using Microsoft.MixedReality.Sharing.Utilities;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -887,7 +887,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     /// <summary>
     /// Simple matchmaking service for local networks.
     /// </summary>
-    public class PeerMatchmakingService : IMatchmakingService
+    public class PeerMatchmakingService : DisposableBase, IMatchmakingService
     {
         /// The network for this matchmaking
         IPeerNetwork network_;
@@ -930,7 +930,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             return server_.CreateRoomAsync(category, connection, 30/*expiry*/, attributes, token);
         }
 
-        public void Dispose()
+        protected override void OnUnmanagedDispose()
         {
             server_?.Stop();
             client_?.Stop();
