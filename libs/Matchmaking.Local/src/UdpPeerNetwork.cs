@@ -2,13 +2,11 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.MixedReality.Sharing.Matchmaking
@@ -24,6 +22,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         internal EndPoint sender_;
     }
 
+    /// <summary>
+    /// This class implements transport on UDP broadcast or multicast.
+    /// UDP is inherently an unreliable protocol. Reliability decreases exponentially when the packet
+    /// becomes large enough to be fragmented (often around 1400 bytes, but sometimes smaller).
+    /// Thus this transport is best used for small packet sizes.
+    /// </summary>
     public class UdpPeerNetwork : IPeerNetwork
     {
         private Socket socket_;
@@ -156,13 +160,17 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             socket_.Dispose();
         }
 
+        static readonly int LargeMessageLimit = 1400;
+
         public void Broadcast(ArraySegment<byte> message)
         {
+            Trace.WriteIf(message.Count > LargeMessageLimit, "UdpPeerNetworkMessage.cs: Large UDP messages are not recommended");
             socket_.SendTo(message.Array, message.Offset, message.Count, SocketFlags.None, broadcastEndpoint_);
         }
 
         public void Reply(IPeerNetworkMessage req, ArraySegment<byte> message)
         {
+            Trace.WriteIf(message.Count > LargeMessageLimit, "UdpPeerNetworkMessage.cs: Large UDP messages are not recommended");
             var umsg = req as UdpPeerNetworkMessage;
             socket_.SendTo(message.Array, message.Offset, message.Count, SocketFlags.None, umsg.sender_);
         }
