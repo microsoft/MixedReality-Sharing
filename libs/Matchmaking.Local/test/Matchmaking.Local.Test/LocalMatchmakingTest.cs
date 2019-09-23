@@ -195,27 +195,48 @@ namespace Matchmaking.Local.Test
             using (var cts = new CancellationTokenSource(TestTimeoutMs))
             using (var svc1 = matchmakingServiceFactory_(1))
             {
-                const string category = "ServiceShutdownRemovesRooms";
-                var rooms1 = svc1.StartDiscovery(category);
+                const string category1 = "ServiceShutdownRemovesRooms1";
+                const string category2 = "ServiceShutdownRemovesRooms2";
+                var rooms1 = svc1.StartDiscovery(category1);
                 Assert.Empty(rooms1.Rooms);
 
+                // These are disposed manually, but keep in a using block so that they are disposed even
+                // if the test throws.
                 using (var svc2 = matchmakingServiceFactory_(2))
+                using (var svc3 = matchmakingServiceFactory_(3))
                 {
-                    // Create rooms from svc2
-                    var room1 = svc2.CreateRoomAsync(category, "conn1", null, cts.Token).Result;
+                    // Create rooms from svc2 and svc3
+                    var room2_1 = svc2.CreateRoomAsync(category1, "conn1", null, cts.Token).Result;
+                    var room2_2 = svc2.CreateRoomAsync(category2, "conn2", null, cts.Token).Result;
+                    var room3_1 = svc3.CreateRoomAsync(category1, "conn3", null, cts.Token).Result;
 
-                    // It should show up in svc1
+                    // They should show up in svc1
                     {
-                        var res1 = QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Any(), cts.Token);
-                        Assert.Single(res1);
-                        Assert.Equal(room1.UniqueId, res1.First().UniqueId);
-                    }
-                }
+                        var res1 = QueryAndWaitForRoomsPredicate(svc1, category1, rl => rl.Count() == 2, cts.Token);
+                        Assert.Equal(2, res1.Count());
+                        Assert.Contains(res1, room => room.UniqueId == room2_1.UniqueId);
+                        Assert.Contains(res1, room => room.UniqueId == room3_1.UniqueId);
 
-                // After svc2 is shut down, its rooms should be gone from svc1
-                {
-                    var res1 = QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Count() == 0, cts.Token);
-                    Assert.Empty(res1);
+                        var res2 = QueryAndWaitForRoomsPredicate(svc1, category2, rl => rl.Count() == 1, cts.Token);
+                        Assert.Equal(room2_2.UniqueId, res2.First().UniqueId);
+                    }
+
+                    // After svc2 is shut down, its rooms should be gone from svc1
+                    svc2.Dispose();
+                    {
+                        var res1 = QueryAndWaitForRoomsPredicate(svc1, category1, rl => rl.Count() == 1, cts.Token);
+                        Assert.Equal(room3_1.UniqueId, res1.First().UniqueId);
+                        var res2 = QueryAndWaitForRoomsPredicate(svc1, category2, rl => rl.Count() == 0, cts.Token);
+                        Assert.Empty(res2);
+                    }
+                    // After svc3 is shut down, all rooms should be gone from svc1
+                    svc3.Dispose();
+                    {
+                        var res1 = QueryAndWaitForRoomsPredicate(svc1, category1, rl => rl.Count() == 0, cts.Token);
+                        Assert.Empty(res1);
+                        var res2 = QueryAndWaitForRoomsPredicate(svc1, category2, rl => rl.Count() == 0, cts.Token);
+                        Assert.Empty(res2);
+                    }
                 }
             }
         }
@@ -300,7 +321,7 @@ namespace Matchmaking.Local.Test
 
                     // how to stop svc2 from announcing without bye
 
-                    // 
+                    //
                     {
                         var res1 = QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Count() == 0, cts.Token);
                         Assert.Single(res1);
