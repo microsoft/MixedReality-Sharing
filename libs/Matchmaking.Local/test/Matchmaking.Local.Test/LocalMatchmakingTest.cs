@@ -3,26 +3,30 @@
 
 using Microsoft.MixedReality.Sharing.Matchmaking;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
+using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Matchmaking.Local.Test
 {
     public abstract class LocalMatchmakingTest
     {
-        Func<int, IMatchmakingService> matchmakingServiceFactory_;
+        protected Func<int, IMatchmakingService> matchmakingServiceFactory_;
 
         protected LocalMatchmakingTest(Func<int, IMatchmakingService> matchmakingServiceFactory)
         {
             matchmakingServiceFactory_ = matchmakingServiceFactory;
         }
 
-        private static int TestTimeoutMs
+        protected static int TestTimeoutMs
         {
             get
             {
@@ -30,7 +34,7 @@ namespace Matchmaking.Local.Test
             }
         }
 
-        private static void AssertSameDictionary(IReadOnlyDictionary<string, string> a, IReadOnlyDictionary<string, string> b)
+        protected static void AssertSameDictionary(IReadOnlyDictionary<string, string> a, IReadOnlyDictionary<string, string> b)
         {
             Assert.Equal(a.Count, b.Count);
             foreach (var entry in a)
@@ -86,7 +90,7 @@ namespace Matchmaking.Local.Test
 
         // Run a query and wait for the predicate to be satisfied.
         // Return the list of rooms which satisfied the predicate or null if cancelled before the preducate was satisfied.
-        private IEnumerable<IRoom> QueryAndWaitForRoomsPredicate(
+        protected IEnumerable<IRoom> QueryAndWaitForRoomsPredicate(
             IMatchmakingService svc, string type,
             Func<IEnumerable<IRoom>, bool> pred, CancellationToken token)
         {
@@ -191,7 +195,6 @@ namespace Matchmaking.Local.Test
         public void ServiceShutdownRemovesRooms()
         {
             // start discovery, then start services afterwards
-
             using (var cts = new CancellationTokenSource(TestTimeoutMs))
             using (var svc1 = matchmakingServiceFactory_(1))
             {
@@ -364,5 +367,173 @@ namespace Matchmaking.Local.Test
         }
 
         public LocalMatchmakingTestMemory() : base(MakeMatchmakingService) { }
+    }
+
+    // Uses relay socket to reorder packets delivery.
+    public class LocalMatchmakingTestReordered : LocalMatchmakingTest, IDisposable
+    {
+        private const int MaxDelayMs = 1000;
+        private const ushort Port = 45279;
+
+        private readonly Socket relay_;
+        private readonly Random random_;
+        private readonly ITestOutputHelper output_;
+        private readonly List<IPEndPoint> recipients_ = new List<IPEndPoint>();
+
+        private IMatchmakingService MakeMatchmakingService(int userIndex)
+        {
+            // Peers all send packets to the relay.
+            var address = new IPAddress(0x0000007f + (userIndex << 24));
+            var net = new UdpPeerNetwork(new IPAddress(0xfeffff7f), Port, address);
+            recipients_.Add(new IPEndPoint(address, Port));
+            return new PeerMatchmakingService(net);
+        }
+
+        public LocalMatchmakingTestReordered(ITestOutputHelper output) : base(null)
+        {
+            matchmakingServiceFactory_ = MakeMatchmakingService;
+            output_ = output;
+
+            relay_ = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            relay_.Bind(new IPEndPoint(new IPAddress(0xfeffff7f), Port));
+
+            var seed = new Random().Next();
+            output_.WriteLine($"Seed for lossy network: {seed}");
+            random_ = new Random(seed);
+
+            // Disable exception on UDP connection reset (don't care).
+            uint IOC_IN = 0x80000000;
+            uint IOC_VENDOR = 0x18000000;
+            uint SIO_UDP_CONNRESET = IOC_IN | IOC_VENDOR | 12;
+            relay_.IOControl((int)SIO_UDP_CONNRESET, new byte[] { Convert.ToByte(false) }, null);
+
+            Task.Run(async () =>
+            {
+                try
+                {
+                    while (true)
+                    {
+                        byte[] buf_ = new byte[1024];
+                        var result = await relay_.ReceiveAsync(new ArraySegment<byte>(buf_), SocketFlags.None);
+
+                        // The relay sends the packets to all peers with a random delay.
+                        foreach (var rec in recipients_)
+                        {
+                            var delay = (int)(random_.NextDouble() * MaxDelayMs);
+                            _ = Task.Delay(delay).ContinueWith(t =>
+                            {
+                                relay_.SendToAsync(new ArraySegment<byte>(buf_, 0, result), SocketFlags.None, rec);
+                            });
+                        }
+                    }
+                }
+                catch (ObjectDisposedException) { }
+                catch (SocketException e) when (e.SocketErrorCode == SocketError.NotSocket) { }
+            });
+        }
+
+        public void Dispose()
+        {
+            relay_.Dispose();
+        }
+
+        [Fact]
+        public void AttributeEditsAreInOrder()
+        {
+            const string category = "AttributeEditsAreInOrder";
+            using (var cts = new CancellationTokenSource(TestTimeoutMs))
+            using (var svc1 = matchmakingServiceFactory_(1))
+            using (var svc2 = matchmakingServiceFactory_(2))
+            {
+                // Create room from svc2
+                var origAttrs = new Dictionary<string, string> { { "value", "0" } };
+                var room2 = svc2.CreateRoomAsync(category, "conn1", origAttrs, cts.Token).Result;
+
+                int lastValueSeen1 = 0;
+                int lastValueSeen2 = 0;
+                int lastValueCommitted = 0;
+                for (int i = 0; i < 10; ++i)
+                {
+                    // Commit a bunch of edits in service2
+                    for (int j = 0; j < 10; ++j)
+                    {
+                        {
+                            ++lastValueCommitted;
+                            var edit2 = room2.RequestEdit();
+                            Assert.NotNull(edit2);
+                            edit2.PutAttribute("value", lastValueCommitted.ToString());
+                            var task = edit2.CommitAsync();
+                            task.Wait(cts.Token);
+                        }
+                    }
+
+                    // Give some time to the messages to reach the peers.
+                    Task.Delay(100).Wait();
+
+                    // Edits should show up in svc1 in order
+                    {
+                        var res1 = QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Any(), cts.Token);
+                        Assert.Single(res1);
+                        var room1 = res1.First();
+                        Assert.Equal(room2.UniqueId, room1.UniqueId);
+                        var value = int.Parse(room1.Attributes["value"]);
+                        Assert.True(lastValueSeen1 <= value);
+                        lastValueSeen1 = value;
+                    }
+
+                    // Edits should show up in svc2 in order
+                    {
+                        var value = int.Parse(room2.Attributes["value"]);
+                        Assert.True(lastValueSeen2 <= value);
+                        lastValueSeen2 = value;
+                    }
+                }
+
+                {
+                    // Eventually the last edit should be delivered to both services.
+                    Func<IEnumerable<IRoom>, bool> lastEditWasApplied = rl =>
+                    {
+                        return rl.Any() && rl.First().Attributes.TryGetValue("value", out string value) &&
+                            int.Parse(value) == lastValueCommitted;
+                    };
+                    var res1 = QueryAndWaitForRoomsPredicate(svc1, category, lastEditWasApplied, cts.Token);
+                    Assert.Single(res1);
+                    var res2 = QueryAndWaitForRoomsPredicate(svc2, category, lastEditWasApplied, cts.Token);
+                    Assert.Single(res2);
+                }
+            }
+        }
+
+        [Fact]
+        public void NoAnnouncementsAfterDispose()
+        {
+            const string category = "NoAnnouncementsAfterDispose";
+            using (var cts = new CancellationTokenSource(TestTimeoutMs))
+            using (var svc1 = matchmakingServiceFactory_(1))
+            using (var discovery = svc1.StartDiscovery(category))
+            {
+                using (var svc2 = matchmakingServiceFactory_(2))
+                {
+                    // Create a lot of rooms.
+                    var tasks = new Task<IRoom>[50];
+                    for (int i = 0; i < tasks.Length; ++i)
+                    {
+                        tasks[i] = svc2.CreateRoomAsync(category, "conn1", null, cts.Token);
+                        Task.Delay(20).Wait();
+                    }
+
+                    // Wait until svc1 discovers at least one room.
+                    var res1 = QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Any(), cts.Token);
+                    Assert.NotNull(res1);
+                    // Dispose the service.
+                }
+
+                // Eventually there should be no rooms left.
+                {
+                    var res1 = QueryAndWaitForRoomsPredicate(svc1, category, rl => !rl.Any(), cts.Token);
+                    Assert.NotNull(res1);
+                }
+            }
+        }
     }
 }
