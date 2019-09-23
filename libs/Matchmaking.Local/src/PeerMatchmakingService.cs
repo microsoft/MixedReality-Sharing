@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -168,7 +169,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         private const int MaxNumAttrs = 1024;
 
         internal delegate void ServerAnnounceCallback(IPeerNetworkMessage msg, string category, Guid guid, string connection, long expiresFileTime, Dictionary<string, string> attributes);
-        internal delegate void ServerByeByeCallback(IPeerNetworkMessage msg, string[] category, Guid[] guid);
+        internal delegate void ServerByeByeCallback(IPeerNetworkMessage msg, Guid[] rooms);
         internal delegate void ClientQueryCallback(IPeerNetworkMessage msg, string category);
 
         IPeerNetwork net_;
@@ -241,14 +242,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 {
                     return;
                 }
-                var categories = new string[numRemoved];
-                var guids = new Guid[numRemoved];
+                var toRemove = new Guid[numRemoved];
                 for (int i = 0; i < numRemoved; ++i)
                 {
-                    categories[i] = br.ReadString();
-                    guids[i] = new Guid(br.ReadBytes(16));
+                    toRemove[i] = new Guid(br.ReadBytes(16));
                 }
-                callback(msg, categories, guids);
+                callback(msg, toRemove);
             }
         }
 
@@ -296,16 +295,15 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
         }
 
-        internal void SendServerByeBye(ICollection<(string, Guid)> rooms)
+        internal void SendServerByeBye(ICollection<Guid> rooms)
         {
             Extensions.Broadcast(net_, w =>
             {
                 w.Write(Proto.ServerByeBye);
                 w.Write(rooms.Count);
-                foreach (var room in rooms)
+                foreach(var id in rooms)
                 {
-                    w.Write(room.Item1);
-                    w.Write(room.Item2.ToByteArray());
+                    w.Write(id.ToByteArray());
                 }
             });
         }
@@ -422,13 +420,13 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         internal void Stop()
         {
-            (string, Guid)[] data;
+            Guid[] data;
             lock (this)
             {
                 timer_.Change(Timeout.Infinite, Timeout.Infinite);
                 timerExpiryTime_ = DateTime.MaxValue;
 
-                data = localRooms_.Select(r => (r.Category, r.UniqueId)).ToArray();
+                data = localRooms_.Select(r => r.UniqueId).ToArray();
             }
             proto_.SendServerByeBye(data);
             proto_.Stop();
@@ -459,8 +457,16 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             IReadOnlyDictionary<string, string> attributes = null,
             CancellationToken token = default)
         {
-            var room = new LocalRoom(category, connection, expirySeconds,
-                attributes != null ? attributes : new Dictionary<string, string>());
+            var attrs = new Dictionary<string, string>();
+            if (attributes != null) // copy so user can't change them behind our back
+            {
+                foreach (var kvp in attributes)
+                {
+                    attrs[kvp.Key] = kvp.Value;
+                }
+            }
+            var room = new LocalRoom(category, connection, expirySeconds, attrs);
+            room.Updated = OnRoomUpdated;
             lock (this)
             {
                 localRooms_.Add(room); // new local rooms get a new guid, always unique
@@ -470,29 +476,93 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             return Task<IRoom>.FromResult((IRoom)room);
         }
 
+        private void OnRoomUpdated(LocalRoom room)
+        {
+            room.LastAnnouncedTime = DateTime.UtcNow;
+            proto_.SendServerHello(room.Category, room.UniqueId, room.Connection, room.ExpirySeconds, room.Attributes);
+        }
+
         // Room which has been created locally. And is owned locally.
         class LocalRoom : IRoom
         {
-            public LocalRoom(string category, string connection, int expirySeconds, IReadOnlyDictionary<string, string> attrs)
+            // Each committed edit bumps this serial number.
+            // If the serial number of an edit does not match this, then we can detect stale edits.
+            private int editSerialNumber_ = 0;
+            private volatile Dictionary<string, string> attributes_;
+
+            public LocalRoom(string category, string connection, int expirySeconds, Dictionary<string, string> attrs)
             {
                 Category = category;
                 UniqueId = Guid.NewGuid();
                 Connection = connection;
                 ExpirySeconds = expirySeconds;
-                Attributes = attrs;
+                attributes_ = attrs;
             }
 
+            public Action<LocalRoom> Updated;
             public string Category { get; }
             public Guid UniqueId { get; }
             public int ExpirySeconds { get; } // Relative time. Interval from announce to expiration.
             public DateTime LastAnnouncedTime = DateTime.MinValue; // Absolute FileTime.
             public string Connection { get; }
-            public IReadOnlyDictionary<string, string> Attributes { get; }
+            public IReadOnlyDictionary<string, string> Attributes { get => attributes_; }
             public DateTime NextAnnounceTime
             {
                 // Reannounce at 45% of expiry time. On an unreliable network, that gives 2 chances
                 // for clients to refresh before expiring.
                 get => LastAnnouncedTime.AddSeconds(0.45 * ExpirySeconds);
+            }
+
+            class RaceEditException : Exception
+            {
+                internal RaceEditException() : base("Another edit was made against the same baseline but commited before this one.") { }
+            }
+
+            internal Task ApplyEdit(int serial, List<string> removeAttrs, Dictionary<string, string> putAttrs)
+            {
+                lock (this)
+                {
+                    if (editSerialNumber_ != serial)
+                    {
+                        return Task.FromException(new RaceEditException());
+                    }
+                    editSerialNumber_ += 1;
+                    // copy and replace attributes so we don't break existing readers
+                    var attrs = new Dictionary<string, string>(attributes_);
+                    foreach (var rem in removeAttrs)
+                    {
+                        attrs.Remove(rem);
+                    }
+                    foreach (var put in putAttrs)
+                    {
+                        attrs[put.Key] = put.Value;
+                    }
+                    attributes_ = attrs;
+                    Updated?.Invoke(this);
+                    return Task.CompletedTask;
+                }
+            }
+
+            class Editor : IRoomEditor
+            {
+                LocalRoom room_;
+                int serial_;
+                List<string> removeAttrs_ = new List<string>();
+                Dictionary<string, string> putAttrs_ = new Dictionary<string, string>();
+
+                internal Editor(LocalRoom room, int serial)
+                {
+                    room_ = room;
+                    serial_ = serial;
+                }
+                public Task CommitAsync() { return room_.ApplyEdit(serial_, removeAttrs_, putAttrs_); }
+                public void PutAttribute(string key, string value) { putAttrs_[key] = value; }
+                public void RemoveAttribute(string key) { removeAttrs_.Add(key); }
+            }
+
+            public IRoomEditor RequestEdit()
+            {
+                return new Editor(this, editSerialNumber_);
             }
         }
     }
@@ -566,6 +636,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             public Guid UniqueId { get; }
             public string Connection { get; set; }
             public IReadOnlyDictionary<string, string> Attributes { get; set; }
+            public IRoomEditor RequestEdit() { return null; }
         }
 
         // Internal class which holds the latest results for each category.
@@ -577,7 +648,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             internal IList<DiscoveryTask> tasks_ = new List<DiscoveryTask>();
 
             // Currently known remote rooms. Each time it is updated, we update roomSerial_ also so that tasks can cache efficiently.
-            internal IDictionary<Guid, RemoteRoom> roomsRemote_ = new SortedDictionary<Guid, RemoteRoom>();
+            internal SortedDictionary<Guid, RemoteRoom> roomsRemote_ = new SortedDictionary<Guid, RemoteRoom>();
 
             // This is incremented on each change to the category
             internal int roomSerial_ = 0;
@@ -779,20 +850,70 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
         }
 
-        private void OnServerByeBye(IPeerNetworkMessage msg, string[] category, Guid[] guid)
+        private void OnServerByeBye(IPeerNetworkMessage msg, Guid[] rooms)
         {
-            Debug.Assert(category.Length == guid.Length);
+            if (rooms.Length == 0)
+            {
+                return;
+            }
+
+            // Search for all the rooms in the local map and remove them. Sort the rooms to make it faster.
+            // todo: move to utilities, add unit tests
+            Array.Sort(rooms);
+            var remainingToRemove = new LinkedList<Guid>(rooms);
+            var tasksUpdated = new List<DiscoveryTask>();
             lock (this)
             {
-                for (int i = 0; i < category.Length; ++i)
+                foreach (var pair in infoFromCategory_)
                 {
-                    CategoryInfo info;
-                    if (infoFromCategory_.TryGetValue(category[i], out info))
+                    CategoryInfo info = pair.Value;
+                    bool roomsDeletedFromThisCategory = false;
+
+                    SortedDictionary<Guid, RemoteRoom> catRooms = info.roomsRemote_;
+                    var curSortedRoomGuids = catRooms.Keys.ToArray();
+
+                    // Walk the lists together.
+                    var node = remainingToRemove.First;
+                    foreach (var guid in curSortedRoomGuids)
                     {
-                        info.roomsRemote_.Remove(guid[i]);
-                        info.roomSerial_ += 1;
+                        while (node != null && node.Value.CompareTo(guid) < 0)
+                        {
+                            node = node.Next;
+                        }
+                        if (node == null)
+                        {
+                            break;
+                        }
+                        if (node.Value == guid)
+                        {
+                            // Found match.
+                            // Remove from local map.
+                            info.roomsRemote_.Remove(guid);
+                            info.roomSerial_ += 1;
+
+                            // Remove from list too so we don't search for this .
+                            var next = node.Next;
+                            remainingToRemove.Remove(node);
+                            node = next;
+
+                            roomsDeletedFromThisCategory = true;
+                        }
+                    }
+
+                    if (roomsDeletedFromThisCategory)
+                    {
+                        tasksUpdated.AddRange(info.tasks_);
+                    }
+
+                    if (!remainingToRemove.Any())
+                    {
+                        break;
                     }
                 }
+            }
+            foreach (var t in tasksUpdated) // outside the lock
+            {
+                t.FireUpdated();
             }
         }
     }

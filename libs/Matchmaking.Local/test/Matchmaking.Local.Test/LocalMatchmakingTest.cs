@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Matchmaking.Local.Test
@@ -29,12 +30,12 @@ namespace Matchmaking.Local.Test
             }
         }
 
-        private static void AssertSameAttributes(IRoom a, IRoom b)
+        private static void AssertSameDictionary(IReadOnlyDictionary<string, string> a, IReadOnlyDictionary<string, string> b)
         {
-            Assert.Equal(a.Attributes.Count, b.Attributes.Count);
-            foreach (var entry in a.Attributes)
+            Assert.Equal(a.Count, b.Count);
+            foreach (var entry in a)
             {
-                Assert.Equal(entry.Value, b.Attributes[entry.Key]);
+                Assert.Equal(entry.Value, b[entry.Key]);
             }
         }
 
@@ -67,17 +68,6 @@ namespace Matchmaking.Local.Test
             //var lAttributes = lhs.Attributes.OrderBy(a => a.Key);
             //var rAttributes = rhs.Attributes.OrderBy(a => a.Key);
             //Assert.True(lAttributes.SequenceEqual(rAttributes));
-        }
-
-        private bool SameRoom(IRoom lhs, IRoom rhs)
-        {
-            if (lhs.Connection != rhs.Connection) return false;
-
-            // Attributes are equal.
-            //var lAttributes = lhs.Attributes.OrderBy(a => a.Key);
-            //var rAttributes = rhs.Attributes.OrderBy(a => a.Key);
-            //return lAttributes.SequenceEqual(rAttributes);
-            return true;
         }
 
         class RaiiGuard : IDisposable
@@ -226,6 +216,60 @@ namespace Matchmaking.Local.Test
                 {
                     var res1 = QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Count() == 0, cts.Token);
                     Assert.Empty(res1);
+                }
+            }
+        }
+
+        [Fact]
+        public void CanEditRoomAttributes()
+        {
+            using (var cts = new CancellationTokenSource(TestTimeoutMs))
+            using (var svc1 = matchmakingServiceFactory_(1))
+            {
+                const string category = "CanEditRoomAttributes";
+                var rooms1 = svc1.StartDiscovery(category);
+                Assert.Empty(rooms1.Rooms);
+
+                using (var svc2 = matchmakingServiceFactory_(2))
+                {
+                    // Create rooms from svc2
+                    var origAttrs = new Dictionary<string, string> { { "keyA", "valA" }, { "keyB", "valB" } };
+                    var room2 = svc2.CreateRoomAsync(category, "conn1", origAttrs, cts.Token).Result;
+
+                    // It should show up in svc1
+                    {
+                        var res1 = QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Any(), cts.Token);
+                        Assert.Single(res1);
+                        var room1 = res1.First();
+                        Assert.Equal(room2.UniqueId, room1.UniqueId);
+                        AssertSameDictionary(res1.First().Attributes, origAttrs);
+                        Assert.Null(room1.RequestEdit()); // remote edit not yet supported
+                    }
+
+                    // Commit edits in service2
+                    {
+                        var edit2 = room2.RequestEdit();
+                        Assert.NotNull(edit2);
+                        edit2.RemoveAttribute("keyA");
+                        edit2.PutAttribute("keyB", "updatedB");
+                        var task = edit2.CommitAsync();
+                        task.Wait(cts.Token);
+                        Assert.Equal(TaskStatus.RanToCompletion, task.Status);
+                    }
+
+                    {
+                        var newAttrs = new Dictionary<string, string> { { "keyB", "updatedB" } };
+
+                        // Edits should show locally
+                        AssertSameDictionary(room2.Attributes, newAttrs);
+
+                        // And remotely. This currently waits for the attributes to change. It would be nice if we could inspect the network instead.
+                        var res1 = QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Any() && rl.First().Attributes.Count == 1, cts.Token);
+                        Assert.Single(res1);
+                        var room1 = res1.First();
+                        Assert.Equal(room2.UniqueId, room1.UniqueId);
+                        AssertSameDictionary(res1.First().Attributes, newAttrs);
+                    }
                 }
             }
         }
