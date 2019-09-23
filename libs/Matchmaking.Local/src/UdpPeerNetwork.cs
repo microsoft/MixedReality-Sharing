@@ -164,13 +164,13 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         public void Broadcast(ArraySegment<byte> message)
         {
-            Trace.WriteIf(message.Count > LargeMessageLimit, "UdpPeerNetworkMessage.cs: Large UDP messages are not recommended");
+            Trace.WriteLineIf(message.Count > LargeMessageLimit, "UdpPeerNetwork.cs: Large UDP messages are not recommended");
             socket_.SendTo(message.Array, message.Offset, message.Count, SocketFlags.None, broadcastEndpoint_);
         }
 
         public void Reply(IPeerNetworkMessage req, ArraySegment<byte> message)
         {
-            Trace.WriteIf(message.Count > LargeMessageLimit, "UdpPeerNetworkMessage.cs: Large UDP messages are not recommended");
+            Trace.WriteLineIf(message.Count > LargeMessageLimit, "UdpPeerNetwork.cs: Large UDP messages are not recommended");
             var umsg = req as UdpPeerNetworkMessage;
             socket_.SendTo(message.Array, message.Offset, message.Count, SocketFlags.None, umsg.sender_);
         }
