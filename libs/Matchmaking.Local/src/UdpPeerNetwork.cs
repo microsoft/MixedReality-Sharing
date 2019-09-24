@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -36,8 +37,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         private readonly byte[] readBuffer_ = new byte[1024];
         private readonly ArraySegment<byte> readSegment_;
 
-        // Map the ID of each stream for which we are sending messages to the next sequence number to use.
-        private readonly Dictionary<Guid, int> sendStreams_ = new Dictionary<Guid, int>();
+        // Map the ID of each stream for which we are sending messages to the last used sequence number.
+        private readonly ConcurrentDictionary<Guid, int> sendStreams_ = new ConcurrentDictionary<Guid, int>();
 
         private class ReceiveStream
         {
@@ -229,20 +230,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 writer.Write(guid.ToByteArray());
                 if (ordered)
                 {
-                    int seqId;
-                    // TODO use concurrent dictionary
-                    lock (sendStreams_)
-                    {
-                        if (sendStreams_.TryGetValue(guid, out seqId))
-                        {
-                            ++sendStreams_[guid];
-                        }
-                        else
-                        {
-                            seqId = 0;
-                            sendStreams_.Add(guid, 1);
-                        }
-                    }
+                    int seqId = sendStreams_.AddOrUpdate(guid, 0, (_, value) => value + 1);
                     writer.Write(seqId);
                 }
                 writer.Write(message.Array, message.Offset, message.Count);
