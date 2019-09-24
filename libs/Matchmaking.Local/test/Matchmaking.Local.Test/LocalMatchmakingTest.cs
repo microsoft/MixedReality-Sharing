@@ -385,7 +385,10 @@ namespace Matchmaking.Local.Test
             // Peers all send packets to the relay.
             var address = new IPAddress(0x0000007f + (userIndex << 24));
             var net = new UdpPeerNetwork(new IPAddress(0xfeffff7f), Port, address);
-            recipients_.Add(new IPEndPoint(address, Port));
+            lock(recipients_)
+            {
+                recipients_.Add(new IPEndPoint(address, Port));
+            }
             return new PeerMatchmakingService(net);
         }
 
@@ -417,7 +420,12 @@ namespace Matchmaking.Local.Test
                         var result = await relay_.ReceiveAsync(new ArraySegment<byte>(buf_), SocketFlags.None);
 
                         // The relay sends the packets to all peers with a random delay.
-                        foreach (var rec in recipients_)
+                        IPEndPoint[] curRecipients;
+                        lock(recipients_)
+                        {
+                            curRecipients = recipients_.ToArray();
+                        }
+                        foreach (var rec in curRecipients)
                         {
                             var delay = (int)(random_.NextDouble() * MaxDelayMs);
                             _ = Task.Delay(delay).ContinueWith(t =>
