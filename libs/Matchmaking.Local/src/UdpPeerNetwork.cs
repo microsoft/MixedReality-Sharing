@@ -93,34 +93,44 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             Debug.Assert(readSegment_.Offset == 0);
 
             Guid streamId;
-            int seqNum;
+            int seqNum = -1; //< unordered
+            int payloadOffset;
             using (var str = new MemoryStream(readSegment_.Array, readSegment_.Offset, readSegment_.Count, false))
             using (var reader = new BinaryReader(str))
             {
                 streamId = new Guid(reader.ReadBytes(16));
-                seqNum = reader.ReadInt32();
+                if (streamId != Guid.Empty)
+                {
+                    seqNum = reader.ReadInt32();
+                }
+                payloadOffset = (int)str.Position;
             }
 
-            bool handleMessage = false; ;
-            if (receiveStreams_.TryGetValue(streamId, out ReceiveStream streamData))
+            bool handleMessage = true;
+            if (seqNum >= 0)
             {
-                if (seqNum > streamData.SeqNum)
+                if (receiveStreams_.TryGetValue(streamId, out ReceiveStream streamData))
                 {
-                    handleMessage = true;
-                    streamData.SeqNum = seqNum;
-                    streamData.LastHeard = DateTime.UtcNow;
+                    if (seqNum > streamData.SeqNum)
+                    {
+                        streamData.SeqNum = seqNum;
+                        streamData.LastHeard = DateTime.UtcNow;
+                    }
+                    else
+                    {
+                        handleMessage = false;
+                    }
                 }
-            }
-            else
-            {
-                handleMessage = true;
-                receiveStreams_.Add(streamId, new ReceiveStream { SeqNum = seqNum });
+                else
+                {
+                    receiveStreams_.Add(streamId, new ReceiveStream { SeqNum = seqNum });
+                }
             }
 
             if (handleMessage)
             {
                 Message?.Invoke(this, new UdpPeerNetworkMessage(result.RemoteEndPoint,
-                    streamId, new ArraySegment<byte>(readSegment_.Array, 16 + sizeof(int), result.ReceivedBytes)));
+                    streamId, new ArraySegment<byte>(readSegment_.Array, payloadOffset, result.ReceivedBytes)));
             }
 
             // Listen again.
@@ -204,27 +214,37 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         // Prepend stream ID and sequence number.
         byte[] PrependHeader(Guid guid, ArraySegment<byte> message)
         {
-            int size = 16 + sizeof(int) + message.Count;
-            var res = new byte[size];
-            int seqId;
-            // TODO use concurrent dictionary
-            lock (sendStreams_)
+            bool ordered = guid != Guid.Empty;
+            int size = 16 + message.Count;
+            if (ordered)
             {
-                if (sendStreams_.TryGetValue(guid, out seqId))
-                {
-                    ++sendStreams_[guid];
-                }
-                else
-                {
-                    seqId = 0;
-                    sendStreams_.Add(guid, 1);
-                }
+                size += sizeof(int); //< sequence number.
             }
+
+            var res = new byte[size];
+
             using (var str = new MemoryStream(res))
             using (var writer = new BinaryWriter(str))
             {
                 writer.Write(guid.ToByteArray());
-                writer.Write(seqId);
+                if (ordered)
+                {
+                    int seqId;
+                    // TODO use concurrent dictionary
+                    lock (sendStreams_)
+                    {
+                        if (sendStreams_.TryGetValue(guid, out seqId))
+                        {
+                            ++sendStreams_[guid];
+                        }
+                        else
+                        {
+                            seqId = 0;
+                            sendStreams_.Add(guid, 1);
+                        }
+                    }
+                    writer.Write(seqId);
+                }
                 writer.Write(message.Array, message.Offset, message.Count);
             }
             return res;

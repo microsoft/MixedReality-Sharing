@@ -292,7 +292,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         internal void SendClientQuery(string category)
         {
-            Extensions.Broadcast(net_, Guid.NewGuid() /* TODO */, (BinaryWriter w) =>
+            Extensions.Broadcast(net_, Guid.Empty, (BinaryWriter w) =>
             {
                 w.Write(Proto.ClientQuery);
                 w.Write(category);
