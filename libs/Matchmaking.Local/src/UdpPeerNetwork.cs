@@ -31,7 +31,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     public class UdpPeerNetwork : IPeerNetwork
     {
         private const int StreamLifetimeMs = 10000;
-        private const int StreamDeletionPeriodMs = StreamLifetimeMs;
+        private const int StreamCleanupPeriodMs = StreamLifetimeMs;
+        private const int MaxRememberedStreams = 10000;
 
         private Socket socket_;
         private readonly IPEndPoint broadcastEndpoint_;
@@ -125,9 +126,14 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                                     handleMessage = false;
                                 }
                             }
-                            else
+                            else if (receiveStreams_.Count < MaxRememberedStreams)
                             {
                                 receiveStreams_.Add(streamId, new ReceiveStream { SeqNum = seqNum });
+                            }
+                            else
+                            {
+                                Trace.WriteLine($"Discarding message from {result.RemoteEndPoint} - too many streams");
+                                handleMessage = false;
                             }
                         }
                     }
@@ -146,7 +152,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         {
             while (!token.IsCancellationRequested)
             {
-                await Task.Delay(StreamDeletionPeriodMs);
+                await Task.Delay(StreamCleanupPeriodMs);
 
                 // Delete all expired entries.
                 var expiryTime = DateTime.UtcNow - TimeSpan.FromMilliseconds(StreamLifetimeMs);
