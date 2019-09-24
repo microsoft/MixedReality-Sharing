@@ -30,6 +30,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
     public class UdpPeerNetwork : IPeerNetwork
     {
+        private const int StreamLifetimeMs = 10000;
+        private const int StreamDeletionPeriodMs = StreamLifetimeMs;
+
         private Socket socket_;
         private readonly IPEndPoint broadcastEndpoint_;
         private readonly IPAddress localAddress_;
@@ -48,6 +51,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         // Map the ID of each stream for which we are receiving messages to the highest seen sequence number.
         private readonly Dictionary<Guid, ReceiveStream> receiveStreams_ = new Dictionary<Guid, ReceiveStream>();
+
+        private Task deleteExpiredTask_;
+        private CancellationTokenSource deleteExpiredCts_ = new CancellationTokenSource();
 
         public event Action<IPeerNetwork, IPeerNetworkMessage> Message;
 
@@ -110,21 +116,26 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             bool handleMessage = true;
             if (seqNum >= 0)
             {
-                if (receiveStreams_.TryGetValue(streamId, out ReceiveStream streamData))
+                // Locking the whole map here just for the sake of deletion is sub-optimal, but
+                // we don't expect a high contention so it should be good enough.
+                lock(receiveStreams_)
                 {
-                    if (seqNum > streamData.SeqNum)
+                    if (receiveStreams_.TryGetValue(streamId, out ReceiveStream streamData))
                     {
-                        streamData.SeqNum = seqNum;
-                        streamData.LastHeard = DateTime.UtcNow;
+                        if (seqNum > streamData.SeqNum)
+                        {
+                            streamData.SeqNum = seqNum;
+                            streamData.LastHeard = DateTime.UtcNow;
+                        }
+                        else
+                        {
+                            handleMessage = false;
+                        }
                     }
                     else
                     {
-                        handleMessage = false;
+                        receiveStreams_.Add(streamId, new ReceiveStream { SeqNum = seqNum });
                     }
-                }
-                else
-                {
-                    receiveStreams_.Add(streamId, new ReceiveStream { SeqNum = seqNum });
                 }
             }
 
@@ -137,6 +148,25 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             // Listen again.
             socket_.ReceiveFromAsync(readSegment_, SocketFlags.None, anywhere_)
                 .ContinueWith(HandleAsyncRead);
+        }
+
+        private async void CleanupExpired(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                await Task.Delay(StreamDeletionPeriodMs);
+
+                // Delete all expired entries.
+                var expiryTime = DateTime.UtcNow - TimeSpan.FromMilliseconds(StreamLifetimeMs);
+                lock(receiveStreams_)
+                {
+                    var toDelete = receiveStreams_.Where(pair => pair.Value.LastHeard < expiryTime).ToArray();
+                    foreach (var entry in toDelete)
+                    {
+                        receiveStreams_.Remove(entry.Key);
+                    }
+                }
+            }
         }
 
         public void Start()
@@ -187,6 +217,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 socket_.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, 1);
             }
 
+            // Start the cleanup thread.
+            deleteExpiredTask_ = Task.Run(() => CleanupExpired(deleteExpiredCts_.Token), deleteExpiredCts_.Token);
+
             socket_.ReceiveFromAsync(readSegment_, SocketFlags.None, anywhere_)
                 .ContinueWith(HandleAsyncRead);
         }
@@ -210,6 +243,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         public void Stop()
         {
             socket_.Dispose();
+            deleteExpiredCts_.Cancel();
+            deleteExpiredCts_.Dispose();
         }
 
         // Prepend stream ID and sequence number.
