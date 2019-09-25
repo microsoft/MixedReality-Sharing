@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 using Microsoft.MixedReality.Sharing.Matchmaking;
+using System;
 using System.Diagnostics;
 using System.Net;
 using System.Threading;
@@ -44,6 +45,24 @@ namespace Matchmaking.Local.Test
             {
                 SendAndReceive(svc1);
             }
+        }
+
+        [Fact]
+        public void LargePacketWarning()
+        {
+            var mem = new System.IO.MemoryStream();
+            var listener = new TextWriterTraceListener(mem);
+            Trace.Listeners.Add(listener);
+
+            var net = new UdpPeerNetwork(new IPAddress(0x000000e0), 45280);
+            net.Start();
+            net.Broadcast(Guid.Empty, new System.ArraySegment<byte>(new byte[2048]));
+            net.Stop();
+
+            Trace.Flush();
+            Trace.Listeners.Remove(listener);
+            var msg = System.Text.Encoding.UTF8.GetString(mem.ToArray());
+            Assert.Contains("Large UDP", msg);
         }
     }
 }

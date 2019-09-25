@@ -28,8 +28,15 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         internal EndPoint sender_;
     }
 
+    /// <summary>
+    /// This class implements transport on UDP broadcast or multicast.
+    /// UDP is inherently an unreliable protocol. Reliability decreases exponentially when the packet
+    /// becomes large enough to be fragmented (often around 1400 bytes, but sometimes smaller).
+    /// Thus this transport is best used for small packet sizes.
+    /// </summary>
     public class UdpPeerNetwork : IPeerNetwork
     {
+        private const int LargeMessageLimit = 1400;
         private const int StreamLifetimeMs = 10000;
         private const int StreamCleanupPeriodMs = StreamLifetimeMs;
         private const int MaxRememberedStreams = 10000;
@@ -254,7 +261,6 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             {
                 size += sizeof(int); //< sequence number.
             }
-
             var res = new byte[size];
 
             using (var str = new MemoryStream(res))
@@ -273,12 +279,14 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         public void Broadcast(Guid guid, ArraySegment<byte> message)
         {
+            Trace.WriteLineIf(message.Count > LargeMessageLimit, "UdpPeerNetwork.cs: Large UDP messages are not recommended");
             var buffer = PrependHeader(guid, message);
             socket_.SendTo(buffer, SocketFlags.None, broadcastEndpoint_);
         }
 
         public void Reply(IPeerNetworkMessage req, Guid guid, ArraySegment<byte> message)
         {
+            Trace.WriteLineIf(message.Count > LargeMessageLimit, "UdpPeerNetwork.cs: Large UDP messages are not recommended");
             var umsg = req as UdpPeerNetworkMessage;
             var buffer = PrependHeader(guid, message);
             socket_.SendTo(buffer, SocketFlags.None, umsg.sender_);
