@@ -46,7 +46,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         private readonly IPEndPoint broadcastEndpoint_;
         private readonly IPAddress localAddress_;
         private readonly EndPoint anywhere_ = new IPEndPoint(IPAddress.Any, 0);
-        private readonly byte[] readBuffer_ = new byte[1024];
+        private readonly byte[] readBuffer_ = new byte[LargeMessageLimit];
         private readonly ArraySegment<byte> readSegment_;
 
         // Map the ID of each stream for which we are sending messages to the last used sequence number.
@@ -297,22 +297,24 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         public void Broadcast(Guid guid, ArraySegment<byte> message)
         {
-            if (message.Count > LargeMessageLimit)
-            {
-                LoggingUtility.LogWarning("UdpPeerNetwork.cs: Large UDP messages are not recommended");
-            }
             var buffer = PrependHeader(guid, message);
+            if (buffer.Length > LargeMessageLimit)
+            {
+                LoggingUtility.LogWarning("UdpPeerNetwork.cs: Large UDP messages will be discarded");
+                return;
+            }
             socket_.SendTo(buffer, SocketFlags.None, broadcastEndpoint_);
         }
 
         public void Reply(IPeerNetworkMessage req, Guid guid, ArraySegment<byte> message)
         {
-            if (message.Count > LargeMessageLimit)
-            {
-                LoggingUtility.LogWarning("UdpPeerNetwork.cs: Large UDP messages are not recommended");
-            }
             var umsg = req as UdpPeerNetworkMessage;
             var buffer = PrependHeader(guid, message);
+            if (buffer.Length > LargeMessageLimit)
+            {
+                LoggingUtility.LogWarning("UdpPeerNetwork.cs: Large UDP messages will be discarded");
+                return;
+            }
             socket_.SendTo(buffer, SocketFlags.None, umsg.sender_);
         }
     }
