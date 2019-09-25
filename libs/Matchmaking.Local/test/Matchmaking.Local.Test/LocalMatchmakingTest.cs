@@ -430,7 +430,12 @@ namespace Matchmaking.Local.Test
                             var delay = (int)(random_.NextDouble() * MaxDelayMs);
                             _ = Task.Delay(delay).ContinueWith(t =>
                             {
-                                relay_.SendToAsync(new ArraySegment<byte>(buf_, 0, result), SocketFlags.None, rec);
+                                try
+                                {
+                                    relay_.SendToAsync(new ArraySegment<byte>(buf_, 0, result), SocketFlags.None, rec);
+                                }
+                                catch (ObjectDisposedException) { }
+                                catch (SocketException e) when (e.SocketErrorCode == SocketError.NotSocket) { }
                             });
                         }
                     }

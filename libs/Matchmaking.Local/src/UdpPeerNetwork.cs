@@ -94,67 +94,83 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         private async void HandleAsyncRead()
         {
-            try
+            while (true)
             {
-                while (true)
+                Debug.Assert(readSegment_.Offset == 0);
+                SocketReceiveFromResult result;
+                try
                 {
-                    Debug.Assert(readSegment_.Offset == 0);
-                    var result = await socket_.ReceiveFromAsync(readSegment_, SocketFlags.None, anywhere_);
+                    result = await socket_.ReceiveFromAsync(readSegment_, SocketFlags.None, anywhere_);
+                }
+                catch (ObjectDisposedException)
+                {
+                    // Socket has been disposed, terminate.
+                    return;
+                }
+                catch (SocketException e)
+                when (e.SocketErrorCode == SocketError.Interrupted || e.SocketErrorCode == SocketError.NotSocket)
+                {
+                    // Socket has been disposed, terminate.
+                    return;
+                }
+                catch (SocketException e) when (e.SocketErrorCode == SocketError.MessageSize)
+                {
+                    // A datagram too long was received, discard it.
+                    continue;
+                }
 
-                    Guid streamId;
-                    int seqNum = -1; //< unordered
-                    int payloadOffset;
-                    using (var str = new MemoryStream(readSegment_.Array, readSegment_.Offset, readSegment_.Count, false))
-                    using (var reader = new BinaryReader(str))
+                Guid streamId;
+                int seqNum = -1; //< unordered
+                int payloadOffset;
+                using (var str = new MemoryStream(readSegment_.Array, readSegment_.Offset, readSegment_.Count, false))
+                using (var reader = new BinaryReader(str))
+                {
+                    streamId = new Guid(reader.ReadBytes(16));
+                    if (streamId != Guid.Empty)
                     {
-                        streamId = new Guid(reader.ReadBytes(16));
-                        if (streamId != Guid.Empty)
-                        {
-                            seqNum = reader.ReadInt32();
-                        }
-                        payloadOffset = (int)str.Position;
+                        seqNum = reader.ReadInt32();
                     }
+                    payloadOffset = (int)str.Position;
+                }
 
-                    bool handleMessage = true;
-                    if (seqNum >= 0)
+                bool handleMessage = true;
+                if (seqNum >= 0)
+                {
+                    // Locking the whole map here just for the sake of deletion is sub-optimal, but
+                    // we don't expect a high contention so it should be good enough.
+                    lock (receiveStreams_)
                     {
-                        // Locking the whole map here just for the sake of deletion is sub-optimal, but
-                        // we don't expect a high contention so it should be good enough.
-                        lock (receiveStreams_)
+                        if (receiveStreams_.TryGetValue(streamId, out ReceiveStream streamData))
                         {
-                            if (receiveStreams_.TryGetValue(streamId, out ReceiveStream streamData))
+                            if (seqNum >= streamData.SeqNum)
                             {
-                                if (seqNum >= streamData.SeqNum)
-                                {
-                                    streamData.SeqNum = seqNum;
-                                    streamData.LastHeard = DateTime.UtcNow;
-                                }
-                                else
-                                {
-                                    handleMessage = false;
-                                }
-                            }
-                            else if (receiveStreams_.Count < MaxRememberedStreams)
-                            {
-                                receiveStreams_.Add(streamId, new ReceiveStream { SeqNum = seqNum });
+                                streamData.SeqNum = seqNum;
+                                streamData.LastHeard = DateTime.UtcNow;
                             }
                             else
                             {
-                                LoggingUtility.LogWarning($"UdpPeerNetwork.cs: " +
-                                    "Discarding message from {result.RemoteEndPoint} - too many streams");
                                 handleMessage = false;
                             }
                         }
-                    }
-
-                    if (handleMessage)
-                    {
-                        Message?.Invoke(this, new UdpPeerNetworkMessage(result.RemoteEndPoint,
-                            streamId, new ArraySegment<byte>(readSegment_.Array, payloadOffset, result.ReceivedBytes)));
+                        else if (receiveStreams_.Count < MaxRememberedStreams)
+                        {
+                            receiveStreams_.Add(streamId, new ReceiveStream { SeqNum = seqNum });
+                        }
+                        else
+                        {
+                            LoggingUtility.LogWarning($"UdpPeerNetwork.cs: " +
+                                "Discarding message from {result.RemoteEndPoint} - too many streams");
+                            handleMessage = false;
+                        }
                     }
                 }
+
+                if (handleMessage)
+                {
+                    Message?.Invoke(this, new UdpPeerNetworkMessage(result.RemoteEndPoint,
+                        streamId, new ArraySegment<byte>(readSegment_.Array, payloadOffset, result.ReceivedBytes)));
+                }
             }
-            catch (ObjectDisposedException) { /* Terminate the task. */}
         }
 
         private async void CleanupExpired(CancellationToken token)
