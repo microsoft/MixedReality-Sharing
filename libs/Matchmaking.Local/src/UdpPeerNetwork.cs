@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using Microsoft.MixedReality.Sharing.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -139,7 +140,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                             }
                             else
                             {
-                                Trace.WriteLine($"Discarding message from {result.RemoteEndPoint} - too many streams");
+                                LoggingUtility.LogWarning($"UdpPeerNetwork.cs: " +
+                                    "Discarding message from {result.RemoteEndPoint} - too many streams");
                                 handleMessage = false;
                             }
                         }
@@ -279,14 +281,20 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         public void Broadcast(Guid guid, ArraySegment<byte> message)
         {
-            Trace.WriteLineIf(message.Count > LargeMessageLimit, "UdpPeerNetwork.cs: Large UDP messages are not recommended");
+            if (message.Count > LargeMessageLimit)
+            {
+                LoggingUtility.LogWarning("UdpPeerNetwork.cs: Large UDP messages are not recommended");
+            }
             var buffer = PrependHeader(guid, message);
             socket_.SendTo(buffer, SocketFlags.None, broadcastEndpoint_);
         }
 
         public void Reply(IPeerNetworkMessage req, Guid guid, ArraySegment<byte> message)
         {
-            Trace.WriteLineIf(message.Count > LargeMessageLimit, "UdpPeerNetwork.cs: Large UDP messages are not recommended");
+            if (message.Count > LargeMessageLimit)
+            {
+                LoggingUtility.LogWarning("UdpPeerNetwork.cs: Large UDP messages are not recommended");
+            }
             var umsg = req as UdpPeerNetworkMessage;
             var buffer = PrependHeader(guid, message);
             socket_.SendTo(buffer, SocketFlags.None, umsg.sender_);
