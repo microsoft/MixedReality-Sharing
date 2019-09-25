@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 using Microsoft.MixedReality.Sharing.Matchmaking;
+using System;
 using System.Diagnostics;
 using System.Net;
 using System.Threading;
@@ -55,7 +56,7 @@ namespace Matchmaking.Local.Test
 
             var net = new UdpPeerNetwork(new IPAddress(0x000000e0), 45280);
             net.Start();
-            net.Broadcast(new System.ArraySegment<byte>(new byte[2048]));
+            net.Broadcast(Guid.Empty, new System.ArraySegment<byte>(new byte[2048]));
             net.Stop();
 
             Trace.Flush();

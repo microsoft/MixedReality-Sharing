@@ -2,21 +2,27 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
     class UdpPeerNetworkMessage : IPeerNetworkMessage
     {
+        public Guid StreamId { get; }
         public ArraySegment<byte> Contents { get; }
-        internal UdpPeerNetworkMessage(EndPoint sender, ArraySegment<byte> msg)
+        internal UdpPeerNetworkMessage(EndPoint sender, Guid streamId, ArraySegment<byte> msg)
         {
             Contents = msg;
+            StreamId = streamId;
             sender_ = sender;
         }
         internal EndPoint sender_;
@@ -30,12 +36,32 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     /// </summary>
     public class UdpPeerNetwork : IPeerNetwork
     {
+        private const int LargeMessageLimit = 1400;
+        private const int StreamLifetimeMs = 10000;
+        private const int StreamCleanupPeriodMs = StreamLifetimeMs;
+        private const int MaxRememberedStreams = 10000;
+
         private Socket socket_;
         private readonly IPEndPoint broadcastEndpoint_;
         private readonly IPAddress localAddress_;
         private readonly EndPoint anywhere_ = new IPEndPoint(IPAddress.Any, 0);
         private readonly byte[] readBuffer_ = new byte[1024];
         private readonly ArraySegment<byte> readSegment_;
+
+        // Map the ID of each stream for which we are sending messages to the last used sequence number.
+        private readonly ConcurrentDictionary<Guid, int> sendStreams_ = new ConcurrentDictionary<Guid, int>();
+
+        private class ReceiveStream
+        {
+            public int SeqNum = 0;
+            public DateTime LastHeard = DateTime.UtcNow; //< TODO use to purge old entries
+        }
+
+        // Map the ID of each stream for which we are receiving messages to the highest seen sequence number.
+        private readonly Dictionary<Guid, ReceiveStream> receiveStreams_ = new Dictionary<Guid, ReceiveStream>();
+
+        private Task deleteExpiredTask_;
+        private CancellationTokenSource deleteExpiredCts_ = new CancellationTokenSource();
 
         public event Action<IPeerNetwork, IPeerNetworkMessage> Message;
 
@@ -65,26 +91,87 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
         }
 
-        private void HandleAsyncRead(Task<SocketReceiveFromResult> task)
+        private async void HandleAsyncRead()
         {
-            if (task.IsFaulted)
+            try
             {
-                task.Exception.Handle(e =>
+                while (true)
                 {
-                    // If the socket has been closed, quit gracefully.
-                    return e is ObjectDisposedException;
-                });
-                return;
+                    Debug.Assert(readSegment_.Offset == 0);
+                    var result = await socket_.ReceiveFromAsync(readSegment_, SocketFlags.None, anywhere_);
+
+                    Guid streamId;
+                    int seqNum = -1; //< unordered
+                    int payloadOffset;
+                    using (var str = new MemoryStream(readSegment_.Array, readSegment_.Offset, readSegment_.Count, false))
+                    using (var reader = new BinaryReader(str))
+                    {
+                        streamId = new Guid(reader.ReadBytes(16));
+                        if (streamId != Guid.Empty)
+                        {
+                            seqNum = reader.ReadInt32();
+                        }
+                        payloadOffset = (int)str.Position;
+                    }
+
+                    bool handleMessage = true;
+                    if (seqNum >= 0)
+                    {
+                        // Locking the whole map here just for the sake of deletion is sub-optimal, but
+                        // we don't expect a high contention so it should be good enough.
+                        lock (receiveStreams_)
+                        {
+                            if (receiveStreams_.TryGetValue(streamId, out ReceiveStream streamData))
+                            {
+                                if (seqNum >= streamData.SeqNum)
+                                {
+                                    streamData.SeqNum = seqNum;
+                                    streamData.LastHeard = DateTime.UtcNow;
+                                }
+                                else
+                                {
+                                    handleMessage = false;
+                                }
+                            }
+                            else if (receiveStreams_.Count < MaxRememberedStreams)
+                            {
+                                receiveStreams_.Add(streamId, new ReceiveStream { SeqNum = seqNum });
+                            }
+                            else
+                            {
+                                Trace.WriteLine($"Discarding message from {result.RemoteEndPoint} - too many streams");
+                                handleMessage = false;
+                            }
+                        }
+                    }
+
+                    if (handleMessage)
+                    {
+                        Message?.Invoke(this, new UdpPeerNetworkMessage(result.RemoteEndPoint,
+                            streamId, new ArraySegment<byte>(readSegment_.Array, payloadOffset, result.ReceivedBytes)));
+                    }
+                }
             }
+            catch (ObjectDisposedException) { /* Terminate the task. */}
+        }
 
-            // Dispatch the message.
-            var result = task.Result;
-            Debug.Assert(readSegment_.Offset == 0);
-            Message?.Invoke(this, new UdpPeerNetworkMessage(result.RemoteEndPoint, new ArraySegment<byte>(readSegment_.Array, 0, result.ReceivedBytes)));
+        private async void CleanupExpired(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                await Task.Delay(StreamCleanupPeriodMs);
 
-            // Listen again.
-            socket_.ReceiveFromAsync(readSegment_, SocketFlags.None, anywhere_)
-                .ContinueWith(HandleAsyncRead);
+                // Delete all expired entries.
+                var expiryTime = DateTime.UtcNow - TimeSpan.FromMilliseconds(StreamLifetimeMs);
+                lock(receiveStreams_)
+                {
+                    var toDelete = receiveStreams_.Where(pair => pair.Value.LastHeard < expiryTime).ToArray();
+                    foreach (var entry in toDelete)
+                    {
+                        receiveStreams_.Remove(entry.Key);
+                    }
+                }
+            }
         }
 
         public void Start()
@@ -135,8 +222,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 socket_.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, 1);
             }
 
-            socket_.ReceiveFromAsync(readSegment_, SocketFlags.None, anywhere_)
-                .ContinueWith(HandleAsyncRead);
+            // Start the cleanup thread.
+            deleteExpiredTask_ = Task.Run(() => CleanupExpired(deleteExpiredCts_.Token), deleteExpiredCts_.Token);
+
+            // Start the receiving thread.
+            Task.Run(HandleAsyncRead);
         }
 
         private static bool IsMulticast(IPAddress address)
@@ -158,21 +248,48 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         public void Stop()
         {
             socket_.Dispose();
+            deleteExpiredCts_.Cancel();
+            deleteExpiredCts_.Dispose();
         }
 
-        static readonly int LargeMessageLimit = 1400;
+        // Prepend stream ID and sequence number.
+        byte[] PrependHeader(Guid guid, ArraySegment<byte> message)
+        {
+            bool ordered = guid != Guid.Empty;
+            int size = 16 + message.Count;
+            if (ordered)
+            {
+                size += sizeof(int); //< sequence number.
+            }
+            var res = new byte[size];
 
-        public void Broadcast(ArraySegment<byte> message)
+            using (var str = new MemoryStream(res))
+            using (var writer = new BinaryWriter(str))
+            {
+                writer.Write(guid.ToByteArray());
+                if (ordered)
+                {
+                    int seqId = sendStreams_.AddOrUpdate(guid, 0, (_, value) => value + 1);
+                    writer.Write(seqId);
+                }
+                writer.Write(message.Array, message.Offset, message.Count);
+            }
+            return res;
+        }
+
+        public void Broadcast(Guid guid, ArraySegment<byte> message)
         {
             Trace.WriteLineIf(message.Count > LargeMessageLimit, "UdpPeerNetwork.cs: Large UDP messages are not recommended");
-            socket_.SendTo(message.Array, message.Offset, message.Count, SocketFlags.None, broadcastEndpoint_);
+            var buffer = PrependHeader(guid, message);
+            socket_.SendTo(buffer, SocketFlags.None, broadcastEndpoint_);
         }
 
-        public void Reply(IPeerNetworkMessage req, ArraySegment<byte> message)
+        public void Reply(IPeerNetworkMessage req, Guid guid, ArraySegment<byte> message)
         {
             Trace.WriteLineIf(message.Count > LargeMessageLimit, "UdpPeerNetwork.cs: Large UDP messages are not recommended");
             var umsg = req as UdpPeerNetworkMessage;
-            socket_.SendTo(message.Array, message.Offset, message.Count, SocketFlags.None, umsg.sender_);
+            var buffer = PrependHeader(guid, message);
+            socket_.SendTo(buffer, SocketFlags.None, umsg.sender_);
         }
     }
 }

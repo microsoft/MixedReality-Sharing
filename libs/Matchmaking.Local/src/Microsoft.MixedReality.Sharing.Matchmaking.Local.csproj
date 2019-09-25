@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Common.Utilities\src\Microsoft.MixedReality.Sharing.Utilities.csproj" />
     <ProjectReference Include="..\..\Matchmaking\src\Microsoft.MixedReality.Sharing.Matchmaking.csproj" />
   </ItemGroup>
 
