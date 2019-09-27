@@ -923,7 +923,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
             AddRefToNetwork();
             var task = client_.StartDiscovery(category);
-            task.Disposed += _ => RemoveRefFromNetwork();
+            task.Disposed += RemoveRefFromNetwork;
             return task;
         }
 
@@ -953,7 +953,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
         }
 
-        private void RemoveRefFromNetwork()
+        private void RemoveRefFromNetwork(IDiscoveryTask _)
         {
             int newRefCount = Interlocked.Decrement(ref networkRefCount_);
             if (newRefCount == 0)
