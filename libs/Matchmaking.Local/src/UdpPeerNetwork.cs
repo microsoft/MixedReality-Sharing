@@ -300,7 +300,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             {
                 Task.WaitAll(recvTask_, deleteExpiredTask_);
             }
-            catch (TaskCanceledException) { }
+            catch (AggregateException e)
+            {
+                e.Handle(inner => inner is OperationCanceledException);
+            }
 
             deleteExpiredCts_.Dispose();
             socket_ = null;
