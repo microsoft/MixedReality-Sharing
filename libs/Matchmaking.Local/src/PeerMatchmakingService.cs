@@ -899,13 +899,20 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         private readonly IPeerNetwork network_;
         private Server server_;
         private Client client_;
+        private Options options_;
 
         // Counts how many things (local rooms or discovery tasks) are using the network.
         private int networkRefCount_ = 0;
 
-        public PeerMatchmakingService(IPeerNetwork network)
+        public class Options
         {
-            this.network_ = network;
+            public int RoomExpirySec = 30;
+        }
+
+        public PeerMatchmakingService(IPeerNetwork network, Options options = null)
+        {
+            network_ = network;
+            options_ = options ?? new Options();
         }
 
         // public interface implementations
@@ -939,7 +946,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 }
             }
             AddRefToNetwork();
-            return server_.CreateRoomAsync(category, connection, 30/*expiry*/, attributes, token);
+            return server_.CreateRoomAsync(category, connection, options_.RoomExpirySec, attributes, token);
         }
 
         private void AddRefToNetwork()
