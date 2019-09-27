@@ -296,7 +296,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
             socket_.Dispose();
             deleteExpiredCts_.Cancel();
-            Task.WaitAll(recvTask_, deleteExpiredTask_);
+            try
+            {
+                Task.WaitAll(recvTask_, deleteExpiredTask_);
+            }
+            catch (TaskCanceledException) { }
 
             deleteExpiredCts_.Dispose();
             socket_ = null;
