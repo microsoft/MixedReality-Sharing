@@ -171,7 +171,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         private const int ClientQuery = ('C' << 24) | ('Q' << 16) | ('R' << 8) | 'Y';
         private const int MaxNumAttrs = 1024;
 
-        internal delegate void ServerAnnounceCallback(IPeerNetworkMessage msg, string category, string connection, long expiresFileTime, Dictionary<string, string> attributes);
+        internal delegate void ServerAnnounceCallback(IPeerNetworkMessage msg, string category, string connection, DateTime expiresTime, Dictionary<string, string> attributes);
         internal delegate void ServerByeByeCallback(IPeerNetworkMessage msg);
         internal delegate void ClientQueryCallback(IPeerNetworkMessage msg, string category);
 
@@ -217,7 +217,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 {
                     return;
                 }
-                var expires = DateTime.UtcNow.AddSeconds(expiresDelta).Ticks;
+                var expires = DateTime.UtcNow.AddSeconds(expiresDelta);
                 var cnt = br.ReadInt32();
                 if (cnt < 0 || cnt > MaxNumAttrs)
                 {
@@ -577,8 +577,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     {
         /// Timer for expiring rooms.
         Timer timer_;
-        /// Time when the timer will fire or -1 if the timer is unset.
-        long timerExpiryFileTime_ = -1;
+        /// Time when the timer will fire or DateTime.MaxValue if the timer is unset.
+        DateTime timerExpiryTime_ = DateTime.MaxValue;
 
         /// The list of all local rooms of all categories
         IDictionary<string, CategoryInfo> infoFromCategory_ = new Dictionary<string, CategoryInfo>();
@@ -623,7 +623,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             lock (this)
             {
                 timer_.Change(Timeout.Infinite, Timeout.Infinite);
-                timerExpiryFileTime_ = -1;
+                timerExpiryTime_ = DateTime.MaxValue;
             }
             proto_.Stop();
         }
@@ -631,16 +631,16 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         // Room which we've heard about from a remote
         private class RemoteRoom : IRoom
         {
-            public RemoteRoom(string category, Guid uniqueId, string connection, IReadOnlyDictionary<string, string> attrs, long expirationFileTime)
+            public RemoteRoom(string category, Guid uniqueId, string connection, IReadOnlyDictionary<string, string> attrs, DateTime expirationTime)
             {
                 Category = category;
                 UniqueId = uniqueId;
                 Connection = connection;
                 Attributes = attrs;
-                ExpirationFileTime = expirationFileTime;
+                ExpirationTime = expirationTime;
             }
 
-            public long ExpirationFileTime; // Windows FileTime (100ns ticks since 1601)
+            public DateTime ExpirationTime;
             public string Category { get; set; }
             public Guid UniqueId { get; }
             public string Connection { get; set; }
@@ -742,44 +742,42 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
         }
 
-        private void SetExpirationTimer(long fileTime)
+        private void SetExpirationTimer(DateTime expiryTime)
         {
             lock (this)
             {
-                var expiryDate = new DateTime(fileTime);
-                var deltaMs = (long)DateTime.UtcNow.Subtract(expiryDate).TotalMilliseconds;
+                var deltaMs = (long)DateTime.UtcNow.Subtract(expiryTime).TotalMilliseconds;
                 // Round up to the next ms to ensure the (finer grained) fileTime has passed.
                 // Also ensure we have a positive delta or the timer will not work.
                 deltaMs = Math.Max(deltaMs + 1, 0);
                 // Cast to int since UWP does not implement long ctor.
                 var deltaMsInt = (int)Math.Min(deltaMs, int.MaxValue);
                 timer_.Change(deltaMsInt, Timeout.Infinite);
-                timerExpiryFileTime_ = fileTime;
+                timerExpiryTime_ = expiryTime;
             }
         }
 
         private void OnClientTimerExpired(object state)
         {
             var updatedTasks = new List<DiscoveryTask>();
-            long nextExpiryFileTime = long.MaxValue;
+            DateTime nextExpiryFileTime = DateTime.MaxValue;
             lock (this)
             {
                 // Search and delete any expired rooms.
                 // Also check the next expiry so we can reset the timer.
                 DateTime nowDate = DateTime.UtcNow;
-                long nowFileTime = nowDate.ToFileTime();
                 foreach (var info in infoFromCategory_.Values)
                 {
                     var expired = new List<Guid>();
                     foreach (var kvp in info.roomsRemote_)
                     {
-                        if (kvp.Value.ExpirationFileTime <= nowFileTime) //room expired?
+                        if (kvp.Value.ExpirationTime <= nowDate) //room expired?
                         {
                             expired.Add(kvp.Key);
                         }
-                        else if (kvp.Value.ExpirationFileTime < nextExpiryFileTime) // room next to expire?
+                        else if (kvp.Value.ExpirationTime < nextExpiryFileTime) // room next to expire?
                         {
-                            nextExpiryFileTime = kvp.Value.ExpirationFileTime;
+                            nextExpiryFileTime = kvp.Value.ExpirationTime;
                         }
                     }
                     if (expired.Any())
@@ -800,14 +798,14 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 up.FireUpdated();
             }
 
-            if (nextExpiryFileTime != long.MaxValue)
+            if (nextExpiryFileTime != DateTime.MaxValue)
             {
                 SetExpirationTimer(nextExpiryFileTime);
             }
         }
 
         // The body of ServerHello and ServerReply is identical so we reuse the code.
-        private void OnServerAnnounce(IPeerNetworkMessage msg, string category, string connection, long expiresFileTime, Dictionary<string, string> attributes)
+        private void OnServerAnnounce(IPeerNetworkMessage msg, string category, string connection, DateTime expiresTime, Dictionary<string, string> attributes)
         {
             DiscoveryTask[] tasksUpdated = null;
             var guid = msg.StreamId;
@@ -823,7 +821,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 bool updated = false;
                 if (!info.roomsRemote_.TryGetValue(guid, out room)) // new room
                 {
-                    room = new RemoteRoom(category, guid, connection, attributes, expiresFileTime);
+                    room = new RemoteRoom(category, guid, connection, attributes, expiresTime);
                     info.roomsRemote_[guid] = room;
                     categoryFromRoomId_[guid] = category;
                     updated = true;
@@ -844,15 +842,15 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                         room.Attributes = attributes;
                         updated = true;
                     }
-                    if (room.ExpirationFileTime != expiresFileTime)
+                    if (room.ExpirationTime != expiresTime)
                     {
-                        room.ExpirationFileTime = expiresFileTime;
+                        room.ExpirationTime = expiresTime;
                     }
                 }
                 // If this expiry is sooner than the current timer, we need to reset the timer.
-                if (expiresFileTime < timerExpiryFileTime_)
+                if (expiresTime < timerExpiryTime_)
                 {
-                    SetExpirationTimer(expiresFileTime);
+                    SetExpirationTimer(expiresTime);
                 }
                 if (updated)
                 {
