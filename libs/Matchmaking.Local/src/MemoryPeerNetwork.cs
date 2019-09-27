@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using Microsoft.MixedReality.Sharing.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -93,13 +94,20 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 // We're about to process the whole list so clear the NetworkQueuedSome bit. [P? -> P0]
                 Interlocked.CompareExchange(ref networkStatus_, NetworkPumpInProgress, NetworkPumpInProgress | NetworkQueuedSome);
 
-                // Raise the messsage events
+                // Raise the message events
                 foreach (var c in instances_)
                 {
                     MemoryPeerNetworkMessage msg;
                     while (c.incoming_.TryDequeue(out msg))
                     {
-                        c.Message?.Invoke(c, msg);
+                        try
+                        {
+                            c.Message?.Invoke(c, msg);
+                        }
+                        catch(Exception e)
+                        {
+                            LoggingUtility.LogError("Exception raised while handling message", e);
+                        }
                     }
                 }
 
