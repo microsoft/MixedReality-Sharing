@@ -598,7 +598,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             timer_ = new Timer(OnClientTimerExpired, null, Timeout.Infinite, Timeout.Infinite);
         }
 
-        internal IDiscoveryTask StartDiscovery(string category)
+        internal IDisposedEventDiscoveryTask StartDiscovery(string category)
         {
             lock (this)
             {
@@ -668,8 +668,13 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
         }
 
+        internal interface IDisposedEventDiscoveryTask : IDiscoveryTask
+        {
+            event Action<IDiscoveryTask> Disposed;
+        }
+
         // User facing interface for an in-progress discovery operation
-        private class DiscoveryTask : IDiscoveryTask
+        private class DiscoveryTask : IDisposedEventDiscoveryTask
         {
             Client client_;
             CategoryInfo info_;
@@ -691,6 +696,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
 
             public event Action<IDiscoveryTask> Updated;
+            public event Action<IDiscoveryTask> Disposed;
 
             public void FireUpdated()
             {
@@ -700,6 +706,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             public void Dispose()
             {
                 client_.TaskDispose(this, info_);
+                Disposed?.Invoke(this);
+                Disposed = null;
             }
 
             public DiscoveryTask(Client client, CategoryInfo info)
@@ -890,14 +898,16 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     public class PeerMatchmakingService : DisposableBase, IMatchmakingService
     {
         /// The network for this matchmaking
-        IPeerNetwork network_;
-        Server server_;
-        Client client_;
+        private readonly IPeerNetwork network_;
+        private Server server_;
+        private Client client_;
+
+        // Counts how many things (local rooms or discovery tasks) are using the network.
+        private int networkRefCount_ = 0;
 
         public PeerMatchmakingService(IPeerNetwork network)
         {
             this.network_ = network;
-            network_.Start();
         }
 
         // public interface implementations
@@ -911,7 +921,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     client_ = new Client(network_);
                 }
             }
-            return client_.StartDiscovery(category);
+            AddRefToNetwork();
+            var task = client_.StartDiscovery(category);
+            task.Disposed += RemoveRefFromNetwork;
+            return task;
         }
 
         public Task<IRoom> CreateRoomAsync(
@@ -927,7 +940,26 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     server_ = new Server(network_);
                 }
             }
+            AddRefToNetwork();
             return server_.CreateRoomAsync(category, connection, 30/*expiry*/, attributes, token);
+        }
+
+        private void AddRefToNetwork()
+        {
+            int newRefCount = Interlocked.Increment(ref networkRefCount_);
+            if (newRefCount == 1)
+            {
+                network_.Start();
+            }
+        }
+
+        private void RemoveRefFromNetwork(IDiscoveryTask _)
+        {
+            int newRefCount = Interlocked.Decrement(ref networkRefCount_);
+            if (newRefCount == 0)
+            {
+                network_.Stop();
+            }
         }
 
         protected override void OnUnmanagedDispose()
@@ -939,8 +971,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             // todo is there a smarter way to do this?
             Task.Delay(1).Wait();
 
-            network_.Stop();
-            network_ = null;
+            if (networkRefCount_ > 0)
+            {
+                network_.Stop();
+            }
         }
     }
 }

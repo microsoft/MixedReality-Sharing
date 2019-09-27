@@ -61,10 +61,24 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         // Map the ID of each stream for which we are receiving messages to the highest seen sequence number.
         private readonly Dictionary<Guid, ReceiveStream> receiveStreams_ = new Dictionary<Guid, ReceiveStream>();
 
+        private Task recvTask_;
         private Task deleteExpiredTask_;
-        private CancellationTokenSource deleteExpiredCts_ = new CancellationTokenSource();
+        private CancellationTokenSource deleteExpiredCts_;
 
+        /// <summary>
+        /// A new message has been received.
+        /// </summary>
         public event Action<IPeerNetwork, IPeerNetworkMessage> Message;
+
+        /// <summary>
+        /// The network has started listening for messages. Called on <see cref="Start()"/>;
+        /// </summary>
+        public event Action<IPeerNetwork> Started;
+
+        /// <summary>
+        /// The network has started stopped for messages. Called on <see cref="Stop()"/>;
+        /// </summary>
+        public event Action<IPeerNetwork> Stopped;
 
         /// <summary>
         /// Create a new network.
@@ -194,7 +208,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         public void Start()
         {
-            Debug.Assert(socket_ == null);
+            if (socket_ != null)
+            {
+                throw new InvalidOperationException("Network is already running");
+            }
+
             socket_ = new Socket(broadcastEndpoint_.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
 
             // Bind to the broadcast port.
@@ -241,10 +259,14 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
 
             // Start the cleanup thread.
-            deleteExpiredTask_ = Task.Run(() => CleanupExpired(deleteExpiredCts_.Token), deleteExpiredCts_.Token);
+            deleteExpiredCts_ = new CancellationTokenSource();
+            var token = deleteExpiredCts_.Token;
+            deleteExpiredTask_ = Task.Run(() => CleanupExpired(token), token);
 
             // Start the receiving thread.
-            Task.Run(HandleAsyncRead);
+            recvTask_ = Task.Run(HandleAsyncRead);
+
+            Started?.Invoke(this);
         }
 
         private static bool IsMulticast(IPAddress address)
@@ -265,9 +287,26 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         public void Stop()
         {
+            if (socket_ == null)
+            {
+                throw new InvalidOperationException("Network is not running");
+            }
+
+            Stopped?.Invoke(this);
+
             socket_.Dispose();
             deleteExpiredCts_.Cancel();
+            try
+            {
+                Task.WaitAll(recvTask_, deleteExpiredTask_);
+            }
+            catch (AggregateException e)
+            {
+                e.Handle(inner => inner is OperationCanceledException);
+            }
+
             deleteExpiredCts_.Dispose();
+            socket_ = null;
         }
 
         // Prepend stream ID and sequence number.
