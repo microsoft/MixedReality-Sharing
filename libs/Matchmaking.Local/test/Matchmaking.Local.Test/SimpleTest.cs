@@ -4,26 +4,20 @@
 using Microsoft.MixedReality.Sharing.Matchmaking;
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Matchmaking.Local.Test
 {
     public class SimpleTest
     {
-        private static int TestTimeoutMs
-        {
-            get
-            {
-                return Debugger.IsAttached ? Timeout.Infinite : 10000;
-            }
-        }
-
         private void SendAndReceive(IMatchmakingService service)
         {
             // Do simple operations to verify that sending and receiving packets doesn't fail.
-            using (var cts = new CancellationTokenSource(TestTimeoutMs))
+            using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
             {
                 var _ = service.CreateRoomAsync("CreateRoom", "http://room1", null, cts.Token).Result;
             }
