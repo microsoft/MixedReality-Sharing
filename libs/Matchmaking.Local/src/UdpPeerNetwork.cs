@@ -106,7 +106,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
         }
 
-        private async void HandleAsyncRead()
+        private async Task ReceiveLoop()
         {
             while (true)
             {
@@ -115,16 +115,14 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 try
                 {
                     result = await socket_.ReceiveFromAsync(readSegment_, SocketFlags.None, anywhere_);
+                    HandleMessage(result);
                 }
-                catch (ObjectDisposedException)
-                {
-                    // Socket has been disposed, terminate.
-                    return;
-                }
+                // Socket has been disposed, terminate.
+                catch (NullReferenceException) { return; }
+                catch (ObjectDisposedException) { return; }
                 catch (SocketException e)
                 when (e.SocketErrorCode == SocketError.Interrupted || e.SocketErrorCode == SocketError.NotSocket)
                 {
-                    // Socket has been disposed, terminate.
                     return;
                 }
                 catch (SocketException e) when (e.SocketErrorCode == SocketError.MessageSize)
@@ -132,58 +130,64 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     // A datagram too long was received, discard it.
                     continue;
                 }
-
-                Guid streamId;
-                int seqNum = -1; //< unordered
-                int payloadOffset;
-                using (var str = new MemoryStream(readSegment_.Array, readSegment_.Offset, readSegment_.Count, false))
-                using (var reader = new BinaryReader(str))
+                catch (Exception e)
                 {
-                    streamId = new Guid(reader.ReadBytes(16));
-                    if (streamId != Guid.Empty)
-                    {
-                        seqNum = reader.ReadInt32();
-                    }
-                    payloadOffset = (int)str.Position;
+                    LoggingUtility.LogError("Exception raised while handling message", e);
                 }
-
-                bool handleMessage = true;
-                if (seqNum >= 0)
+            }
+        }
+        private void HandleMessage(SocketReceiveFromResult result)
+        {
+            Guid streamId;
+            int seqNum = -1; //< unordered
+            int payloadOffset;
+            using (var str = new MemoryStream(readSegment_.Array, readSegment_.Offset, readSegment_.Count, false))
+            using (var reader = new BinaryReader(str))
+            {
+                streamId = new Guid(reader.ReadBytes(16));
+                if (streamId != Guid.Empty)
                 {
-                    // Locking the whole map here just for the sake of deletion is sub-optimal, but
-                    // we don't expect a high contention so it should be good enough.
-                    lock (receiveStreams_)
+                    seqNum = reader.ReadInt32();
+                }
+                payloadOffset = (int)str.Position;
+            }
+
+            bool handleMessage = true;
+            if (seqNum >= 0)
+            {
+                // Locking the whole map here just for the sake of deletion is sub-optimal, but
+                // we don't expect a high contention so it should be good enough.
+                lock (receiveStreams_)
+                {
+                    if (receiveStreams_.TryGetValue(streamId, out ReceiveStream streamData))
                     {
-                        if (receiveStreams_.TryGetValue(streamId, out ReceiveStream streamData))
+                        if (seqNum >= streamData.SeqNum)
                         {
-                            if (seqNum >= streamData.SeqNum)
-                            {
-                                streamData.SeqNum = seqNum;
-                                streamData.LastHeard = DateTime.UtcNow;
-                            }
-                            else
-                            {
-                                handleMessage = false;
-                            }
-                        }
-                        else if (receiveStreams_.Count < MaxRememberedStreams)
-                        {
-                            receiveStreams_.Add(streamId, new ReceiveStream { SeqNum = seqNum });
+                            streamData.SeqNum = seqNum;
+                            streamData.LastHeard = DateTime.UtcNow;
                         }
                         else
                         {
-                            LoggingUtility.LogWarning($"UdpPeerNetwork.cs: " +
-                                "Discarding message from {result.RemoteEndPoint} - too many streams");
                             handleMessage = false;
                         }
                     }
+                    else if (receiveStreams_.Count < MaxRememberedStreams)
+                    {
+                        receiveStreams_.Add(streamId, new ReceiveStream { SeqNum = seqNum });
+                    }
+                    else
+                    {
+                        LoggingUtility.LogWarning($"UdpPeerNetwork.cs: " +
+                            "Discarding message from {result.RemoteEndPoint} - too many streams");
+                        handleMessage = false;
+                    }
                 }
+            }
 
-                if (handleMessage)
-                {
-                    Message?.Invoke(this, new UdpPeerNetworkMessage(result.RemoteEndPoint,
-                        streamId, new ArraySegment<byte>(readSegment_.Array, payloadOffset, result.ReceivedBytes)));
-                }
+            if (handleMessage)
+            {
+                Message?.Invoke(this, new UdpPeerNetworkMessage(result.RemoteEndPoint,
+                    streamId, new ArraySegment<byte>(readSegment_.Array, payloadOffset, result.ReceivedBytes)));
             }
         }
 
@@ -264,7 +268,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             deleteExpiredTask_ = Task.Run(() => CleanupExpired(token), token);
 
             // Start the receiving thread.
-            recvTask_ = Task.Run(HandleAsyncRead);
+            recvTask_ = Task.Run(ReceiveLoop);
 
             Started?.Invoke(this);
         }
