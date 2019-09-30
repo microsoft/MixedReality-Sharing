@@ -51,10 +51,11 @@ namespace Matchmaking.Local.Test
         {
             using (var result = svc.StartDiscovery(type))
             {
+                // Check optimistically before subscribing to the discovery event.
                 var rooms = result.Rooms;
                 if (pred(rooms))
                 {
-                    return rooms; // optimistic path
+                    return rooms;
                 }
                 if (token.IsCancellationRequested)
                 {
@@ -69,12 +70,13 @@ namespace Matchmaking.Local.Test
                     {
                         while (true)
                         {
-                            wakeUp.WaitOne(); // wait for cancel or update
+                            // Check before waiting on the event so that updates aren't missed.
                             rooms = result.Rooms;
                             if (pred(rooms))
                             {
                                 return rooms;
                             }
+                            wakeUp.WaitOne(); // wait for cancel or update
                             if (token.IsCancellationRequested)
                             {
                                 return null;
