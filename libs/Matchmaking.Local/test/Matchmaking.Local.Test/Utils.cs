@@ -52,10 +52,13 @@ namespace Matchmaking.Local.Test
             using (var result = svc.StartDiscovery(type))
             {
                 var rooms = result.Rooms;
-                bool predicateResult = pred(rooms);
-                if (predicateResult)
+                if (pred(rooms))
                 {
                     return rooms; // optimistic path
+                }
+                if (token.IsCancellationRequested)
+                {
+                    return null;
                 }
                 using (var wakeUp = new AutoResetEvent(false))
                 {
@@ -66,12 +69,12 @@ namespace Matchmaking.Local.Test
                     {
                         while (true)
                         {
+                            wakeUp.WaitOne(); // wait for cancel or update
                             rooms = result.Rooms;
                             if (pred(rooms))
                             {
                                 return rooms;
                             }
-                            wakeUp.WaitOne(); // wait for cancel or update
                             if (token.IsCancellationRequested)
                             {
                                 return null;
