@@ -113,13 +113,15 @@ namespace Matchmaking.Local.Test
         [Fact]
         public void ServiceShutdownRemovesRooms()
         {
+            const string category1 = "ServiceShutdownRemovesRooms1";
+            const string category2 = "ServiceShutdownRemovesRooms2";
+
             // start discovery, then start services afterwards
             using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
             using (var svc1 = matchmakingServiceFactory_(1))
+            using (var rooms1 = svc1.StartDiscovery(category1))
+            using (var rooms2 = svc1.StartDiscovery(category2))
             {
-                const string category1 = "ServiceShutdownRemovesRooms1";
-                const string category2 = "ServiceShutdownRemovesRooms2";
-                var rooms1 = svc1.StartDiscovery(category1);
                 Assert.Empty(rooms1.Rooms);
 
                 // These are disposed manually, but keep in a using block so that they are disposed even
@@ -134,29 +136,29 @@ namespace Matchmaking.Local.Test
 
                     // They should show up in svc1
                     {
-                        var res1 = Utils.QueryAndWaitForRoomsPredicate(svc1, category1, rl => rl.Count() == 2, cts.Token);
+                        var res1 = Utils.QueryAndWaitForRoomsPredicate(rooms1, rl => rl.Count() == 2, cts.Token);
                         Assert.Equal(2, res1.Count());
                         Assert.Contains(res1, room => room.UniqueId == room2_1.UniqueId);
                         Assert.Contains(res1, room => room.UniqueId == room3_1.UniqueId);
 
-                        var res2 = Utils.QueryAndWaitForRoomsPredicate(svc1, category2, rl => rl.Count() == 1, cts.Token);
+                        var res2 = Utils.QueryAndWaitForRoomsPredicate(rooms2, rl => rl.Count() == 1, cts.Token);
                         Assert.Equal(room2_2.UniqueId, res2.First().UniqueId);
                     }
 
                     // After svc2 is shut down, its rooms should be gone from svc1
                     svc2.Dispose();
                     {
-                        var res1 = Utils.QueryAndWaitForRoomsPredicate(svc1, category1, rl => rl.Count() == 1, cts.Token);
+                        var res1 = Utils.QueryAndWaitForRoomsPredicate(rooms1, rl => rl.Count() == 1, cts.Token);
                         Assert.Equal(room3_1.UniqueId, res1.First().UniqueId);
-                        var res2 = Utils.QueryAndWaitForRoomsPredicate(svc1, category2, rl => rl.Count() == 0, cts.Token);
+                        var res2 = Utils.QueryAndWaitForRoomsPredicate(rooms2, rl => rl.Count() == 0, cts.Token);
                         Assert.Empty(res2);
                     }
                     // After svc3 is shut down, all rooms should be gone from svc1
                     svc3.Dispose();
                     {
-                        var res1 = Utils.QueryAndWaitForRoomsPredicate(svc1, category1, rl => rl.Count() == 0, cts.Token);
+                        var res1 = Utils.QueryAndWaitForRoomsPredicate(rooms1, rl => rl.Count() == 0, cts.Token);
                         Assert.Empty(res1);
-                        var res2 = Utils.QueryAndWaitForRoomsPredicate(svc1, category2, rl => rl.Count() == 0, cts.Token);
+                        var res2 = Utils.QueryAndWaitForRoomsPredicate(rooms2, rl => rl.Count() == 0, cts.Token);
                         Assert.Empty(res2);
                     }
                 }
@@ -254,7 +256,7 @@ namespace Matchmaking.Local.Test
     // Uses relay socket to reorder packets delivery.
     public class LocalMatchmakingTestReordered : LocalMatchmakingTest, IDisposable
     {
-        private const int MaxDelayMs = 1000;
+        private const int MaxDelayMs = 25;
         private const ushort Port = 45279;
 
         private readonly Socket relay_;
@@ -309,7 +311,7 @@ namespace Matchmaking.Local.Test
                         }
                         foreach (var rec in curRecipients)
                         {
-                            var delay = (int)(random_.NextDouble() * MaxDelayMs);
+                            var delay = random_.Next(MaxDelayMs);
                             _ = Task.Delay(delay).ContinueWith(t =>
                             {
                                 try
@@ -338,6 +340,7 @@ namespace Matchmaking.Local.Test
             const string category = "AttributeEditsAreInOrder";
             using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
             using (var svc1 = matchmakingServiceFactory_(1))
+            using (var discovery = svc1.StartDiscovery(category))
             using (var svc2 = matchmakingServiceFactory_(2))
             {
                 // Create room from svc2
@@ -363,11 +366,11 @@ namespace Matchmaking.Local.Test
                     }
 
                     // Give some time to the messages to reach the peers.
-                    Task.Delay(100).Wait();
+                    Task.Delay(MaxDelayMs).Wait();
 
                     // Edits should show up in svc1 in order
                     {
-                        var res1 = Utils.QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Any(), cts.Token);
+                        var res1 = Utils.QueryAndWaitForRoomsPredicate(discovery, rl => rl.Any(), cts.Token);
                         Assert.Single(res1);
                         var room1 = res1.First();
                         Assert.Equal(room2.UniqueId, room1.UniqueId);
@@ -383,7 +386,6 @@ namespace Matchmaking.Local.Test
                         lastValueSeen2 = value;
                     }
                 }
-
                 {
                     // Eventually the last edit should be delivered to both services.
                     Func<IEnumerable<IRoom>, bool> lastEditWasApplied = rl =>
@@ -393,8 +395,7 @@ namespace Matchmaking.Local.Test
                     };
                     var res1 = Utils.QueryAndWaitForRoomsPredicate(svc1, category, lastEditWasApplied, cts.Token);
                     Assert.Single(res1);
-                    var res2 = Utils.QueryAndWaitForRoomsPredicate(svc2, category, lastEditWasApplied, cts.Token);
-                    Assert.Single(res2);
+                    Assert.Equal(int.Parse(room2.Attributes["value"]), lastValueCommitted);
                 }
             }
         }
@@ -410,22 +411,21 @@ namespace Matchmaking.Local.Test
                 using (var svc2 = matchmakingServiceFactory_(2))
                 {
                     // Create a lot of rooms.
-                    var tasks = new Task<IRoom>[50];
+                    var tasks = new Task<IRoom>[100];
                     for (int i = 0; i < tasks.Length; ++i)
                     {
                         tasks[i] = svc2.CreateRoomAsync(category, "conn1", null, cts.Token);
-                        Task.Delay(20).Wait();
                     }
 
                     // Wait until svc1 discovers at least one room.
-                    var res1 = Utils.QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Any(), cts.Token);
+                    var res1 = Utils.QueryAndWaitForRoomsPredicate(discovery, rl => rl.Any(), cts.Token);
                     Assert.NotNull(res1);
                     // Dispose the service.
                 }
 
                 // Eventually there should be no rooms left.
                 {
-                    var res1 = Utils.QueryAndWaitForRoomsPredicate(svc1, category, rl => !rl.Any(), cts.Token);
+                    var res1 = Utils.QueryAndWaitForRoomsPredicate(discovery, rl => !rl.Any(), cts.Token);
                     Assert.NotNull(res1);
                 }
             }
