@@ -117,15 +117,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     result = await socket_.ReceiveFromAsync(readSegment_, SocketFlags.None, anywhere_);
                     HandleMessage(result);
                 }
-                catch (ObjectDisposedException)
-                {
-                    // Socket has been disposed, terminate.
-                    return;
-                }
+                // Socket has been disposed, terminate.
+                catch (NullReferenceException) { return; }
+                catch (ObjectDisposedException) { return; }
                 catch (SocketException e)
                 when (e.SocketErrorCode == SocketError.Interrupted || e.SocketErrorCode == SocketError.NotSocket)
                 {
-                    // Socket has been disposed, terminate.
                     return;
                 }
                 catch (SocketException e) when (e.SocketErrorCode == SocketError.MessageSize)
