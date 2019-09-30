@@ -1,6 +1,5 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License. See LICENSE in the project root for license
-// information.
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 
 #include "pch.h"
 
@@ -46,8 +45,7 @@ class SubkeyVersionBlock_Test : public ::testing::Test {
   // versions in-between.
   bool IsMissingPayloadsBetween(uint64_t first_version,
                                 uint64_t last_version) const noexcept {
-    assert(first_version <= last_version &&
-           last_version < kInvalidVersion);
+    assert(first_version <= last_version && last_version < kInvalidVersion);
     for (uint64_t i = 0; i < 10 && first_version + i < last_version; ++i) {
       if (first_block_.GetVersionedPayload(first_version + i).has_payload())
         return false;
@@ -69,8 +67,7 @@ class SubkeyVersionBlock_Test : public ::testing::Test {
   bool IsPayloadBetween(uint64_t first_version,
                         uint64_t last_version,
                         uint64_t expected_handle_64) const noexcept {
-    assert(first_version <= last_version &&
-           last_version < kInvalidVersion);
+    assert(first_version <= last_version && last_version < kInvalidVersion);
     VersionedPayloadHandle expected_handle{first_version,
                                            PayloadHandle{expected_handle_64}};
 

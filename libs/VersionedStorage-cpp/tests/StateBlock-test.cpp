@@ -1,6 +1,5 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License. See LICENSE in the project root for license
-// information.
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 
 #include "pch.h"
 
@@ -86,8 +85,7 @@ TEST(StateBlock, SubkeyStateBlock_payload_and_deletion_marker) {
 
   EXPECT_FALSE(block.GetVersionedPayload(0).has_payload());
   EXPECT_FALSE(block.GetVersionedPayload(99999).has_payload());
-  EXPECT_FALSE(
-      block.GetVersionedPayload(kInvalidVersion - 1).has_payload());
+  EXPECT_FALSE(block.GetVersionedPayload(kInvalidVersion - 1).has_payload());
 
   // Can store any version at first, since it's not compressed.
   EXPECT_TRUE(block.CanPushFromWriterThread(0, true));
@@ -122,8 +120,7 @@ TEST(StateBlock, SubkeyStateBlock_payload_and_deletion_marker) {
   EXPECT_EQ(block.GetVersionedPayload(123'000'400'000ull), v0);
   EXPECT_EQ(block.GetVersionedPayload(123'999'999'999ull), v0);
   EXPECT_FALSE(block.GetVersionedPayload(124'000'000'000ull).has_payload());
-  EXPECT_FALSE(
-      block.GetVersionedPayload(kInvalidVersion - 1).has_payload());
+  EXPECT_FALSE(block.GetVersionedPayload(kInvalidVersion - 1).has_payload());
 
   // The writes above should not overwrite the other properties.
   EXPECT_EQ(block.key_, KeyHandle{42});
@@ -158,8 +155,7 @@ TEST(StateBlock, SubkeyStateBlock_2_payloads_largest_offset) {
 
   EXPECT_FALSE(block.GetVersionedPayload(0).has_payload());
   EXPECT_FALSE(block.GetVersionedPayload(99999).has_payload());
-  EXPECT_FALSE(
-      block.GetVersionedPayload(kInvalidVersion - 1).has_payload());
+  EXPECT_FALSE(block.GetVersionedPayload(kInvalidVersion - 1).has_payload());
 
   // Can store any version at first, since it's not compressed.
   EXPECT_TRUE(block.CanPushFromWriterThread(0, true));
@@ -169,8 +165,7 @@ TEST(StateBlock, SubkeyStateBlock_2_payloads_largest_offset) {
   EXPECT_TRUE(block.CanPushFromWriterThread(223'000'000'000ull, true));
   EXPECT_TRUE(block.CanPushFromWriterThread(223'000'000'000ull, false));
   EXPECT_TRUE(block.CanPushFromWriterThread(kInvalidVersion - 1, true));
-  EXPECT_TRUE(
-      block.CanPushFromWriterThread(kInvalidVersion - 1, false));
+  EXPECT_TRUE(block.CanPushFromWriterThread(kInvalidVersion - 1, false));
 
   block.PushFromWriterThread(123'000'000'000ull, PayloadHandle{123'123'000});
   EXPECT_FALSE(block.GetVersionedPayload(0).has_payload());
