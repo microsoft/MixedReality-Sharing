@@ -223,7 +223,7 @@ namespace Matchmaking.Local.Test
         static private IMatchmakingService MakeMatchmakingService(int userIndex)
         {
             var net = new UdpPeerNetwork(new IPAddress(0xffffff7f), 45277, new IPAddress(0x0000007f + (userIndex << 24)));
-            return new PeerMatchmakingService(net);
+            return new PeerMatchmakingService(net, new PeerMatchmakingService.Options { RoomExpirySec = int.MaxValue });
         }
 
         public LocalMatchmakingTestUdp() : base(MakeMatchmakingService) { }
@@ -234,7 +234,7 @@ namespace Matchmaking.Local.Test
         static private IMatchmakingService MakeMatchmakingService(int userIndex)
         {
             var net = new UdpPeerNetwork(new IPAddress(0x000000e0), 45278, new IPAddress(0x0000007f + (userIndex << 24)));
-            return new PeerMatchmakingService(net);
+            return new PeerMatchmakingService(net, new PeerMatchmakingService.Options { RoomExpirySec = int.MaxValue });
         }
 
         public LocalMatchmakingTestUdpMulticast() : base(MakeMatchmakingService) { }
@@ -245,7 +245,7 @@ namespace Matchmaking.Local.Test
         static private IMatchmakingService MakeMatchmakingService(int userIndex)
         {
             var net = new MemoryPeerNetwork(userIndex);
-            return new PeerMatchmakingService(net);
+            return new PeerMatchmakingService(net, new PeerMatchmakingService.Options { RoomExpirySec = int.MaxValue });
         }
 
         public LocalMatchmakingTestMemory() : base(MakeMatchmakingService) { }
@@ -271,7 +271,7 @@ namespace Matchmaking.Local.Test
             {
                 recipients_.Add(new IPEndPoint(address, Port));
             }
-            return new PeerMatchmakingService(net);
+            return new PeerMatchmakingService(net, new PeerMatchmakingService.Options { RoomExpirySec = int.MaxValue });
         }
 
         public LocalMatchmakingTestReordered(ITestOutputHelper output) : base(null)

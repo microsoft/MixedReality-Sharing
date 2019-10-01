@@ -441,7 +441,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 var now = DateTime.UtcNow;
                 var delta = next.Subtract(now);
                 timerExpiryTime_ = next;
-                timer_.Change((int)Math.Max(delta.TotalMilliseconds + 1, 0), -1);
+                timer_.Change((int)Math.Min(Math.Max(delta.TotalMilliseconds + 1, 0), int.MaxValue), -1);
             }
             else // no more rooms
             {
