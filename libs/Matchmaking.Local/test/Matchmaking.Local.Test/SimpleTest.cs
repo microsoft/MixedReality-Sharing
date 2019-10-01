@@ -77,9 +77,9 @@ namespace Matchmaking.Local.Test
                     // Create rooms from svc2
                     var room1 = svc2.CreateRoomAsync(category, "conn1", null, cts.Token).Result;
 
-                    // It should show up in svc1
+                    // It should show up in svc1 even after the timeout.
                     {
-                        Task.Delay(timeoutSec * 1500).Wait();
+                        Task.Delay(timeoutSec * 1200).Wait();
                         var res1 = Utils.QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Any(), cts.Token);
                         Assert.Single(res1);
                         Assert.Equal(room1.UniqueId, res1.First().UniqueId);
@@ -89,7 +89,7 @@ namespace Matchmaking.Local.Test
                     network1.Stop();
 
                     // Wait a bit after the timeout.
-                    Task.Delay(timeoutSec * 1500).Wait();
+                    Task.Delay(timeoutSec * 1200).Wait();
                     {
                         var res1 = Utils.QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Count() == 0, cts.Token);
                         Assert.Empty(res1);
