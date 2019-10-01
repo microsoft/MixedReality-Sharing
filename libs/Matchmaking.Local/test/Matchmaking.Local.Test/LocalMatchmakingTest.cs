@@ -26,27 +26,10 @@ namespace Matchmaking.Local.Test
             matchmakingServiceFactory_ = matchmakingServiceFactory;
         }
 
-        protected static int TestTimeoutMs
-        {
-            get
-            {
-                return Debugger.IsAttached ? Timeout.Infinite : 10000;
-            }
-        }
-
-        protected static void AssertSameDictionary(IReadOnlyDictionary<string, string> a, IReadOnlyDictionary<string, string> b)
-        {
-            Assert.Equal(a.Count, b.Count);
-            foreach (var entry in a)
-            {
-                Assert.Equal(entry.Value, b[entry.Key]);
-            }
-        }
-
         [Fact]
         public void CreateRoom()
         {
-            using (var cts = new CancellationTokenSource(TestTimeoutMs))
+            using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
             using (var svc1 = matchmakingServiceFactory_(1))
             {
                 var room1 = svc1.CreateRoomAsync("CreateRoom", "http://room1", null, cts.Token).Result;
@@ -63,74 +46,10 @@ namespace Matchmaking.Local.Test
             }
         }
 
-        private void AssertSame(IRoom lhs, IRoom rhs)
-        {
-            // ID is equal.
-            Assert.Equal(lhs.Connection, rhs.Connection);
-
-            // Attributes are equal.
-            //var lAttributes = lhs.Attributes.OrderBy(a => a.Key);
-            //var rAttributes = rhs.Attributes.OrderBy(a => a.Key);
-            //Assert.True(lAttributes.SequenceEqual(rAttributes));
-        }
-
-        class RaiiGuard : IDisposable
-        {
-            private Action Quit { get; set; }
-            public RaiiGuard(Action init, Action quit)
-            {
-                Quit = quit;
-                if (init != null) init();
-            }
-            void IDisposable.Dispose()
-            {
-                if (Quit != null) Quit();
-            }
-        }
-
-        // Run a query and wait for the predicate to be satisfied.
-        // Return the list of rooms which satisfied the predicate or null if cancelled before the preducate was satisfied.
-        protected IEnumerable<IRoom> QueryAndWaitForRoomsPredicate(
-            IMatchmakingService svc, string type,
-            Func<IEnumerable<IRoom>, bool> pred, CancellationToken token)
-        {
-            using (var result = svc.StartDiscovery(type))
-            {
-                var rooms = result.Rooms;
-                bool predicateResult = pred(rooms);
-                if (predicateResult)
-                {
-                    return rooms; // optimistic path
-                }
-                using (var wakeUp = new AutoResetEvent(false))
-                {
-                    Action<IDiscoveryTask> onChange = (IDiscoveryTask sender) => wakeUp.Set();
-
-                    using (var unregisterCancel = token.Register(() => wakeUp.Set()))
-                    using (var unregisterWatch = new RaiiGuard(() => result.Updated += onChange, () => result.Updated -= onChange))
-                    {
-                        while (true)
-                        {
-                            rooms = result.Rooms;
-                            if (pred(rooms))
-                            {
-                                return rooms;
-                            }
-                            wakeUp.WaitOne(); // wait for cancel or update
-                            if (token.IsCancellationRequested)
-                            {
-                                return null;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
         [Fact]
         public void FindRoomsLocalAndRemote()
         {
-            using (var cts = new CancellationTokenSource(TestTimeoutMs))
+            using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
             using (var svc1 = matchmakingServiceFactory_(1))
             using (var svc2 = matchmakingServiceFactory_(2))
             {
@@ -142,7 +61,7 @@ namespace Matchmaking.Local.Test
 
                 // Discover them from the first service
                 {
-                    var rooms = QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Count() >= 3, cts.Token);
+                    var rooms = Utils.QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Count() >= 3, cts.Token);
                     Assert.Equal(3, rooms.Count());
                     Assert.Contains(rooms, r => r.UniqueId.Equals(room1.UniqueId));
                     Assert.Contains(rooms, r => r.UniqueId.Equals(room2.UniqueId));
@@ -151,7 +70,7 @@ namespace Matchmaking.Local.Test
 
                 // And also from the second
                 {
-                    var rooms = QueryAndWaitForRoomsPredicate(svc2, category, rl => rl.Count() >= 3, cts.Token);
+                    var rooms = Utils.QueryAndWaitForRoomsPredicate(svc2, category, rl => rl.Count() >= 3, cts.Token);
                     Assert.Equal(3, rooms.Count());
                     Assert.Contains(rooms, r => r.UniqueId.Equals(room1.UniqueId));
                     Assert.Contains(rooms, r => r.UniqueId.Equals(room2.UniqueId));
@@ -165,7 +84,7 @@ namespace Matchmaking.Local.Test
         {
             // start discovery, then start services afterwards
 
-            using (var cts = new CancellationTokenSource(TestTimeoutMs))
+            using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
             using (var svc1 = matchmakingServiceFactory_(1))
             using (var svc2 = matchmakingServiceFactory_(2))
             {
@@ -180,11 +99,11 @@ namespace Matchmaking.Local.Test
                     var room1 = svc1.CreateRoomAsync(category, "foo1", null, cts.Token).Result;
 
                     // local
-                    var res1 = QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Any(), cts.Token);
+                    var res1 = Utils.QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Any(), cts.Token);
                     Assert.Single(res1);
                     Assert.Equal(res1.First().UniqueId, room1.UniqueId);
                     // remote
-                    var res2 = QueryAndWaitForRoomsPredicate(svc2, category, rl => rl.Any(), cts.Token);
+                    var res2 = Utils.QueryAndWaitForRoomsPredicate(svc2, category, rl => rl.Any(), cts.Token);
                     Assert.Single(res1);
                     Assert.Equal(res1.First().UniqueId, room1.UniqueId);
                 }
@@ -194,13 +113,15 @@ namespace Matchmaking.Local.Test
         [Fact]
         public void ServiceShutdownRemovesRooms()
         {
+            const string category1 = "ServiceShutdownRemovesRooms1";
+            const string category2 = "ServiceShutdownRemovesRooms2";
+
             // start discovery, then start services afterwards
-            using (var cts = new CancellationTokenSource(TestTimeoutMs))
+            using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
             using (var svc1 = matchmakingServiceFactory_(1))
+            using (var rooms1 = svc1.StartDiscovery(category1))
+            using (var rooms2 = svc1.StartDiscovery(category2))
             {
-                const string category1 = "ServiceShutdownRemovesRooms1";
-                const string category2 = "ServiceShutdownRemovesRooms2";
-                var rooms1 = svc1.StartDiscovery(category1);
                 Assert.Empty(rooms1.Rooms);
 
                 // These are disposed manually, but keep in a using block so that they are disposed even
@@ -215,29 +136,29 @@ namespace Matchmaking.Local.Test
 
                     // They should show up in svc1
                     {
-                        var res1 = QueryAndWaitForRoomsPredicate(svc1, category1, rl => rl.Count() == 2, cts.Token);
+                        var res1 = Utils.QueryAndWaitForRoomsPredicate(rooms1, rl => rl.Count() == 2, cts.Token);
                         Assert.Equal(2, res1.Count());
                         Assert.Contains(res1, room => room.UniqueId == room2_1.UniqueId);
                         Assert.Contains(res1, room => room.UniqueId == room3_1.UniqueId);
 
-                        var res2 = QueryAndWaitForRoomsPredicate(svc1, category2, rl => rl.Count() == 1, cts.Token);
+                        var res2 = Utils.QueryAndWaitForRoomsPredicate(rooms2, rl => rl.Count() == 1, cts.Token);
                         Assert.Equal(room2_2.UniqueId, res2.First().UniqueId);
                     }
 
                     // After svc2 is shut down, its rooms should be gone from svc1
                     svc2.Dispose();
                     {
-                        var res1 = QueryAndWaitForRoomsPredicate(svc1, category1, rl => rl.Count() == 1, cts.Token);
+                        var res1 = Utils.QueryAndWaitForRoomsPredicate(rooms1, rl => rl.Count() == 1, cts.Token);
                         Assert.Equal(room3_1.UniqueId, res1.First().UniqueId);
-                        var res2 = QueryAndWaitForRoomsPredicate(svc1, category2, rl => rl.Count() == 0, cts.Token);
+                        var res2 = Utils.QueryAndWaitForRoomsPredicate(rooms2, rl => rl.Count() == 0, cts.Token);
                         Assert.Empty(res2);
                     }
                     // After svc3 is shut down, all rooms should be gone from svc1
                     svc3.Dispose();
                     {
-                        var res1 = QueryAndWaitForRoomsPredicate(svc1, category1, rl => rl.Count() == 0, cts.Token);
+                        var res1 = Utils.QueryAndWaitForRoomsPredicate(rooms1, rl => rl.Count() == 0, cts.Token);
                         Assert.Empty(res1);
-                        var res2 = QueryAndWaitForRoomsPredicate(svc1, category2, rl => rl.Count() == 0, cts.Token);
+                        var res2 = Utils.QueryAndWaitForRoomsPredicate(rooms2, rl => rl.Count() == 0, cts.Token);
                         Assert.Empty(res2);
                     }
                 }
@@ -247,7 +168,7 @@ namespace Matchmaking.Local.Test
         [Fact]
         public void CanEditRoomAttributes()
         {
-            using (var cts = new CancellationTokenSource(TestTimeoutMs))
+            using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
             using (var svc1 = matchmakingServiceFactory_(1))
             {
                 const string category = "CanEditRoomAttributes";
@@ -262,11 +183,11 @@ namespace Matchmaking.Local.Test
 
                     // It should show up in svc1
                     {
-                        var res1 = QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Any(), cts.Token);
+                        var res1 = Utils.QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Any(), cts.Token);
                         Assert.Single(res1);
                         var room1 = res1.First();
                         Assert.Equal(room2.UniqueId, room1.UniqueId);
-                        AssertSameDictionary(res1.First().Attributes, origAttrs);
+                        Utils.AssertSameDictionary(res1.First().Attributes, origAttrs);
                         Assert.Null(room1.RequestEdit()); // remote edit not yet supported
                     }
 
@@ -285,55 +206,18 @@ namespace Matchmaking.Local.Test
                         var newAttrs = new Dictionary<string, string> { { "keyB", "updatedB" } };
 
                         // Edits should show locally
-                        AssertSameDictionary(room2.Attributes, newAttrs);
+                        Utils.AssertSameDictionary(room2.Attributes, newAttrs);
 
                         // And remotely. This currently waits for the attributes to change. It would be nice if we could inspect the network instead.
-                        var res1 = QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Any() && rl.First().Attributes.Count == 1, cts.Token);
+                        var res1 = Utils.QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Any() && rl.First().Attributes.Count == 1, cts.Token);
                         Assert.Single(res1);
                         var room1 = res1.First();
                         Assert.Equal(room2.UniqueId, room1.UniqueId);
-                        AssertSameDictionary(res1.First().Attributes, newAttrs);
+                        Utils.AssertSameDictionary(res1.First().Attributes, newAttrs);
                     }
                 }
             }
         }
-
-#if false
-        [Fact]
-        public void RoomExpiresOnTime()
-        {
-            using (var cts = new CancellationTokenSource(TestTimeoutMs))
-            using (var svc1 = matchmakingServiceFactory_(1))
-            {
-                const string category = "RoomExpiresOnTime";
-                var rooms1 = svc1.StartDiscovery(category);
-                Assert.Empty(rooms1.Rooms);
-
-                using (var svc2 = matchmakingServiceFactory_(2))
-                {
-                    // Create rooms from svc2
-                    // SET TIMEOUT 2s
-                    var room1 = svc2.CreateRoomAsync(category, "conn1",  null, cts.Token).Result;
-
-                    // It should show up in svc1
-                    {
-                        var res1 = QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Any(), cts.Token);
-                        Assert.Single(res1);
-                        Assert.Equal(room1.UniqueId, res1.First().UniqueId);
-                    }
-
-                    // how to stop svc2 from announcing without bye
-
-                    //
-                    {
-                        var res1 = QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Count() == 0, cts.Token);
-                        Assert.Single(res1);
-                        Assert.Equal(room1.UniqueId, res1.First().UniqueId);
-                    }
-                }
-            }
-        }
-#endif
     }
 
     public class LocalMatchmakingTestUdp : LocalMatchmakingTest
@@ -341,7 +225,7 @@ namespace Matchmaking.Local.Test
         static private IMatchmakingService MakeMatchmakingService(int userIndex)
         {
             var net = new UdpPeerNetwork(new IPAddress(0xffffff7f), 45277, new IPAddress(0x0000007f + (userIndex << 24)));
-            return new PeerMatchmakingService(net);
+            return new PeerMatchmakingService(net, new PeerMatchmakingService.Options { RoomExpirySec = int.MaxValue });
         }
 
         public LocalMatchmakingTestUdp() : base(MakeMatchmakingService) { }
@@ -352,7 +236,7 @@ namespace Matchmaking.Local.Test
         static private IMatchmakingService MakeMatchmakingService(int userIndex)
         {
             var net = new UdpPeerNetwork(new IPAddress(0x000000e0), 45278, new IPAddress(0x0000007f + (userIndex << 24)));
-            return new PeerMatchmakingService(net);
+            return new PeerMatchmakingService(net, new PeerMatchmakingService.Options { RoomExpirySec = int.MaxValue });
         }
 
         public LocalMatchmakingTestUdpMulticast() : base(MakeMatchmakingService) { }
@@ -363,7 +247,7 @@ namespace Matchmaking.Local.Test
         static private IMatchmakingService MakeMatchmakingService(int userIndex)
         {
             var net = new MemoryPeerNetwork(userIndex);
-            return new PeerMatchmakingService(net);
+            return new PeerMatchmakingService(net, new PeerMatchmakingService.Options { RoomExpirySec = int.MaxValue });
         }
 
         public LocalMatchmakingTestMemory() : base(MakeMatchmakingService) { }
@@ -372,7 +256,7 @@ namespace Matchmaking.Local.Test
     // Uses relay socket to reorder packets delivery.
     public class LocalMatchmakingTestReordered : LocalMatchmakingTest, IDisposable
     {
-        private const int MaxDelayMs = 1000;
+        private const int MaxDelayMs = 25;
         private const ushort Port = 45279;
 
         private readonly Socket relay_;
@@ -389,7 +273,7 @@ namespace Matchmaking.Local.Test
             {
                 recipients_.Add(new IPEndPoint(address, Port));
             }
-            return new PeerMatchmakingService(net);
+            return new PeerMatchmakingService(net, new PeerMatchmakingService.Options { RoomExpirySec = int.MaxValue });
         }
 
         public LocalMatchmakingTestReordered(ITestOutputHelper output) : base(null)
@@ -427,7 +311,7 @@ namespace Matchmaking.Local.Test
                         }
                         foreach (var rec in curRecipients)
                         {
-                            var delay = (int)(random_.NextDouble() * MaxDelayMs);
+                            var delay = random_.Next(MaxDelayMs);
                             _ = Task.Delay(delay).ContinueWith(t =>
                             {
                                 try
@@ -454,8 +338,9 @@ namespace Matchmaking.Local.Test
         public void AttributeEditsAreInOrder()
         {
             const string category = "AttributeEditsAreInOrder";
-            using (var cts = new CancellationTokenSource(TestTimeoutMs))
+            using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
             using (var svc1 = matchmakingServiceFactory_(1))
+            using (var discovery = svc1.StartDiscovery(category))
             using (var svc2 = matchmakingServiceFactory_(2))
             {
                 // Create room from svc2
@@ -481,11 +366,11 @@ namespace Matchmaking.Local.Test
                     }
 
                     // Give some time to the messages to reach the peers.
-                    Task.Delay(100).Wait();
+                    Task.Delay(MaxDelayMs).Wait();
 
                     // Edits should show up in svc1 in order
                     {
-                        var res1 = QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Any(), cts.Token);
+                        var res1 = Utils.QueryAndWaitForRoomsPredicate(discovery, rl => rl.Any(), cts.Token);
                         Assert.Single(res1);
                         var room1 = res1.First();
                         Assert.Equal(room2.UniqueId, room1.UniqueId);
@@ -501,7 +386,6 @@ namespace Matchmaking.Local.Test
                         lastValueSeen2 = value;
                     }
                 }
-
                 {
                     // Eventually the last edit should be delivered to both services.
                     Func<IEnumerable<IRoom>, bool> lastEditWasApplied = rl =>
@@ -509,10 +393,9 @@ namespace Matchmaking.Local.Test
                         return rl.Any() && rl.First().Attributes.TryGetValue("value", out string value) &&
                             int.Parse(value) == lastValueCommitted;
                     };
-                    var res1 = QueryAndWaitForRoomsPredicate(svc1, category, lastEditWasApplied, cts.Token);
+                    var res1 = Utils.QueryAndWaitForRoomsPredicate(svc1, category, lastEditWasApplied, cts.Token);
                     Assert.Single(res1);
-                    var res2 = QueryAndWaitForRoomsPredicate(svc2, category, lastEditWasApplied, cts.Token);
-                    Assert.Single(res2);
+                    Assert.Equal(int.Parse(room2.Attributes["value"]), lastValueCommitted);
                 }
             }
         }
@@ -521,29 +404,28 @@ namespace Matchmaking.Local.Test
         public void NoAnnouncementsAfterDispose()
         {
             const string category = "NoAnnouncementsAfterDispose";
-            using (var cts = new CancellationTokenSource(TestTimeoutMs))
+            using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
             using (var svc1 = matchmakingServiceFactory_(1))
             using (var discovery = svc1.StartDiscovery(category))
             {
                 using (var svc2 = matchmakingServiceFactory_(2))
                 {
                     // Create a lot of rooms.
-                    var tasks = new Task<IRoom>[50];
+                    var tasks = new Task<IRoom>[100];
                     for (int i = 0; i < tasks.Length; ++i)
                     {
                         tasks[i] = svc2.CreateRoomAsync(category, "conn1", null, cts.Token);
-                        Task.Delay(20).Wait();
                     }
 
                     // Wait until svc1 discovers at least one room.
-                    var res1 = QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Any(), cts.Token);
+                    var res1 = Utils.QueryAndWaitForRoomsPredicate(discovery, rl => rl.Any(), cts.Token);
                     Assert.NotNull(res1);
                     // Dispose the service.
                 }
 
                 // Eventually there should be no rooms left.
                 {
-                    var res1 = QueryAndWaitForRoomsPredicate(svc1, category, rl => !rl.Any(), cts.Token);
+                    var res1 = Utils.QueryAndWaitForRoomsPredicate(discovery, rl => !rl.Any(), cts.Token);
                     Assert.NotNull(res1);
                 }
             }

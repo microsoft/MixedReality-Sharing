@@ -47,10 +47,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             // any existing iterators.
             lock (instances_)
             {
-                Debug.Assert(!instances_.Contains(this));
-                var i = new List<MemoryPeerNetwork>(instances_);
-                i.Add(this);
-                instances_ = i;
+                if (!instances_.Contains(this))
+                {
+                    var i = new List<MemoryPeerNetwork>(instances_);
+                    i.Add(this);
+                    instances_ = i;
+                }
             }
         }
 
@@ -58,10 +60,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         {
             lock (instances_)
             {
-                Debug.Assert(instances_.Contains(this));
-                var i = new List<MemoryPeerNetwork>(instances_);
-                i.Remove(this);
-                instances_ = i;
+                if (instances_.Contains(this))
+                {
+                    var i = new List<MemoryPeerNetwork>(instances_);
+                    i.Remove(this);
+                    instances_ = i;
+                }
             }
         }
 
