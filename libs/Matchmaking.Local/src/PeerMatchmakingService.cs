@@ -376,9 +376,15 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                             where lr.Category == category
                             select lr).ToArray();
             }
-            foreach (var room in matching)
+            lock (announcementsLock_)
             {
-                proto_.SendServerReply(msg, room.Category, room.UniqueId, room.Connection, room.ExpirySeconds, room.Attributes);
+                if (!stopAllAnnouncements_)
+                {
+                    foreach (var room in matching)
+                    {
+                        proto_.SendServerReply(msg, room.Category, room.UniqueId, room.Connection, room.ExpirySeconds, room.Attributes);
+                    }
+                }
             }
         }
 
