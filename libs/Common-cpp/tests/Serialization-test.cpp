@@ -15,6 +15,12 @@ struct EncodedValue {
   bit_shift_t max_width_bits;  // Can be larger than the actual width
 };
 
+// Generates a test set of values of different bit "widths" (the size of the
+// significant part up to the highest non-zero bit). Compared to uniform
+// distribution, values of smaller widths are a lot more likely (and each width
+// is about as likely as any other). Two special values (0 and ~0ull) are also
+// inserted with much increased probability since they are special-cased in the
+// stream code and should be properly tested.
 std::vector<EncodedValue> GenerateRandomValues(size_t count) {
   std::uniform_int_distribution<uint64_t> uint64_distribution{0, ~0ull};
 

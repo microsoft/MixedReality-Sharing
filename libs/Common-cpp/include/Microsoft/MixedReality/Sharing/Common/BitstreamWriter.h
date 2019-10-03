@@ -16,7 +16,7 @@ class BitstreamWriter {
  public:
   // Outputs the provided bits into the stream.
   // Expects that the provided value fits into bits_count bits,
-  // oterwise the behavior is undefined.
+  // otherwise the behavior is undefined.
   void WriteBits(uint64_t value, bit_shift_t bits_count);
 
   // Encodes the provided value as an order-0 exponential-Golomb code
