@@ -19,12 +19,17 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\BitstreamReader.h" />
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\BitstreamWriter.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\hash.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Platform.h" />
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Serialization.h" />
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Span.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\windows.h" />
     <ClInclude Include="src\pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\BitstreamWriter.cpp" />
     <ClCompile Include="src\hash.cpp" />
     <ClCompile Include="src\pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -33,6 +38,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="src\Platform.cpp" />
+    <ClCompile Include="src\Serialization.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
