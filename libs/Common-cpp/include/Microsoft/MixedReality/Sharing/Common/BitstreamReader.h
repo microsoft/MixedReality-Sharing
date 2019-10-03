@@ -95,7 +95,7 @@ MS_MR_SHARING_FORCEINLINE
 uint64_t BitstreamReader::ReadExponentialGolombCode() {
   // The pattern we are looking for is either:
   // * [0..63] '0' bits, then '1', then some value bits
-  //   (the same number as the number of zeros, called width_bits below).
+  //   (the same number as the number of zeros, called zeroes_count below).
   // * 64 '0' bits (special case encoding for ~0ull).
   //   In this case we don't check the bits after zeros.
 

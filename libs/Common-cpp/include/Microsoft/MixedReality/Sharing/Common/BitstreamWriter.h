@@ -75,6 +75,16 @@ void BitstreamWriter::WriteBits(uint64_t value, bit_shift_t bits_count) {
 
 MS_MR_SHARING_FORCEINLINE
 void BitstreamWriter::WriteExponentialGolombCode(uint64_t value) {
+  // This is a Little-Endian version of the encoding.
+  // First, making the value non-zero by adding 1 and special-casing
+  // the ~0ull case. Then for the input that looks like:
+  //   1xx..xx
+  // we push N zeros into the stream, then '1', then xx..xx bits.
+  // N is equal to the number of bits in the xx..xx payload.
+  // Then, when reading the value later, we'll count the number of 0s in the
+  // stream before the separating '1' and reverse the transform
+  // (add (1ull << N) - 1) to get the original value before we offsetted it
+  // by 1 and chopped off the leading '1'.
   if (value == 0) {  // Fast path for the most common case
     WriteOneBit();
   } else {
