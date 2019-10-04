@@ -982,7 +982,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             // todo is there a smarter way to do this?
             Task.Delay(1).Wait();
 
-            if (networkRefCount_ > 0)
+            // Stop the network and prevent later disposals from trying to stop it again.
+            if (Interlocked.Exchange(ref networkRefCount_, 0) > 0)
             {
                 network_.Stop();
             }
