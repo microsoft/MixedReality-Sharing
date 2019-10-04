@@ -20,7 +20,7 @@ class BitstreamWriter {
   void WriteBits(uint64_t value, bit_shift_t bits_count);
 
   // Encodes the provided value as an order-0 exponential-Golomb code
-  // (Little-Endian variation that stores 0 in low bits).
+  // (Little-Endian variation that stores zeros in low bits).
   // Has a special shortened encoding for ~0ull since we are not interested
   // in arbitrarily large codes.
   void WriteExponentialGolombCode(uint64_t value);
@@ -115,6 +115,6 @@ void BitstreamWriter::WriteExponentialGolombCode(uint64_t value) {
     WriteBits(pattern, pattern_bits_count);
     WriteBits(value & (pattern - 1), index);
   }
-}  // namespace Microsoft::MixedReality::Sharing::Serialization
+}
 
 }  // namespace Microsoft::MixedReality::Sharing::Serialization
