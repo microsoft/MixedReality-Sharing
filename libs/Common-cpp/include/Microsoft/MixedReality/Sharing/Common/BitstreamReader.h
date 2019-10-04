@@ -11,12 +11,6 @@
 #include <stdexcept>
 #include <string_view>
 
-#if defined(MS_MR_SHARING_PLATFORM_AMD64)
-#define BitScanForwardSizeT _BitScanForward64
-#elif defined(MS_MR_SHARING_PLATFORM_x86)
-#define BitScanForwardSizeT _BitScanForward
-#endif
-
 namespace Microsoft::MixedReality::Sharing::Serialization {
 
 class BitstreamReader {
@@ -101,7 +95,14 @@ uint64_t BitstreamReader::ReadExponentialGolombCode() {
 
   bit_shift_t zeroes_count = 0;
   bit_shift_t set_bit_position;
-  while (!BitScanForwardSizeT(&set_bit_position, read_buf_)) {
+
+#if defined(MS_MR_SHARING_PLATFORM_AMD64)
+  while (!_BitScanForward64(&set_bit_position, read_buf_)) {
+#elif defined(MS_MR_SHARING_PLATFORM_x86)
+  while (!_BitScanForward(&set_bit_position, read_buf_)) {
+#else
+#error Unsupported platform
+#endif
     zeroes_count += read_buf_bits_count_;
     if (zeroes_count >= 64) {
       // Special case for ~0ull,
@@ -161,6 +162,6 @@ uint64_t BitstreamReader::ReadExponentialGolombCode() {
 #endif
   const uint64_t mask = (1ull << zeroes_count) - 1;
   return (result & mask) + mask;
-}
+}  // namespace Microsoft::MixedReality::Sharing::Serialization
 
 }  // namespace Microsoft::MixedReality::Sharing::Serialization

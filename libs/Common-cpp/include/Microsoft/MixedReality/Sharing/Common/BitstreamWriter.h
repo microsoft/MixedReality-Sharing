@@ -58,6 +58,7 @@ void BitstreamWriter::WriteOneBit() {
     ++temp_bit_offset_;
   }
 }
+
 MS_MR_SHARING_FORCEINLINE
 void BitstreamWriter::WriteBits(uint64_t value, bit_shift_t bits_count) {
   assert((bits_count == 64) || (bits_count < 64 && (value >> bits_count) == 0));
@@ -106,7 +107,7 @@ void BitstreamWriter::WriteExponentialGolombCode(uint64_t value) {
       // We could encode this as a 65-bit value (exponential-Golomb coding
       // doesn't have an upper limit for the size of the value) by writing 64
       // zeros, one, and then 64 zeros again, but since this is the only value
-      // like this, we can skip the long tail.
+      // like this, we can skip the long tail and just write 64 zeros.
       WriteBits(0, 64);
       return;
     }
