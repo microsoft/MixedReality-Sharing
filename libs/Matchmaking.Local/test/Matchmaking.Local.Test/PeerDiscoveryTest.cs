@@ -17,11 +17,11 @@ using Xunit.Abstractions;
 
 namespace Matchmaking.Local.Test
 {
-    public abstract class LocalMatchmakingTest
+    public abstract class PeerDiscoveryTest
     {
-        protected Func<int, IMatchmakingService> matchmakingServiceFactory_;
+        protected Func<int, IDiscoveryAgent> matchmakingServiceFactory_;
 
-        protected LocalMatchmakingTest(Func<int, IMatchmakingService> matchmakingServiceFactory)
+        protected PeerDiscoveryTest(Func<int, IDiscoveryAgent> matchmakingServiceFactory)
         {
             matchmakingServiceFactory_ = matchmakingServiceFactory;
         }
@@ -32,13 +32,13 @@ namespace Matchmaking.Local.Test
             using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
             using (var svc1 = matchmakingServiceFactory_(1))
             {
-                var room1 = svc1.CreateRoomAsync("CreateRoom", "http://room1", null, cts.Token).Result;
+                var room1 = svc1.PublishAsync("CreateRoom", "http://room1", null, cts.Token).Result;
 
                 Assert.Equal("http://room1", room1.Connection);
                 Assert.Empty(room1.Attributes);
 
                 var attributes = new Dictionary<string, string> { ["prop1"] = "1", ["prop2"] = "2" };
-                var room2 = svc1.CreateRoomAsync("CreateRoom", "foo://room2", attributes, cts.Token).Result;
+                var room2 = svc1.PublishAsync("CreateRoom", "foo://room2", attributes, cts.Token).Result;
 
                 Assert.Equal("foo://room2", room2.Connection);
                 Assert.Equal("1", room2.Attributes["prop1"]);
@@ -55,9 +55,9 @@ namespace Matchmaking.Local.Test
             {
                 // Create some rooms in the first one
                 const string category = "FindRoomsLocalAndRemote";
-                var room1 = svc1.CreateRoomAsync(category, "Conn1", null, cts.Token).Result;
-                var room2 = svc1.CreateRoomAsync(category, "Conn2", null, cts.Token).Result;
-                var room3 = svc1.CreateRoomAsync(category, "Conn3", null, cts.Token).Result;
+                var room1 = svc1.PublishAsync(category, "Conn1", null, cts.Token).Result;
+                var room2 = svc1.PublishAsync(category, "Conn2", null, cts.Token).Result;
+                var room3 = svc1.PublishAsync(category, "Conn3", null, cts.Token).Result;
 
                 // Discover them from the first service
                 {
@@ -90,13 +90,13 @@ namespace Matchmaking.Local.Test
             {
                 const string category = "FindRoomsFromAnnouncement";
 
-                using (var task1 = svc1.StartDiscovery(category))
-                using (var task2 = svc2.StartDiscovery(category))
+                using (var task1 = svc1.Subscribe(category))
+                using (var task2 = svc2.Subscribe(category))
                 {
                     Assert.Empty(task1.Rooms);
                     Assert.Empty(task2.Rooms);
 
-                    var room1 = svc1.CreateRoomAsync(category, "foo1", null, cts.Token).Result;
+                    var room1 = svc1.PublishAsync(category, "foo1", null, cts.Token).Result;
 
                     // local
                     var res1 = Utils.QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Any(), cts.Token);
@@ -119,8 +119,8 @@ namespace Matchmaking.Local.Test
             // start discovery, then start services afterwards
             using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
             using (var svc1 = matchmakingServiceFactory_(1))
-            using (var rooms1 = svc1.StartDiscovery(category1))
-            using (var rooms2 = svc1.StartDiscovery(category2))
+            using (var rooms1 = svc1.Subscribe(category1))
+            using (var rooms2 = svc1.Subscribe(category2))
             {
                 Assert.Empty(rooms1.Rooms);
 
@@ -130,9 +130,9 @@ namespace Matchmaking.Local.Test
                 using (var svc3 = matchmakingServiceFactory_(3))
                 {
                     // Create rooms from svc2 and svc3
-                    var room2_1 = svc2.CreateRoomAsync(category1, "conn1", null, cts.Token).Result;
-                    var room2_2 = svc2.CreateRoomAsync(category2, "conn2", null, cts.Token).Result;
-                    var room3_1 = svc3.CreateRoomAsync(category1, "conn3", null, cts.Token).Result;
+                    var room2_1 = svc2.PublishAsync(category1, "conn1", null, cts.Token).Result;
+                    var room2_2 = svc2.PublishAsync(category2, "conn2", null, cts.Token).Result;
+                    var room3_1 = svc3.PublishAsync(category1, "conn3", null, cts.Token).Result;
 
                     // They should show up in svc1
                     {
@@ -172,14 +172,14 @@ namespace Matchmaking.Local.Test
             using (var svc1 = matchmakingServiceFactory_(1))
             {
                 const string category = "CanEditRoomAttributes";
-                var rooms1 = svc1.StartDiscovery(category);
+                var rooms1 = svc1.Subscribe(category);
                 Assert.Empty(rooms1.Rooms);
 
                 using (var svc2 = matchmakingServiceFactory_(2))
                 {
                     // Create rooms from svc2
                     var origAttrs = new Dictionary<string, string> { { "keyA", "valA" }, { "keyB", "valB" } };
-                    var room2 = svc2.CreateRoomAsync(category, "conn1", origAttrs, cts.Token).Result;
+                    var room2 = svc2.PublishAsync(category, "conn1", origAttrs, cts.Token).Result;
 
                     // It should show up in svc1
                     {
@@ -220,41 +220,41 @@ namespace Matchmaking.Local.Test
         }
     }
 
-    public class LocalMatchmakingTestUdp : LocalMatchmakingTest
+    public class PeerDiscoveryTestUdp : PeerDiscoveryTest
     {
-        static private IMatchmakingService MakeMatchmakingService(int userIndex)
+        static private IDiscoveryAgent MakeMatchmakingService(int userIndex)
         {
-            var net = new UdpPeerNetwork(new IPAddress(0xffffff7f), 45277, new IPAddress(0x0000007f + (userIndex << 24)));
-            return new PeerMatchmakingService(net, new PeerMatchmakingService.Options { RoomExpirySec = int.MaxValue });
+            var net = new UdpPeerDiscoveryTransport(new IPAddress(0xffffff7f), 45277, new IPAddress(0x0000007f + (userIndex << 24)));
+            return new PeerDiscoveryAgent(net, new PeerDiscoveryAgent.Options { RoomExpirySec = int.MaxValue });
         }
 
-        public LocalMatchmakingTestUdp() : base(MakeMatchmakingService) { }
+        public PeerDiscoveryTestUdp() : base(MakeMatchmakingService) { }
     }
 
-    public class LocalMatchmakingTestUdpMulticast : LocalMatchmakingTest
+    public class PeerDiscoveryTestUdpMulticast : PeerDiscoveryTest
     {
-        static private IMatchmakingService MakeMatchmakingService(int userIndex)
+        static private IDiscoveryAgent MakeMatchmakingService(int userIndex)
         {
-            var net = new UdpPeerNetwork(new IPAddress(0x000000e0), 45278, new IPAddress(0x0000007f + (userIndex << 24)));
-            return new PeerMatchmakingService(net, new PeerMatchmakingService.Options { RoomExpirySec = int.MaxValue });
+            var net = new UdpPeerDiscoveryTransport(new IPAddress(0x000000e0), 45278, new IPAddress(0x0000007f + (userIndex << 24)));
+            return new PeerDiscoveryAgent(net, new PeerDiscoveryAgent.Options { RoomExpirySec = int.MaxValue });
         }
 
-        public LocalMatchmakingTestUdpMulticast() : base(MakeMatchmakingService) { }
+        public PeerDiscoveryTestUdpMulticast() : base(MakeMatchmakingService) { }
     }
 
-    public class LocalMatchmakingTestMemory : LocalMatchmakingTest
+    public class PeerDiscoveryTestMemory : PeerDiscoveryTest
     {
-        static private IMatchmakingService MakeMatchmakingService(int userIndex)
+        static private IDiscoveryAgent MakeMatchmakingService(int userIndex)
         {
-            var net = new MemoryPeerNetwork(userIndex);
-            return new PeerMatchmakingService(net, new PeerMatchmakingService.Options { RoomExpirySec = int.MaxValue });
+            var net = new MemoryPeerDiscoveryTransport(userIndex);
+            return new PeerDiscoveryAgent(net, new PeerDiscoveryAgent.Options { RoomExpirySec = int.MaxValue });
         }
 
-        public LocalMatchmakingTestMemory() : base(MakeMatchmakingService) { }
+        public PeerDiscoveryTestMemory() : base(MakeMatchmakingService) { }
     }
 
     // Uses relay socket to reorder packets delivery.
-    public class LocalMatchmakingTestReordered : LocalMatchmakingTest, IDisposable
+    public class PeerDiscoveryTestReordered : PeerDiscoveryTest, IDisposable
     {
         private const int MaxDelayMs = 25;
         private const ushort Port = 45279;
@@ -264,19 +264,19 @@ namespace Matchmaking.Local.Test
         private readonly ITestOutputHelper output_;
         private readonly List<IPEndPoint> recipients_ = new List<IPEndPoint>();
 
-        private IMatchmakingService MakeMatchmakingService(int userIndex)
+        private IDiscoveryAgent MakeMatchmakingService(int userIndex)
         {
             // Peers all send packets to the relay.
             var address = new IPAddress(0x0000007f + (userIndex << 24));
-            var net = new UdpPeerNetwork(new IPAddress(0xfeffff7f), Port, address);
+            var net = new UdpPeerDiscoveryTransport(new IPAddress(0xfeffff7f), Port, address);
             lock(recipients_)
             {
                 recipients_.Add(new IPEndPoint(address, Port));
             }
-            return new PeerMatchmakingService(net, new PeerMatchmakingService.Options { RoomExpirySec = int.MaxValue });
+            return new PeerDiscoveryAgent(net, new PeerDiscoveryAgent.Options { RoomExpirySec = int.MaxValue });
         }
 
-        public LocalMatchmakingTestReordered(ITestOutputHelper output) : base(null)
+        public PeerDiscoveryTestReordered(ITestOutputHelper output) : base(null)
         {
             matchmakingServiceFactory_ = MakeMatchmakingService;
             output_ = output;
@@ -340,12 +340,12 @@ namespace Matchmaking.Local.Test
             const string category = "AttributeEditsAreInOrder";
             using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
             using (var svc1 = matchmakingServiceFactory_(1))
-            using (var discovery = svc1.StartDiscovery(category))
+            using (var discovery = svc1.Subscribe(category))
             using (var svc2 = matchmakingServiceFactory_(2))
             {
                 // Create room from svc2
                 var origAttrs = new Dictionary<string, string> { { "value", "0" } };
-                var room2 = svc2.CreateRoomAsync(category, "conn1", origAttrs, cts.Token).Result;
+                var room2 = svc2.PublishAsync(category, "conn1", origAttrs, cts.Token).Result;
 
                 int lastValueSeen1 = 0;
                 int lastValueSeen2 = 0;
@@ -388,7 +388,7 @@ namespace Matchmaking.Local.Test
                 }
                 {
                     // Eventually the last edit should be delivered to both services.
-                    Func<IEnumerable<IRoom>, bool> lastEditWasApplied = rl =>
+                    Func<IEnumerable<IDiscoveryResource>, bool> lastEditWasApplied = rl =>
                     {
                         return rl.Any() && rl.First().Attributes.TryGetValue("value", out string value) &&
                             int.Parse(value) == lastValueCommitted;
@@ -406,15 +406,15 @@ namespace Matchmaking.Local.Test
             const string category = "NoAnnouncementsAfterDispose";
             using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
             using (var svc1 = matchmakingServiceFactory_(1))
-            using (var discovery = svc1.StartDiscovery(category))
+            using (var discovery = svc1.Subscribe(category))
             {
                 using (var svc2 = matchmakingServiceFactory_(2))
                 {
                     // Create a lot of rooms.
-                    var tasks = new Task<IRoom>[100];
+                    var tasks = new Task<IDiscoveryResource>[100];
                     for (int i = 0; i < tasks.Length; ++i)
                     {
-                        tasks[i] = svc2.CreateRoomAsync(category, "conn1", null, cts.Token);
+                        tasks[i] = svc2.PublishAsync(category, "conn1", null, cts.Token);
                     }
 
                     // Wait until svc1 discovers at least one room.

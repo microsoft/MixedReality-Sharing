@@ -10,13 +10,13 @@ using System.Threading;
 
 namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
-    class MemoryPeerNetworkMessage : IPeerNetworkMessage
+    class MemoryPeerDiscoveryMessage : IPeerDiscoveryMessage
     {
-        internal MemoryPeerNetwork sender_;
+        internal MemoryPeerDiscoveryTransport sender_;
         public Guid StreamId { get; }
         public ArraySegment<byte> Contents { get; }
 
-        internal MemoryPeerNetworkMessage(MemoryPeerNetwork sender, Guid streamId, ArraySegment<byte> contents)
+        internal MemoryPeerDiscoveryMessage(MemoryPeerDiscoveryTransport sender, Guid streamId, ArraySegment<byte> contents)
         {
             sender_ = sender;
             Contents = contents;
@@ -24,19 +24,19 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         }
     }
 
-    public class MemoryPeerNetwork : IPeerNetwork
+    public class MemoryPeerDiscoveryTransport : IPeerDiscoveryTransport
     {
         int ident_;
-        ConcurrentQueue<MemoryPeerNetworkMessage> incoming_ = new ConcurrentQueue<MemoryPeerNetworkMessage>();
+        ConcurrentQueue<MemoryPeerDiscoveryMessage> incoming_ = new ConcurrentQueue<MemoryPeerDiscoveryMessage>();
 
         //TODO extract into a factory so we can have independent networks
-        static volatile List<MemoryPeerNetwork> instances_ = new List<MemoryPeerNetwork>();
+        static volatile List<MemoryPeerDiscoveryTransport> instances_ = new List<MemoryPeerDiscoveryTransport>();
 
         const int NetworkPumpInProgress = 1;
         const int NetworkQueuedSome = 2;
         static int networkStatus_ = 0;
 
-        public MemoryPeerNetwork(int ident)
+        public MemoryPeerDiscoveryTransport(int ident)
         {
             ident_ = ident;
         }
@@ -49,7 +49,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             {
                 if (!instances_.Contains(this))
                 {
-                    var i = new List<MemoryPeerNetwork>(instances_);
+                    var i = new List<MemoryPeerDiscoveryTransport>(instances_);
                     i.Add(this);
                     instances_ = i;
                 }
@@ -62,18 +62,18 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             {
                 if (instances_.Contains(this))
                 {
-                    var i = new List<MemoryPeerNetwork>(instances_);
+                    var i = new List<MemoryPeerDiscoveryTransport>(instances_);
                     i.Remove(this);
                     instances_ = i;
                 }
             }
         }
 
-        public event Action<IPeerNetwork, IPeerNetworkMessage> Message;
+        public event Action<IPeerDiscoveryTransport, IPeerDiscoveryMessage> Message;
 
         public void Broadcast(Guid streamId, ArraySegment<byte> message)
         {
-            var m = new MemoryPeerNetworkMessage(this, streamId, message);
+            var m = new MemoryPeerDiscoveryMessage(this, streamId, message);
             foreach (var c in instances_)
             {
                 c.incoming_.Enqueue(m);
@@ -81,10 +81,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             PumpNetwork();
         }
 
-        public void Reply(IPeerNetworkMessage req, Guid streamId, ArraySegment<byte> message)
+        public void Reply(IPeerDiscoveryMessage req, Guid streamId, ArraySegment<byte> message)
         {
-            var r = req as MemoryPeerNetworkMessage;
-            var m = new MemoryPeerNetworkMessage(this, streamId, message);
+            var r = req as MemoryPeerDiscoveryMessage;
+            var m = new MemoryPeerDiscoveryMessage(this, streamId, message);
             r.sender_.incoming_.Enqueue(m);
             PumpNetwork();
         }
@@ -101,7 +101,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 // Raise the message events
                 foreach (var c in instances_)
                 {
-                    MemoryPeerNetworkMessage msg;
+                    MemoryPeerDiscoveryMessage msg;
                     while (c.incoming_.TryDequeue(out msg))
                     {
                         try

@@ -6,15 +6,15 @@ using System;
 namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
     /// <summary>
-    /// Interface for IPeerNetwork messages.
+    /// Interface for IPeerDiscoveryTransport messages.
     /// </summary>
     /// <remarks>
-    /// Only implementations of IPeerNetwork should implement this interface.
+    /// Only implementations of IPeerDiscoveryTransport should implement this interface.
     /// </remarks>
-    public interface IPeerNetworkMessage
+    public interface IPeerDiscoveryMessage
     {
         /// <summary>
-        /// Stream that the packet belongs to. See <see cref="IPeerNetwork.Broadcast(Guid, ArraySegment{byte})"/>.
+        /// Stream that the packet belongs to. See <see cref="IPeerDiscoveryTransport.Broadcast(Guid, ArraySegment{byte})"/>.
         /// </summary>
         Guid StreamId { get; }
 
@@ -28,12 +28,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     /// Transport layer abstraction for PeerMatchmakingService.
     /// Implement this interface to use peer matchmaking over a different transport layer.
     /// </summary>
-    public interface IPeerNetwork
+    public interface IPeerDiscoveryTransport
     {
         /// <summary>
         /// Raised when a message arrives on this network.
         /// </summary>
-        event Action<IPeerNetwork, IPeerNetworkMessage> Message;
+        event Action<IPeerDiscoveryTransport, IPeerDiscoveryMessage> Message;
 
         /// <summary>
         /// Start the network.
@@ -65,6 +65,6 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// for messages that do not need ordering.
         /// </param>
         /// <param name="message">The buffer containing the message to send</param>
-        void Reply(IPeerNetworkMessage inResponseTo, Guid streamId, ArraySegment<byte> message);
+        void Reply(IPeerDiscoveryMessage inResponseTo, Guid streamId, ArraySegment<byte> message);
     }
 }

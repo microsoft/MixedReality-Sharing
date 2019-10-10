@@ -11,27 +11,27 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     /// <summary>
     /// Handle to an ongoing discovery task.
     /// </summary>
-    public interface IDiscoveryTask : IDisposable
+    public interface IDiscoverySubscription : IDisposable
     {
         /// <summary>
         /// The list of discovered rooms, ordered by IRoom.UniqueId.
         /// </summary>
-        IEnumerable<IRoom> Rooms { get; }
+        IEnumerable<IDiscoveryResource> Rooms { get; }
 
         /// <summary>
         /// Event raised when the 'Rooms' property will return an updated result.
         /// </summary>
-        event Action<IDiscoveryTask> Updated;
+        event Action<IDiscoverySubscription> Updated;
     }
 
-    public interface IMatchmakingService : IDisposable
+    public interface IDiscoveryAgent : IDisposable
     {
         /// <summary>
         /// Start discovery of all rooms whose category matches the one given.
         /// The returned result will change over time. Use the Updated event to subscribe to changes.
         /// The collection will update indefinitely until disposed.
         /// </summary>
-        IDiscoveryTask StartDiscovery(string category);
+        IDiscoverySubscription Subscribe(string category);
 
         /// <summary>
         /// Create a new room.
@@ -44,7 +44,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// <returns>
         /// The newly created room.
         /// </returns>
-        Task<IRoom> CreateRoomAsync(
+        Task<IDiscoveryResource> PublishAsync(
             string category,
             string connection,
             IReadOnlyDictionary<string, string> attributes = null,

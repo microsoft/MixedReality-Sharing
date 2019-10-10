@@ -38,9 +38,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             return true;
         }
 
-        internal class RoomComparer : IComparer<IRoom>
+        internal class RoomComparer : IComparer<IDiscoveryResource>
         {
-            public int Compare(IRoom a, IRoom b)
+            public int Compare(IDiscoveryResource a, IDiscoveryResource b)
             {
                 return a.UniqueId.CompareTo(b.UniqueId);
             }
@@ -130,7 +130,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         // network helpers
 
-        internal static void Broadcast(IPeerNetwork net, Guid streamId, Action<BinaryWriter> cb)
+        internal static void Broadcast(IPeerDiscoveryTransport net, Guid streamId, Action<BinaryWriter> cb)
         {
             byte[] buffer = new byte[1024];
             using (var str = new MemoryStream(buffer))
@@ -142,7 +142,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
         }
 
-        internal static void Reply(IPeerNetwork net, IPeerNetworkMessage msg, Guid streamId, Action<BinaryWriter> cb)
+        internal static void Reply(IPeerDiscoveryTransport net, IPeerDiscoveryMessage msg, Guid streamId, Action<BinaryWriter> cb)
         {
             byte[] buffer = new byte[1024];
             using (var str = new MemoryStream(buffer))
@@ -171,17 +171,17 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         private const int ClientQuery = ('C' << 24) | ('Q' << 16) | ('R' << 8) | 'Y';
         private const int MaxNumAttrs = 1024;
 
-        internal delegate void ServerAnnounceCallback(IPeerNetworkMessage msg, string category, string connection, DateTime expiresTime, Dictionary<string, string> attributes);
-        internal delegate void ServerByeByeCallback(IPeerNetworkMessage msg);
-        internal delegate void ClientQueryCallback(IPeerNetworkMessage msg, string category);
+        internal delegate void ServerAnnounceCallback(IPeerDiscoveryMessage msg, string category, string connection, DateTime expiresTime, Dictionary<string, string> attributes);
+        internal delegate void ServerByeByeCallback(IPeerDiscoveryMessage msg);
+        internal delegate void ClientQueryCallback(IPeerDiscoveryMessage msg, string category);
 
-        IPeerNetwork net_;
+        IPeerDiscoveryTransport net_;
         internal ServerAnnounceCallback OnServerHello;
         internal ServerByeByeCallback OnServerByeBye;
         internal ServerAnnounceCallback OnServerReply;
         internal ClientQueryCallback OnClientQuery;
 
-        internal Proto(IPeerNetwork net)
+        internal Proto(IPeerDiscoveryTransport net)
         {
             net_ = net;
             Start();
@@ -199,13 +199,13 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         // Receiving
 
-        private void OnNetMessage(IPeerNetwork net, IPeerNetworkMessage msg)
+        private void OnNetMessage(IPeerDiscoveryTransport net, IPeerDiscoveryMessage msg)
         {
             Debug.Assert(net == net_);
             Dispatch(msg);
         }
 
-        private static void DecodeServerAnnounce(ServerAnnounceCallback callback, IPeerNetworkMessage msg)
+        private static void DecodeServerAnnounce(ServerAnnounceCallback callback, IPeerDiscoveryMessage msg)
         {
             using (var ms = new MemoryStream(msg.Contents.Array, msg.Contents.Offset + 4, msg.Contents.Count - 4, false))
             using (var br = new BinaryReader(ms))
@@ -234,12 +234,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
         }
 
-        private static void DecodeServerByeBye(ServerByeByeCallback callback, IPeerNetworkMessage msg)
+        private static void DecodeServerByeBye(ServerByeByeCallback callback, IPeerDiscoveryMessage msg)
         {
             callback(msg);
         }
 
-        private static void DecodeClientQuery(ClientQueryCallback callback, IPeerNetworkMessage msg)
+        private static void DecodeClientQuery(ClientQueryCallback callback, IPeerDiscoveryMessage msg)
         {
             using (var ms = new MemoryStream(msg.Contents.Array, msg.Contents.Offset + 4, msg.Contents.Count - 4, false))
             using (var br = new BinaryReader(ms))
@@ -251,7 +251,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         // Sending
 
-        internal void SendServerReply(IPeerNetworkMessage msg, string category, Guid uniqueId, string connection, int expirySeconds, IReadOnlyCollection<KeyValuePair<string, string>> attributes)
+        internal void SendServerReply(IPeerDiscoveryMessage msg, string category, Guid uniqueId, string connection, int expirySeconds, IReadOnlyCollection<KeyValuePair<string, string>> attributes)
         {
             Extensions.Reply(net_, msg, uniqueId, w =>
             {
@@ -299,7 +299,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             });
         }
 
-        internal void Dispatch(IPeerNetworkMessage msg)
+        internal void Dispatch(IPeerDiscoveryMessage msg)
         {
             if (msg.Contents.Count < 4)
             {
@@ -360,14 +360,14 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         private bool stopAllAnnouncements_ = false;
         private object announcementsLock_ = new object();
 
-        internal Server(IPeerNetwork net)
+        internal Server(IPeerDiscoveryTransport net)
         {
             proto_ = new Proto(net);
             proto_.OnClientQuery = OnClientQuery;
             timer_ = new Timer(OnServerTimerExpired, null, Timeout.Infinite, Timeout.Infinite);
         }
 
-        void OnClientQuery(IPeerNetworkMessage msg, string category)
+        void OnClientQuery(IPeerDiscoveryMessage msg, string category)
         {
             LocalRoom[] matching;
             lock (this)
@@ -456,7 +456,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
         }
 
-        internal Task<IRoom> CreateRoomAsync(
+        internal Task<IDiscoveryResource> CreateRoomAsync(
             string category,
             string connection,
             int expirySeconds,
@@ -479,7 +479,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 UpdateAnnounceTimer();
             }
 
-            return Task<IRoom>.FromResult((IRoom)room);
+            return Task<IDiscoveryResource>.FromResult((IDiscoveryResource)room);
         }
 
         private void OnRoomUpdated(LocalRoom room)
@@ -495,7 +495,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         }
 
         // Room which has been created locally. And is owned locally.
-        class LocalRoom : IRoom
+        class LocalRoom : IDiscoveryResource
         {
             // Each committed edit bumps this serial number.
             // If the serial number of an edit does not match this, then we can detect stale edits.
@@ -555,7 +555,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 }
             }
 
-            class Editor : IRoomEditor
+            class Editor : IDiscoveryResourceEditor
             {
                 LocalRoom room_;
                 int serial_;
@@ -572,7 +572,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 public void RemoveAttribute(string key) { removeAttrs_.Add(key); }
             }
 
-            public IRoomEditor RequestEdit()
+            public IDiscoveryResourceEditor RequestEdit()
             {
                 return new Editor(this, editSerialNumber_);
             }
@@ -595,7 +595,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// Protocol handler.
         Proto proto_;
 
-        internal Client(IPeerNetwork net)
+        internal Client(IPeerDiscoveryTransport net)
         {
             proto_ = new Proto(net);
             proto_.OnServerHello = OnServerAnnounce;
@@ -635,7 +635,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         }
 
         // Room which we've heard about from a remote
-        private class RemoteRoom : IRoom
+        private class RemoteRoom : IDiscoveryResource
         {
             public RemoteRoom(string category, Guid uniqueId, string connection, IReadOnlyDictionary<string, string> attrs, DateTime expirationTime)
             {
@@ -651,7 +651,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             public Guid UniqueId { get; }
             public string Connection { get; set; }
             public IReadOnlyDictionary<string, string> Attributes { get; set; }
-            public IRoomEditor RequestEdit() { return null; }
+            public IDiscoveryResourceEditor RequestEdit() { return null; }
         }
 
         // Internal class which holds the latest results for each category.
@@ -674,9 +674,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
         }
 
-        internal interface IDisposedEventDiscoveryTask : IDiscoveryTask
+        internal interface IDisposedEventDiscoveryTask : IDiscoverySubscription
         {
-            event Action<IDiscoveryTask> Disposed;
+            event Action<IDiscoverySubscription> Disposed;
         }
 
         // User facing interface for an in-progress discovery operation
@@ -684,10 +684,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         {
             Client client_;
             CategoryInfo info_;
-            IRoom[] cachedRooms_ = null;
+            IDiscoveryResource[] cachedRooms_ = null;
             int cachedRoomsSerial_ = -1;
 
-            public IEnumerable<IRoom> Rooms
+            public IEnumerable<IDiscoveryResource> Rooms
             {
                 get
                 {
@@ -701,8 +701,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 }
             }
 
-            public event Action<IDiscoveryTask> Updated;
-            public event Action<IDiscoveryTask> Disposed;
+            public event Action<IDiscoverySubscription> Updated;
+            public event Action<IDiscoverySubscription> Disposed;
 
             public void FireUpdated()
             {
@@ -726,7 +726,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         // Task helpers
 
         // return the new list of rooms or null if the serial hasn't changed.
-        private Tuple<int, IRoom[]> TaskFetchRooms(CategoryInfo info, int serial)
+        private Tuple<int, IDiscoveryResource[]> TaskFetchRooms(CategoryInfo info, int serial)
         {
             lock (this) // Update the cached copy if it has changed
             {
@@ -735,8 +735,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     return null;
                 }
                 // need a copy since .Values is a reference
-                var rooms = info.roomsRemote_.Values.ToArray<IRoom>();
-                return new Tuple<int, IRoom[]>(info.roomSerial_, rooms);
+                var rooms = info.roomsRemote_.Values.ToArray<IDiscoveryResource>();
+                return new Tuple<int, IDiscoveryResource[]>(info.roomSerial_, rooms);
             }
         }
 
@@ -811,7 +811,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         }
 
         // The body of ServerHello and ServerReply is identical so we reuse the code.
-        private void OnServerAnnounce(IPeerNetworkMessage msg, string category, string connection, DateTime expiresTime, Dictionary<string, string> attributes)
+        private void OnServerAnnounce(IPeerDiscoveryMessage msg, string category, string connection, DateTime expiresTime, Dictionary<string, string> attributes)
         {
             DiscoveryTask[] tasksUpdated = null;
             var guid = msg.StreamId;
@@ -873,7 +873,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
         }
 
-        private void OnServerByeBye(IPeerNetworkMessage msg)
+        private void OnServerByeBye(IPeerDiscoveryMessage msg)
         {
             var guid = msg.StreamId;
             DiscoveryTask[] tasksUpdated = Array.Empty<DiscoveryTask>();
@@ -899,10 +899,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     /// <summary>
     /// Simple matchmaking service for local networks.
     /// </summary>
-    public class PeerMatchmakingService : DisposableBase, IMatchmakingService
+    public class PeerDiscoveryAgent : DisposableBase, IDiscoveryAgent
     {
         /// The network for this matchmaking
-        private readonly IPeerNetwork network_;
+        private readonly IPeerDiscoveryTransport network_;
         private Server server_;
         private Client client_;
         private Options options_;
@@ -915,7 +915,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             public int RoomExpirySec = 30;
         }
 
-        public PeerMatchmakingService(IPeerNetwork network, Options options = null)
+        public PeerDiscoveryAgent(IPeerDiscoveryTransport network, Options options = null)
         {
             network_ = network;
             options_ = options ?? new Options();
@@ -923,7 +923,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         // public interface implementations
 
-        public IDiscoveryTask StartDiscovery(string category)
+        public IDiscoverySubscription Subscribe(string category)
         {
             lock (this)
             {
@@ -938,7 +938,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             return task;
         }
 
-        public Task<IRoom> CreateRoomAsync(
+        public Task<IDiscoveryResource> PublishAsync(
             string category,
             string connection,
             IReadOnlyDictionary<string, string> attributes = null,
@@ -964,7 +964,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
         }
 
-        private void RemoveRefFromNetwork(IDiscoveryTask _)
+        private void RemoveRefFromNetwork(IDiscoverySubscription _)
         {
             int newRefCount = Interlocked.Decrement(ref networkRefCount_);
             if (newRefCount == 0)

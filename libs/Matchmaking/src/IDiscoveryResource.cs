@@ -10,7 +10,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     /// <summary>
     /// Information about a matchmaking room.
     /// </summary>
-    public interface IRoom
+    public interface IDiscoveryResource
     {
         /// <summary>
         /// The category of room. This is an application-defined URI.
@@ -36,13 +36,13 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// <summary>
         /// If the backend allows it, return an interface to edit this room. Otherwise return null.
         /// </summary>
-        IRoomEditor RequestEdit();
+        IDiscoveryResourceEditor RequestEdit();
     }
 
     /// <summary>
     /// Interface to edit a room.
     /// </summary>
-    public interface IRoomEditor
+    public interface IDiscoveryResourceEditor
     {
         /// <summary>
         /// Try to commit the edits made through this interface.
