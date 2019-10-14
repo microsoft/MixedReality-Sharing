@@ -8,7 +8,7 @@ using System.Diagnostics;
 using System.Threading;
 using Xunit;
 
-namespace Matchmaking.Local.Test
+namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
 {
     public static class Utils
     {

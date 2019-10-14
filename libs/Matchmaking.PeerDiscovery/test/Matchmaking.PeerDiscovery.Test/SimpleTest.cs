@@ -10,7 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Matchmaking.Local.Test
+namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
 {
     public class SimpleTest
     {
