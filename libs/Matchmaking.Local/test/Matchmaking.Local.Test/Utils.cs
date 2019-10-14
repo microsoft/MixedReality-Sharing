@@ -44,27 +44,27 @@ namespace Matchmaking.Local.Test
         }
 
         // Run a query and wait for the predicate to be satisfied.
-        // Return the list of rooms which satisfied the predicate or null if canceled before the predicate was satisfied.
-        public static IEnumerable<IDiscoveryResource> QueryAndWaitForRoomsPredicate(
+        // Return the list of resources which satisfied the predicate or null if canceled before the predicate was satisfied.
+        public static IEnumerable<IDiscoveryResource> QueryAndWaitForResourcesPredicate(
             IDiscoveryAgent svc, string type,
             Func<IEnumerable<IDiscoveryResource>, bool> pred, CancellationToken token)
         {
             using (var discovery = svc.Subscribe(type))
             {
-                return QueryAndWaitForRoomsPredicate(discovery, pred, token);
+                return QueryAndWaitForResourcesPredicate(discovery, pred, token);
             }
         }
 
         // Run a query and wait for the predicate to be satisfied.
-        // Return the list of rooms which satisfied the predicate or null if canceled before the predicate was satisfied.
-        public static IEnumerable<IDiscoveryResource> QueryAndWaitForRoomsPredicate(
+        // Return the list of resources which satisfied the predicate or null if canceled before the predicate was satisfied.
+        public static IEnumerable<IDiscoveryResource> QueryAndWaitForResourcesPredicate(
             IDiscoverySubscription discovery, Func<IEnumerable<IDiscoveryResource>, bool> pred, CancellationToken token)
         {
             // Check optimistically before subscribing to the discovery event.
-            var rooms = discovery.Rooms;
-            if (pred(rooms))
+            var resources = discovery.Resources;
+            if (pred(resources))
             {
-                return rooms;
+                return resources;
             }
             if (token.IsCancellationRequested)
             {
@@ -80,10 +80,10 @@ namespace Matchmaking.Local.Test
                     while (true)
                     {
                         // Check before waiting on the event so that updates aren't missed.
-                        rooms = discovery.Rooms;
-                        if (pred(rooms))
+                        resources = discovery.Resources;
+                        if (pred(resources))
                         {
-                            return rooms;
+                            return resources;
                         }
                         wakeUp.WaitOne(); // wait for cancel or update
                         if (token.IsCancellationRequested)

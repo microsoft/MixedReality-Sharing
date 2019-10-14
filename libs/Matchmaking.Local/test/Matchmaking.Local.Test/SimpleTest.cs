@@ -14,14 +14,14 @@ namespace Matchmaking.Local.Test
 {
     public class SimpleTest
     {
-        private void SendAndReceive(IDiscoveryAgent service)
+        private void SendAndReceive(IDiscoveryAgent agent)
         {
             // Do simple operations to verify that sending and receiving packets doesn't fail.
             using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
             {
-                var _ = service.PublishAsync("CreateRoom", "http://room1", null, cts.Token).Result;
+                var _ = agent.PublishAsync("Test", "http://resource1", null, cts.Token).Result;
             }
-            using (var task = service.Subscribe("Category")) { }
+            using (var task = agent.Subscribe("Category")) { }
         }
 
         [Fact]
@@ -60,7 +60,7 @@ namespace Matchmaking.Local.Test
         }
 
         [Fact]
-        public void RoomExpiresOnTime()
+        public void ResourceExpiresOnTime()
         {
             const int timeoutSec = 1;
             var network1 = new MemoryPeerDiscoveryTransport(1);
@@ -68,21 +68,21 @@ namespace Matchmaking.Local.Test
             using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
             using (var svc1 = new PeerDiscoveryAgent(network1))
             {
-                const string category = "RoomExpiresOnTime";
-                var rooms1 = svc1.Subscribe(category);
-                Assert.Empty(rooms1.Rooms);
+                const string category = "ResourceExpiresOnTime";
+                var resources1 = svc1.Subscribe(category);
+                Assert.Empty(resources1.Resources);
 
-                using (var svc2 = new PeerDiscoveryAgent(network2, new PeerDiscoveryAgent.Options { RoomExpirySec = timeoutSec }))
+                using (var svc2 = new PeerDiscoveryAgent(network2, new PeerDiscoveryAgent.Options { ResourceExpirySec = timeoutSec }))
                 {
-                    // Create rooms from svc2
-                    var room1 = svc2.PublishAsync(category, "conn1", null, cts.Token).Result;
+                    // Create resources from svc2
+                    var resource1 = svc2.PublishAsync(category, "conn1", null, cts.Token).Result;
 
                     // It should show up in svc1 even after the timeout.
                     {
                         Task.Delay(timeoutSec * 1200).Wait();
-                        var res1 = Utils.QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Any(), cts.Token);
+                        var res1 = Utils.QueryAndWaitForResourcesPredicate(svc1, category, rl => rl.Any(), cts.Token);
                         Assert.Single(res1);
-                        Assert.Equal(room1.UniqueId, res1.First().UniqueId);
+                        Assert.Equal(resource1.UniqueId, res1.First().UniqueId);
                     }
 
                     // Stop the network.
@@ -91,7 +91,7 @@ namespace Matchmaking.Local.Test
                     // Wait a bit after the timeout.
                     Task.Delay(timeoutSec * 1200).Wait();
                     {
-                        var res1 = Utils.QueryAndWaitForRoomsPredicate(svc1, category, rl => rl.Count() == 0, cts.Token);
+                        var res1 = Utils.QueryAndWaitForResourcesPredicate(svc1, category, rl => rl.Count() == 0, cts.Token);
                         Assert.Empty(res1);
                     }
                 }

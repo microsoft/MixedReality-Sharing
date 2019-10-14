@@ -25,28 +25,28 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     }
 
     /// <summary>
-    /// Transport layer abstraction for PeerMatchmakingService.
-    /// Implement this interface to use peer matchmaking over a different transport layer.
+    /// Transport layer abstraction for PeerDiscoveryAgent.
+    /// Implement this interface to use peer discovery over a different transport layer.
     /// </summary>
     public interface IPeerDiscoveryTransport
     {
         /// <summary>
-        /// Raised when a message arrives on this network.
+        /// Raised when a message arrives on this transport.
         /// </summary>
         event Action<IPeerDiscoveryTransport, IPeerDiscoveryMessage> Message;
 
         /// <summary>
-        /// Start the network.
+        /// Start the transport.
         /// </summary>
         void Start();
 
         /// <summary>
-        /// Stop the network
+        /// Stop the transport
         /// </summary>
         void Stop();
 
         /// <summary>
-        /// Send a message to all others in this network.
+        /// Send a message to all others in this transport.
         /// </summary>
         /// <param name="streamId">
         /// Associates the message to a stream. Messages from the same stream will be delivered in order.

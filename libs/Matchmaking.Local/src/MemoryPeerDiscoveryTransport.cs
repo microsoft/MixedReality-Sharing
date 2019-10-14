@@ -32,9 +32,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         //TODO extract into a factory so we can have independent networks
         static volatile List<MemoryPeerDiscoveryTransport> instances_ = new List<MemoryPeerDiscoveryTransport>();
 
-        const int NetworkPumpInProgress = 1;
-        const int NetworkQueuedSome = 2;
-        static int networkStatus_ = 0;
+        const int MessagePumpInProgress = 1;
+        const int MessageQueuedSome = 2;
+        static int transportStatus_ = 0;
 
         public MemoryPeerDiscoveryTransport(int ident)
         {
@@ -78,7 +78,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             {
                 c.incoming_.Enqueue(m);
             }
-            PumpNetwork();
+            PumpMessages();
         }
 
         public void Reply(IPeerDiscoveryMessage req, Guid streamId, ArraySegment<byte> message)
@@ -86,17 +86,17 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             var r = req as MemoryPeerDiscoveryMessage;
             var m = new MemoryPeerDiscoveryMessage(this, streamId, message);
             r.sender_.incoming_.Enqueue(m);
-            PumpNetwork();
+            PumpMessages();
         }
 
-        static protected void PumpNetworkInternal()
+        static protected void PumpMessagesInternal()
         {
-            // Notation - networkStatus is two bits : P = NetworkPumpInProgress, Q = NetworkQueuedSome
+            // Notation - transportStatus is two bits : P = MessagePumpInProgress, Q = MessageQueuedSome
             // The only valid states are [00, P0, PQ], [0Q] is invalid.
             while (true)
             {
-                // We're about to process the whole list so clear the NetworkQueuedSome bit. [P? -> P0]
-                Interlocked.CompareExchange(ref networkStatus_, NetworkPumpInProgress, NetworkPumpInProgress | NetworkQueuedSome);
+                // We're about to process the whole list so clear the MessageQueuedSome bit. [P? -> P0]
+                Interlocked.CompareExchange(ref transportStatus_, MessagePumpInProgress, MessagePumpInProgress | MessageQueuedSome);
 
                 // Raise the message events
                 foreach (var c in instances_)
@@ -115,8 +115,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     }
                 }
 
-                // Exit if no more work has been queued while we were working. i.e. NetworkQueuedSome is still clear.
-                if (Interlocked.CompareExchange(ref networkStatus_, 0, NetworkPumpInProgress) == NetworkPumpInProgress)
+                // Exit if no more work has been queued while we were working. i.e. MessageQueuedSome is still clear.
+                if (Interlocked.CompareExchange(ref transportStatus_, 0, MessagePumpInProgress) == MessagePumpInProgress)
                 {
                     return; // [P0 -> 00]
                 }
@@ -124,23 +124,23 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         }
 
         // Called after a Broadcast() or Reply() to ensure the message is delivered.
-        // The first thread to send a message becomes the pumper until all messages are deliverd.
-        static protected void PumpNetwork()
+        // The first thread to send a message becomes the pumper until all messages are delivered.
+        static protected void PumpMessages()
         {
             while (true)
             {
-                int orig = networkStatus_;
-                if ((orig & NetworkQueuedSome) != 0)
+                int orig = transportStatus_;
+                if ((orig & MessageQueuedSome) != 0)
                 {
                     return;
                 }
-                const int NetFlagsBoth = NetworkPumpInProgress | NetworkQueuedSome;
-                // Ensure the NetworkQueuedSome bit is set.  [?? -> PQ]
-                if (Interlocked.CompareExchange(ref networkStatus_, NetFlagsBoth, orig) == orig)
+                const int NetFlagsBoth = MessagePumpInProgress | MessageQueuedSome;
+                // Ensure the MessageQueuedSome bit is set.  [?? -> PQ]
+                if (Interlocked.CompareExchange(ref transportStatus_, NetFlagsBoth, orig) == orig)
                 {
-                    if ((orig & NetworkPumpInProgress) == 0)
+                    if ((orig & MessagePumpInProgress) == 0)
                     {
-                        PumpNetworkInternal(); // If [0? -> PQ], then we became the pumper
+                        PumpMessagesInternal(); // If [0? -> PQ], then we became the pumper
                     }
                     return;
                 }

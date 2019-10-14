@@ -71,20 +71,20 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         public event Action<IPeerDiscoveryTransport, IPeerDiscoveryMessage> Message;
 
         /// <summary>
-        /// The network has started listening for messages. Called on <see cref="Start()"/>;
+        /// The transport has started listening for messages. Called on <see cref="Start()"/>;
         /// </summary>
         public event Action<IPeerDiscoveryTransport> Started;
 
         /// <summary>
-        /// The network has started stopped for messages. Called on <see cref="Stop()"/>;
+        /// The transport has started stopped for messages. Called on <see cref="Stop()"/>;
         /// </summary>
         public event Action<IPeerDiscoveryTransport> Stopped;
 
         /// <summary>
-        /// Create a new network.
+        /// Create a new transport.
         /// </summary>
         /// <param name="broadcast">Broadcast or multicast address used to send packets to other hosts.</param>
-        /// <param name="local">Local address. TODO.</param>
+        /// <param name="local">Local address.</param>
         /// <param name="port">Port used to send and receive broadcast packets.</param>
         public UdpPeerDiscoveryTransport(IPAddress broadcast, ushort port, IPAddress local = null)
         {

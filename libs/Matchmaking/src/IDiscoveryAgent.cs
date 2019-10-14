@@ -9,40 +9,43 @@ using System.Threading.Tasks;
 namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
     /// <summary>
-    /// Handle to an ongoing discovery task.
+    /// Handle to an ongoing discovery subscription.
     /// </summary>
     public interface IDiscoverySubscription : IDisposable
     {
         /// <summary>
-        /// The list of discovered rooms, ordered by IRoom.UniqueId.
+        /// The list of discovered resources, ordered by IDiscoveryResource.UniqueId.
         /// </summary>
-        IEnumerable<IDiscoveryResource> Rooms { get; }
+        IEnumerable<IDiscoveryResource> Resources { get; }
 
         /// <summary>
-        /// Event raised when the 'Rooms' property will return an updated result.
+        /// Event raised when the 'Resources' property will return an updated result.
         /// </summary>
         event Action<IDiscoverySubscription> Updated;
     }
 
+    /// <summary>
+    /// Entry point for publishing and/or subscribing to matchmaking resources on the network.
+    /// </summary>
     public interface IDiscoveryAgent : IDisposable
     {
         /// <summary>
-        /// Start discovery of all rooms whose category matches the one given.
+        /// Start discovery of all resources whose category matches the one given.
         /// The returned result will change over time. Use the Updated event to subscribe to changes.
-        /// The collection will update indefinitely until disposed.
+        /// The subscription will update indefinitely until disposed.
         /// </summary>
         IDiscoverySubscription Subscribe(string category);
 
         /// <summary>
-        /// Create a new room.
+        /// Publish a new resource.
         /// </summary>
-        /// <param name="attributes">Attributes to set on the new room.</param>
+        /// <param name="attributes">Attributes to set on the new resource.</param>
         /// <param name="token">
         /// If cancellation is requested, the method should either complete the operation and return a valid
-        /// room, or roll back any changes to the system state and return a canceled Task.
+        /// resource, or roll back any changes to the system state and return a canceled Task.
         /// </param>
         /// <returns>
-        /// The newly created room.
+        /// The newly created resource.
         /// </returns>
         Task<IDiscoveryResource> PublishAsync(
             string category,

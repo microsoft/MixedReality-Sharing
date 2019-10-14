@@ -15,30 +15,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
     internal static class Extensions
     {
-        // Return true if (Count(a)<= 1) or (isOk( a[n], a[n+1] ) is true for all n).
-        internal static bool CheckAdjacenctElements<T>(IEnumerable<T> a, Func<T, T, bool> isOk)
-        {
-            var ea = a.GetEnumerator();
-            if (ea.MoveNext())
-            {
-                var prev = ea.Current;
-                while (ea.MoveNext())
-                {
-                    var cur = ea.Current;
-                    if (isOk(prev, cur))
-                    {
-                        prev = cur;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-            }
-            return true;
-        }
-
-        internal class RoomComparer : IComparer<IDiscoveryResource>
+        internal class ResourceComparer : IComparer<IDiscoveryResource>
         {
             public int Compare(IDiscoveryResource a, IDiscoveryResource b)
             {
@@ -128,7 +105,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
         }
 
-        // network helpers
+        // transport helpers
 
         internal static void Broadcast(IPeerDiscoveryTransport net, Guid streamId, Action<BinaryWriter> cb)
         {
@@ -160,7 +137,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     // directly in response to client queries.
     // Clients broadcast ClientQuery on startup and servers unicast reply with ServerReply.
     // Clients also listen for announce messages.
-    // Servers broadcast ServerHello/ServerByeBye on service startup/shutdown respectively.
+    // Servers broadcast ServerHello/ServerByeBye on startup/shutdown respectively.
     // If the underlying transport is lossy, it may choose to send packets multiple times so
     // we need to expect duplicate messages.
     class Proto
@@ -175,7 +152,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         internal delegate void ServerByeByeCallback(IPeerDiscoveryMessage msg);
         internal delegate void ClientQueryCallback(IPeerDiscoveryMessage msg, string category);
 
-        IPeerDiscoveryTransport net_;
+        IPeerDiscoveryTransport transport_;
         internal ServerAnnounceCallback OnServerHello;
         internal ServerByeByeCallback OnServerByeBye;
         internal ServerAnnounceCallback OnServerReply;
@@ -183,25 +160,25 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         internal Proto(IPeerDiscoveryTransport net)
         {
-            net_ = net;
+            transport_ = net;
             Start();
         }
 
         internal void Start()
         {
-            net_.Message += OnNetMessage;
+            transport_.Message += OnMessage;
         }
 
         internal void Stop()
         {
-            net_.Message -= OnNetMessage;
+            transport_.Message -= OnMessage;
         }
 
         // Receiving
 
-        private void OnNetMessage(IPeerDiscoveryTransport net, IPeerDiscoveryMessage msg)
+        private void OnMessage(IPeerDiscoveryTransport net, IPeerDiscoveryMessage msg)
         {
-            Debug.Assert(net == net_);
+            Debug.Assert(net == transport_);
             Dispatch(msg);
         }
 
@@ -253,23 +230,23 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         internal void SendServerReply(IPeerDiscoveryMessage msg, string category, Guid uniqueId, string connection, int expirySeconds, IReadOnlyCollection<KeyValuePair<string, string>> attributes)
         {
-            Extensions.Reply(net_, msg, uniqueId, w =>
+            Extensions.Reply(transport_, msg, uniqueId, w =>
             {
                 w.Write(Proto.ServerReply);
-                _SendRoomInfo(w, category, connection, expirySeconds, attributes);
+                _SendResourceInfo(w, category, connection, expirySeconds, attributes);
             });
         }
 
         internal void SendServerHello(string category, Guid uniqueId, string connection, int expirySeconds, IReadOnlyCollection<KeyValuePair<string, string>> attributes)
         {
-            Extensions.Broadcast(net_, uniqueId, w =>
+            Extensions.Broadcast(transport_, uniqueId, w =>
             {
                 w.Write(Proto.ServerReply);
-                _SendRoomInfo(w, category, connection, expirySeconds, attributes);
+                _SendResourceInfo(w, category, connection, expirySeconds, attributes);
             });
         }
 
-        private void _SendRoomInfo(BinaryWriter w, string category, string connection, int expirySeconds, IReadOnlyCollection<KeyValuePair<string, string>> attributes)
+        private void _SendResourceInfo(BinaryWriter w, string category, string connection, int expirySeconds, IReadOnlyCollection<KeyValuePair<string, string>> attributes)
         {
             w.Write(category);
             w.Write(connection);
@@ -284,7 +261,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         internal void SendServerByeBye(Guid guid)
         {
-            Extensions.Broadcast(net_, guid, w =>
+            Extensions.Broadcast(transport_, guid, w =>
             {
                 w.Write(Proto.ServerByeBye);
             });
@@ -292,7 +269,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         internal void SendClientQuery(string category)
         {
-            Extensions.Broadcast(net_, Guid.Empty, (BinaryWriter w) =>
+            Extensions.Broadcast(transport_, Guid.Empty, (BinaryWriter w) =>
             {
                 w.Write(Proto.ClientQuery);
                 w.Write(category);
@@ -345,10 +322,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
     class Server
     {
-        /// The list of all local rooms of all categories
-        private SortedSet<LocalRoom> localRooms_ = new SortedSet<LocalRoom>(new Extensions.RoomComparer());
+        /// The list of all local resources of all categories
+        private SortedSet<LocalResource> localResources_ = new SortedSet<LocalResource>(new Extensions.ResourceComparer());
 
-        /// Timer for re-announcing rooms.
+        /// Timer for re-announcing resources.
         private Timer timer_;
         /// Time when the timer will fire or MaxValue if the timer is unset.
         private DateTime timerExpiryTime_ = DateTime.MaxValue;
@@ -369,10 +346,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         void OnClientQuery(IPeerDiscoveryMessage msg, string category)
         {
-            LocalRoom[] matching;
+            LocalResource[] matching;
             lock (this)
             {
-                matching = (from lr in localRooms_
+                matching = (from lr in localResources_
                             where lr.Category == category
                             select lr).ToArray();
             }
@@ -380,9 +357,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             {
                 if (!stopAllAnnouncements_)
                 {
-                    foreach (var room in matching)
+                    foreach (var res in matching)
                     {
-                        proto_.SendServerReply(msg, room.Category, room.UniqueId, room.Connection, room.ExpirySeconds, room.Attributes);
+                        proto_.SendServerReply(msg, res.Category, res.UniqueId, res.Connection, res.ExpirySeconds, res.Attributes);
                     }
                 }
             }
@@ -391,10 +368,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         internal void OnServerTimerExpired(object state)
         {
             var now = DateTime.UtcNow;
-            var todo = new List<LocalRoom>();
+            var todo = new List<LocalResource>();
             lock (this)
             {
-                foreach (var r in localRooms_)
+                foreach (var r in localResources_)
                 {
                     if (r.NextAnnounceTime < now)
                     {
@@ -408,9 +385,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             {
                 if (!stopAllAnnouncements_)
                 {
-                    foreach (var room in todo)
+                    foreach (var res in todo)
                     {
-                        proto_.SendServerHello(room.Category, room.UniqueId, room.Connection, room.ExpirySeconds, room.Attributes);
+                        proto_.SendServerHello(res.Category, res.UniqueId, res.Connection, res.ExpirySeconds, res.Attributes);
                     }
                 }
             }
@@ -424,7 +401,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 timer_.Change(Timeout.Infinite, Timeout.Infinite);
                 timerExpiryTime_ = DateTime.MaxValue;
 
-                data = localRooms_.Select(r => r.UniqueId).ToArray();
+                data = localResources_.Select(r => r.UniqueId).ToArray();
             }
             // Wait until the lock is acquired (all announcements in progress have been sent) and stop sending.
             lock(announcementsLock_)
@@ -441,7 +418,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         private void UpdateAnnounceTimer()
         {
             Debug.Assert(Monitor.IsEntered(this)); // Caller should have lock(this)
-            var next = localRooms_.Min(r => r.NextAnnounceTime);
+            var next = localResources_.Min(r => r.NextAnnounceTime);
             if (next != null)
             {
                 var now = DateTime.UtcNow;
@@ -449,14 +426,14 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 timerExpiryTime_ = next;
                 timer_.Change((int)Math.Min(Math.Max(delta.TotalMilliseconds + 1, 0), int.MaxValue), -1);
             }
-            else // no more rooms
+            else // no more resources
             {
                 timer_.Change(Timeout.Infinite, Timeout.Infinite);
                 timerExpiryTime_ = DateTime.MaxValue;
             }
         }
 
-        internal Task<IDiscoveryResource> CreateRoomAsync(
+        internal Task<IDiscoveryResource> PublishAsync(
             string category,
             string connection,
             int expirySeconds,
@@ -471,38 +448,38 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     attrs[kvp.Key] = kvp.Value;
                 }
             }
-            var room = new LocalRoom(category, connection, expirySeconds, attrs);
-            room.Updated = OnRoomUpdated;
+            var resource = new LocalResource(category, connection, expirySeconds, attrs);
+            resource.Updated = OnResourceUpdated;
             lock (this)
             {
-                localRooms_.Add(room); // new local rooms get a new guid, always unique
+                localResources_.Add(resource); // new local resources get a new guid, always unique
                 UpdateAnnounceTimer();
             }
 
-            return Task<IDiscoveryResource>.FromResult((IDiscoveryResource)room);
+            return Task.FromResult((IDiscoveryResource)resource);
         }
 
-        private void OnRoomUpdated(LocalRoom room)
+        private void OnResourceUpdated(LocalResource resource)
         {
-            room.LastAnnouncedTime = DateTime.UtcNow;
+            resource.LastAnnouncedTime = DateTime.UtcNow;
             lock(announcementsLock_)
             {
                 if (!stopAllAnnouncements_)
                 {
-                    proto_.SendServerHello(room.Category, room.UniqueId, room.Connection, room.ExpirySeconds, room.Attributes);
+                    proto_.SendServerHello(resource.Category, resource.UniqueId, resource.Connection, resource.ExpirySeconds, resource.Attributes);
                 }
             }
         }
 
-        // Room which has been created locally. And is owned locally.
-        class LocalRoom : IDiscoveryResource
+        // Resource which has been created locally. And is owned locally.
+        class LocalResource : IDiscoveryResource
         {
             // Each committed edit bumps this serial number.
             // If the serial number of an edit does not match this, then we can detect stale edits.
             private int editSerialNumber_ = 0;
             private volatile Dictionary<string, string> attributes_;
 
-            public LocalRoom(string category, string connection, int expirySeconds, Dictionary<string, string> attrs)
+            public LocalResource(string category, string connection, int expirySeconds, Dictionary<string, string> attrs)
             {
                 Category = category;
                 UniqueId = Guid.NewGuid();
@@ -511,7 +488,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 attributes_ = attrs;
             }
 
-            public Action<LocalRoom> Updated;
+            public Action<LocalResource> Updated;
             public string Category { get; }
             public Guid UniqueId { get; }
             public int ExpirySeconds { get; } // Relative time. Interval from announce to expiration.
@@ -557,17 +534,17 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
             class Editor : IDiscoveryResourceEditor
             {
-                LocalRoom room_;
+                LocalResource resource_;
                 int serial_;
                 List<string> removeAttrs_ = new List<string>();
                 Dictionary<string, string> putAttrs_ = new Dictionary<string, string>();
 
-                internal Editor(LocalRoom room, int serial)
+                internal Editor(LocalResource resource, int serial)
                 {
-                    room_ = room;
+                    resource_ = resource;
                     serial_ = serial;
                 }
-                public Task CommitAsync() { return room_.ApplyEdit(serial_, removeAttrs_, putAttrs_); }
+                public Task CommitAsync() { return resource_.ApplyEdit(serial_, removeAttrs_, putAttrs_); }
                 public void PutAttribute(string key, string value) { putAttrs_[key] = value; }
                 public void RemoveAttribute(string key) { removeAttrs_.Add(key); }
             }
@@ -581,16 +558,16 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
     class Client
     {
-        /// Timer for expiring rooms.
+        /// Timer for expiring resources.
         Timer timer_;
         /// Time when the timer will fire or DateTime.MaxValue if the timer is unset.
         DateTime timerExpiryTime_ = DateTime.MaxValue;
 
-        /// The list of all local rooms of all categories
+        /// The list of all local resources of all categories
         IDictionary<string, CategoryInfo> infoFromCategory_ = new Dictionary<string, CategoryInfo>();
 
-        /// Reverse map room ID -> category.
-        IDictionary<Guid, string> categoryFromRoomId_ = new Dictionary<Guid, string>();
+        /// Reverse map resource ID -> category.
+        IDictionary<Guid, string> categoryFromResourceId_ = new Dictionary<Guid, string>();
 
         /// Protocol handler.
         Proto proto_;
@@ -634,10 +611,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             proto_.Stop();
         }
 
-        // Room which we've heard about from a remote
-        private class RemoteRoom : IDiscoveryResource
+        // Resource which we've heard about from a remote
+        private class RemoteResource : IDiscoveryResource
         {
-            public RemoteRoom(string category, Guid uniqueId, string connection, IReadOnlyDictionary<string, string> attrs, DateTime expirationTime)
+            public RemoteResource(string category, Guid uniqueId, string connection, IReadOnlyDictionary<string, string> attrs, DateTime expirationTime)
             {
                 Category = category;
                 UniqueId = uniqueId;
@@ -662,11 +639,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             // Tasks from this category (ephemeral).
             internal IList<DiscoveryTask> tasks_ = new List<DiscoveryTask>();
 
-            // Currently known remote rooms. Each time it is updated, we update roomSerial_ also so that tasks can cache efficiently.
-            internal SortedDictionary<Guid, RemoteRoom> roomsRemote_ = new SortedDictionary<Guid, RemoteRoom>();
+            // Currently known remote resources. Each time it is updated, we update resourceSerial_ also so that tasks can cache efficiently.
+            internal SortedDictionary<Guid, RemoteResource> resourcesRemote_ = new SortedDictionary<Guid, RemoteResource>();
 
             // This is incremented on each change to the category
-            internal int roomSerial_ = 0;
+            internal int resourceSerial_ = 0;
 
             internal CategoryInfo(string category)
             {
@@ -684,20 +661,20 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         {
             Client client_;
             CategoryInfo info_;
-            IDiscoveryResource[] cachedRooms_ = null;
-            int cachedRoomsSerial_ = -1;
+            IDiscoveryResource[] cachedResources_ = null;
+            int cachedResourcesSerial_ = -1;
 
-            public IEnumerable<IDiscoveryResource> Rooms
+            public IEnumerable<IDiscoveryResource> Resources
             {
                 get
                 {
-                    var updated = client_.TaskFetchRooms(info_, cachedRoomsSerial_);
+                    var updated = client_.TaskFetchResources(info_, cachedResourcesSerial_);
                     if (updated != null)
                     {
-                        cachedRoomsSerial_ = updated.Item1;
-                        cachedRooms_ = updated.Item2;
+                        cachedResourcesSerial_ = updated.Item1;
+                        cachedResources_ = updated.Item2;
                     }
-                    return cachedRooms_;
+                    return cachedResources_;
                 }
             }
 
@@ -725,18 +702,18 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         // Task helpers
 
-        // return the new list of rooms or null if the serial hasn't changed.
-        private Tuple<int, IDiscoveryResource[]> TaskFetchRooms(CategoryInfo info, int serial)
+        // return the new list of resources or null if the serial hasn't changed.
+        private Tuple<int, IDiscoveryResource[]> TaskFetchResources(CategoryInfo info, int serial)
         {
             lock (this) // Update the cached copy if it has changed
             {
-                if (info.roomSerial_ == serial)
+                if (info.resourceSerial_ == serial)
                 {
                     return null;
                 }
                 // need a copy since .Values is a reference
-                var rooms = info.roomsRemote_.Values.ToArray<IDiscoveryResource>();
-                return new Tuple<int, IDiscoveryResource[]>(info.roomSerial_, rooms);
+                var resources = info.resourcesRemote_.Values.ToArray<IDiscoveryResource>();
+                return new Tuple<int, IDiscoveryResource[]>(info.resourceSerial_, resources);
             }
         }
 
@@ -769,36 +746,36 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             DateTime nextExpiryFileTime = DateTime.MaxValue;
             lock (this)
             {
-                // Search and delete any expired rooms.
+                // Search and delete any expired resources.
                 // Also check the next expiry so we can reset the timer.
                 DateTime nowDate = DateTime.UtcNow;
                 foreach (var info in infoFromCategory_.Values)
                 {
                     var expired = new List<Guid>();
-                    foreach (var kvp in info.roomsRemote_)
+                    foreach (var kvp in info.resourcesRemote_)
                     {
-                        if (kvp.Value.ExpirationTime <= nowDate) //room expired?
+                        if (kvp.Value.ExpirationTime <= nowDate) //resource expired?
                         {
                             expired.Add(kvp.Key);
                         }
-                        else if (kvp.Value.ExpirationTime < nextExpiryFileTime) // room next to expire?
+                        else if (kvp.Value.ExpirationTime < nextExpiryFileTime) // resource next to expire?
                         {
                             nextExpiryFileTime = kvp.Value.ExpirationTime;
                         }
                     }
                     if (expired.Any())
                     {
-                        info.roomSerial_ += 1;
+                        info.resourceSerial_ += 1;
                         foreach (var exp in expired)
                         {
-                            info.roomsRemote_.Remove(exp);
-                            categoryFromRoomId_.Remove(exp);
+                            info.resourcesRemote_.Remove(exp);
+                            categoryFromResourceId_.Remove(exp);
                         }
                         updatedTasks.AddRange(info.tasks_);
                     }
                 }
             }
-            // Notify any tasks if we've removed rooms
+            // Notify any tasks if we've removed resources
             foreach (var up in updatedTasks)
             {
                 up.FireUpdated();
@@ -823,34 +800,34 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 {
                     return; // we don't care about this category
                 }
-                RemoteRoom room;
+                RemoteResource resource;
                 bool updated = false;
-                if (!info.roomsRemote_.TryGetValue(guid, out room)) // new room
+                if (!info.resourcesRemote_.TryGetValue(guid, out resource)) // new resource
                 {
-                    room = new RemoteRoom(category, guid, connection, attributes, expiresTime);
-                    info.roomsRemote_[guid] = room;
-                    categoryFromRoomId_[guid] = category;
+                    resource = new RemoteResource(category, guid, connection, attributes, expiresTime);
+                    info.resourcesRemote_[guid] = resource;
+                    categoryFromResourceId_[guid] = category;
                     updated = true;
                 }
-                else // existing room, has it changed?
+                else // existing resource, has it changed?
                 {
-                    if (room.Category != category)
+                    if (resource.Category != category)
                     {
-                        // todo: We cannot handle this correctly for now, since we index rooms by category
+                        // todo: We cannot handle this correctly for now, since we index resources by category
                     }
-                    if (room.Connection != connection)
+                    if (resource.Connection != connection)
                     {
-                        room.Connection = connection;
+                        resource.Connection = connection;
                         updated = true;
                     }
-                    if (!Extensions.DictionariesEqual(room.Attributes, attributes))
+                    if (!Extensions.DictionariesEqual(resource.Attributes, attributes))
                     {
-                        room.Attributes = attributes;
+                        resource.Attributes = attributes;
                         updated = true;
                     }
-                    if (room.ExpirationTime != expiresTime)
+                    if (resource.ExpirationTime != expiresTime)
                     {
-                        room.ExpirationTime = expiresTime;
+                        resource.ExpirationTime = expiresTime;
                     }
                 }
                 // If this expiry is sooner than the current timer, we need to reset the timer.
@@ -860,7 +837,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 }
                 if (updated)
                 {
-                    info.roomSerial_ += 1;
+                    info.resourceSerial_ += 1;
                     tasksUpdated = info.tasks_.ToArray();
                 }
             }
@@ -879,12 +856,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             DiscoveryTask[] tasksUpdated = Array.Empty<DiscoveryTask>();
             lock(this)
             {
-                if (categoryFromRoomId_.TryGetValue(guid, out string category))
+                if (categoryFromResourceId_.TryGetValue(guid, out string category))
                 {
-                    categoryFromRoomId_.Remove(guid);
+                    categoryFromResourceId_.Remove(guid);
                     var info = infoFromCategory_[category];
-                    info.roomsRemote_.Remove(guid);
-                    info.roomSerial_ += 1;
+                    info.resourcesRemote_.Remove(guid);
+                    info.resourceSerial_ += 1;
                     tasksUpdated = info.tasks_.ToArray();
                 }
             }
@@ -897,27 +874,27 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     }
 
     /// <summary>
-    /// Simple matchmaking service for local networks.
+    /// Simple discovery agent for local networks.
     /// </summary>
     public class PeerDiscoveryAgent : DisposableBase, IDiscoveryAgent
     {
-        /// The network for this matchmaking
-        private readonly IPeerDiscoveryTransport network_;
+        /// The transport for this agent.
+        private readonly IPeerDiscoveryTransport transport_;
         private Server server_;
         private Client client_;
         private Options options_;
 
-        // Counts how many things (local rooms or discovery tasks) are using the network.
-        private int networkRefCount_ = 0;
+        // Counts how many things (local resources or discovery tasks) are using the transport.
+        private int transportRefCount_ = 0;
 
         public class Options
         {
-            public int RoomExpirySec = 30;
+            public int ResourceExpirySec = 30;
         }
 
-        public PeerDiscoveryAgent(IPeerDiscoveryTransport network, Options options = null)
+        public PeerDiscoveryAgent(IPeerDiscoveryTransport transport, Options options = null)
         {
-            network_ = network;
+            transport_ = transport;
             options_ = options ?? new Options();
         }
 
@@ -929,12 +906,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             {
                 if (client_ == null)
                 {
-                    client_ = new Client(network_);
+                    client_ = new Client(transport_);
                 }
             }
-            AddRefToNetwork();
+            AddRefToTransport();
             var task = client_.StartDiscovery(category);
-            task.Disposed += RemoveRefFromNetwork;
+            task.Disposed += RemoveRefFromTransport;
             return task;
         }
 
@@ -948,28 +925,28 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             {
                 if (server_ == null)
                 {
-                    server_ = new Server(network_);
+                    server_ = new Server(transport_);
                 }
             }
-            AddRefToNetwork();
-            return server_.CreateRoomAsync(category, connection, options_.RoomExpirySec, attributes, token);
+            AddRefToTransport();
+            return server_.PublishAsync(category, connection, options_.ResourceExpirySec, attributes, token);
         }
 
-        private void AddRefToNetwork()
+        private void AddRefToTransport()
         {
-            int newRefCount = Interlocked.Increment(ref networkRefCount_);
+            int newRefCount = Interlocked.Increment(ref transportRefCount_);
             if (newRefCount == 1)
             {
-                network_.Start();
+                transport_.Start();
             }
         }
 
-        private void RemoveRefFromNetwork(IDiscoverySubscription _)
+        private void RemoveRefFromTransport(IDiscoverySubscription _)
         {
-            int newRefCount = Interlocked.Decrement(ref networkRefCount_);
+            int newRefCount = Interlocked.Decrement(ref transportRefCount_);
             if (newRefCount == 0)
             {
-                network_.Stop();
+                transport_.Stop();
             }
         }
 
@@ -983,9 +960,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             Task.Delay(1).Wait();
 
             // Stop the network and prevent later disposals from trying to stop it again.
-            if (Interlocked.Exchange(ref networkRefCount_, 0) > 0)
+            if (Interlocked.Exchange(ref transportRefCount_, 0) > 0)
             {
-                network_.Stop();
+                transport_.Stop();
             }
         }
     }

@@ -8,39 +8,39 @@ using System.Threading.Tasks;
 namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
     /// <summary>
-    /// Information about a matchmaking room.
+    /// Information about a matchmaking resource advertised on the network.
     /// </summary>
     public interface IDiscoveryResource
     {
         /// <summary>
-        /// The category of room. This is an application-defined URI.
+        /// The category of the resource. This is an application-defined URI.
         /// </summary>
         string Category { get; }
 
         /// <summary>
-        /// The unique identifier of this room.
+        /// The unique identifier of this resource.
         /// </summary>
         Guid UniqueId { get; }
 
         /// <summary>
-        /// An application specific connection string which can be used to join this room.
+        /// An application specific string which can be used to connect to this resource.
         /// </summary>
         string Connection { get; }
 
         /// <summary>
-        /// Dictionary used to store data associated with the room, which can be used to filter and query rooms,
+        /// Dictionary used to store data associated with the resource, which can be used to filter and query resources,
         /// and to store data which can be retrieved by any participant.
         /// </summary>
         IReadOnlyDictionary<string, string> Attributes { get; }
 
         /// <summary>
-        /// If the backend allows it, return an interface to edit this room. Otherwise return null.
+        /// If the backend allows it, return an interface to edit this resource. Otherwise return null.
         /// </summary>
         IDiscoveryResourceEditor RequestEdit();
     }
 
     /// <summary>
-    /// Interface to edit a room.
+    /// Interface to edit a resource.
     /// </summary>
     public interface IDiscoveryResourceEditor
     {
