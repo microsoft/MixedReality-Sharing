@@ -16,11 +16,11 @@ using System.Threading.Tasks;
 
 namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
-    class UdpPeerNetworkMessage : IPeerNetworkMessage
+    class UdpPeerDiscoveryMessage : IPeerDiscoveryMessage
     {
         public Guid StreamId { get; }
         public ArraySegment<byte> Contents { get; }
-        internal UdpPeerNetworkMessage(EndPoint sender, Guid streamId, ArraySegment<byte> msg)
+        internal UdpPeerDiscoveryMessage(EndPoint sender, Guid streamId, ArraySegment<byte> msg)
         {
             Contents = msg;
             StreamId = streamId;
@@ -35,7 +35,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     /// becomes large enough to be fragmented (often around 1400 bytes, but sometimes smaller).
     /// Thus this transport is best used for small packet sizes.
     /// </summary>
-    public class UdpPeerNetwork : IPeerNetwork
+    public class UdpPeerDiscoveryTransport : IPeerDiscoveryTransport
     {
         private const int LargeMessageLimit = 1400;
         private const int StreamLifetimeMs = 10000;
@@ -68,25 +68,25 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// <summary>
         /// A new message has been received.
         /// </summary>
-        public event Action<IPeerNetwork, IPeerNetworkMessage> Message;
+        public event Action<IPeerDiscoveryTransport, IPeerDiscoveryMessage> Message;
 
         /// <summary>
-        /// The network has started listening for messages. Called on <see cref="Start()"/>;
+        /// The transport has started listening for messages. Called on <see cref="Start()"/>;
         /// </summary>
-        public event Action<IPeerNetwork> Started;
+        public event Action<IPeerDiscoveryTransport> Started;
 
         /// <summary>
-        /// The network has started stopped for messages. Called on <see cref="Stop()"/>;
+        /// The transport has started stopped for messages. Called on <see cref="Stop()"/>;
         /// </summary>
-        public event Action<IPeerNetwork> Stopped;
+        public event Action<IPeerDiscoveryTransport> Stopped;
 
         /// <summary>
-        /// Create a new network.
+        /// Create a new transport.
         /// </summary>
         /// <param name="broadcast">Broadcast or multicast address used to send packets to other hosts.</param>
-        /// <param name="local">Local address. TODO.</param>
+        /// <param name="local">Local address.</param>
         /// <param name="port">Port used to send and receive broadcast packets.</param>
-        public UdpPeerNetwork(IPAddress broadcast, ushort port, IPAddress local = null)
+        public UdpPeerDiscoveryTransport(IPAddress broadcast, ushort port, IPAddress local = null)
         {
             broadcastEndpoint_ = new IPEndPoint(broadcast, port);
             localAddress_ = local ?? AnyAddress(broadcast.AddressFamily);
@@ -186,7 +186,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
             if (handleMessage)
             {
-                Message?.Invoke(this, new UdpPeerNetworkMessage(result.RemoteEndPoint,
+                Message?.Invoke(this, new UdpPeerDiscoveryMessage(result.RemoteEndPoint,
                     streamId, new ArraySegment<byte>(readSegment_.Array, payloadOffset, result.ReceivedBytes)));
             }
         }
@@ -349,9 +349,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             socket_.SendTo(buffer, SocketFlags.None, broadcastEndpoint_);
         }
 
-        public void Reply(IPeerNetworkMessage req, Guid guid, ArraySegment<byte> message)
+        public void Reply(IPeerDiscoveryMessage req, Guid guid, ArraySegment<byte> message)
         {
-            var umsg = req as UdpPeerNetworkMessage;
+            var umsg = req as UdpPeerDiscoveryMessage;
             var buffer = PrependHeader(guid, message);
             if (buffer.Length > LargeMessageLimit)
             {

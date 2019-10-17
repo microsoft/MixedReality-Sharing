@@ -14,7 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Matchmaking\src\Microsoft.MixedReality.Sharing.Matchmaking.csproj" />
-    <ProjectReference Include="..\..\src\Microsoft.MixedReality.Sharing.Matchmaking.Local.csproj" />
+    <ProjectReference Include="..\..\src\Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscovery.csproj" />
   </ItemGroup>
 
 </Project>
