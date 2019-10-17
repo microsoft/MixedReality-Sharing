@@ -29,7 +29,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         int ident_;
         ConcurrentQueue<MemoryPeerDiscoveryMessage> incoming_ = new ConcurrentQueue<MemoryPeerDiscoveryMessage>();
 
-        //TODO extract into a factory so we can have independent networks
+        //TODO extract into a factory so we can have independent transports
         static volatile List<MemoryPeerDiscoveryTransport> instances_ = new List<MemoryPeerDiscoveryTransport>();
 
         const int MessagePumpInProgress = 1;
