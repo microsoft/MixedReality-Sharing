@@ -13,17 +13,20 @@
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\hash.h">
       <Filter>include/Microsoft/MixedReality/Sharing/Common</Filter>
     </ClInclude>
-    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Serialization.h">
-      <Filter>include/Microsoft/MixedReality/Sharing/Common</Filter>
-    </ClInclude>
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Span.h">
       <Filter>include/Microsoft/MixedReality/Sharing/Common</Filter>
     </ClInclude>
-    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\BitstreamWriter.h">
-      <Filter>include/Microsoft/MixedReality/Sharing/Common</Filter>
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Serialization\BitstreamWriter.h">
+      <Filter>include/Microsoft/MixedReality/Sharing/Common\Serialization</Filter>
     </ClInclude>
-    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\BitstreamReader.h">
-      <Filter>include/Microsoft/MixedReality/Sharing/Common</Filter>
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Serialization\BitstreamReader.h">
+      <Filter>include/Microsoft/MixedReality/Sharing/Common\Serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Serialization\MonotonicSequenceEncoder.h">
+      <Filter>include/Microsoft/MixedReality/Sharing/Common\Serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Serialization\Serialization.h">
+      <Filter>include/Microsoft/MixedReality/Sharing/Common\Serialization</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -36,11 +39,14 @@
     <ClCompile Include="src\hash.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\Serialization.cpp">
-      <Filter>src</Filter>
+    <ClCompile Include="src\Serialization\Serialization.cpp">
+      <Filter>src\Serialization</Filter>
     </ClCompile>
-    <ClCompile Include="src\BitstreamWriter.cpp">
-      <Filter>src</Filter>
+    <ClCompile Include="src\Serialization\MonotonicSequenceEncoder.cpp">
+      <Filter>src\Serialization</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Serialization\BitstreamWriter.cpp">
+      <Filter>src\Serialization</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -49,6 +55,12 @@
     </Filter>
     <Filter Include="src">
       <UniqueIdentifier>{4fea64c8-33a8-40f1-a6c3-340a138cae23}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include/Microsoft/MixedReality/Sharing/Common\Serialization">
+      <UniqueIdentifier>{ee0769d8-27a7-42d8-9010-79479ffe2444}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\Serialization">
+      <UniqueIdentifier>{9b6308d0-0c07-4372-9bc3-be89c63ac93e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 #pragma once
-#include <Microsoft/MixedReality/Sharing/Common/Serialization.h>
+#include <Microsoft/MixedReality/Sharing/Common/Serialization/Serialization.h>
 
 #include <cassert>
 #include <cstddef>

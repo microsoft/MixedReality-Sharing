@@ -56,7 +56,7 @@ class KeyDescriptor {
   virtual ~KeyDescriptor() = default;
   KeyDescriptor(const KeyDescriptor&) = delete;
   KeyDescriptor& operator=(const KeyDescriptor&) = delete;
-  const uint64_t key_hash_;
+  uint64_t key_hash_;
 };
 
 }  // namespace Microsoft::MixedReality::Sharing::VersionedStorage

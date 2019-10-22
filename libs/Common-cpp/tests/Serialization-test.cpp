@@ -3,8 +3,8 @@
 
 #include "pch.h"
 
-#include <Microsoft/MixedReality/Sharing/Common/BitstreamReader.h>
-#include <Microsoft/MixedReality/Sharing/Common/BitstreamWriter.h>
+#include <Microsoft/MixedReality/Sharing/Common/Serialization/BitstreamReader.h>
+#include <Microsoft/MixedReality/Sharing/Common/Serialization/BitstreamWriter.h>
 
 namespace Microsoft::MixedReality::Sharing::Serialization {
 using namespace std::literals;

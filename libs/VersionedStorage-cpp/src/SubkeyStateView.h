@@ -42,6 +42,30 @@ struct SubkeyStateView {
     return {};
   }
 
+  bool has_payload_thread_unsafe() const noexcept {
+    if (version_block_)
+      return version_block_->latest_versioned_payload_thread_unsafe()
+          .has_payload();
+    if (state_block_)
+      return state_block_->latest_versioned_payload_thread_unsafe()
+          .has_payload();
+    return false;
+  }
+
+  void EnsureDeletedFromWriterThread(uint64_t version) {
+    if (version_block_) {
+      if (version_block_->latest_versioned_payload_thread_unsafe()
+              .has_payload()) {
+        version_block_->PushFromWriterThread(version, {});
+      }
+    } else if (state_block_) {
+      if (state_block_->latest_versioned_payload_thread_unsafe()
+              .has_payload()) {
+        state_block_->PushFromWriterThread(version, {});
+      }
+    }
+  }
+
   SubkeyStateBlock* state_block_{nullptr};
   SubkeyVersionBlock* version_block_{nullptr};
 };

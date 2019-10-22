@@ -14,9 +14,14 @@ namespace Microsoft::MixedReality::Sharing::VersionedStorage {
 class Snapshot;
 class KeyView;
 
-class SubkeyIterator
-    : public std::iterator<std::forward_iterator_tag, SubkeyView> {
+class SubkeyIterator {
  public:
+  using iterator_category = std::forward_iterator_tag;
+  using value_type = SubkeyView;
+  using difference_type = ptrdiff_t;
+  using pointer = SubkeyView*;
+  using reference = SubkeyView&;
+
   SubkeyIterator() noexcept = default;
   SubkeyIterator(const KeyView& key_view, const Snapshot& snapshot) noexcept;
 

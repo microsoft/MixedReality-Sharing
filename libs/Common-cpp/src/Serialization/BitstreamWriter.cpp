@@ -3,7 +3,7 @@
 
 #include "src/pch.h"
 
-#include <Microsoft/MixedReality/Sharing/Common/BitstreamWriter.h>
+#include <Microsoft/MixedReality/Sharing/Common/Serialization/BitstreamWriter.h>
 
 namespace Microsoft::MixedReality::Sharing::Serialization {
 

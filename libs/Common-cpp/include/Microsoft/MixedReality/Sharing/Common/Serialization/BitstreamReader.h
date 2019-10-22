@@ -3,7 +3,7 @@
 
 #pragma once
 #include <Microsoft/MixedReality/Sharing/Common/Platform.h>
-#include <Microsoft/MixedReality/Sharing/Common/Serialization.h>
+#include <Microsoft/MixedReality/Sharing/Common/Serialization/Serialization.h>
 
 #include <cassert>
 #include <cstddef>
@@ -23,11 +23,21 @@ class BitstreamReader {
   // any further non-empty reads).
   uint64_t ReadExponentialGolombCode();
 
+  // Reads up to 32 bits from the bitstream.
+  // Throws std::out_of_range if there is not enough input left
+  // (the error also advances the stream to the end, preventing
+  // any further non-empty reads).
+  uint32_t ReadBits32(bit_shift_t bits_count);
+
   // Reads up to 64 bits from the bitstream.
   // Throws std::out_of_range if there is not enough input left
   // (the error also advances the stream to the end, preventing
   // any further non-empty reads).
   uint64_t ReadBits64(bit_shift_t bits_count);
+
+  size_t untouched_bytes_count() const noexcept {
+    return remaining_size_ + read_buf_bits_count_ / 8;
+  }
 
  private:
   void PopulateReadBuf();
@@ -60,6 +70,29 @@ void BitstreamReader::PopulateReadBuf() {
         "Can't read bits outside of the input range provided to "
         "BitstreamReader");
   }
+}
+
+MS_MR_SHARING_FORCEINLINE
+uint32_t BitstreamReader::ReadBits32(bit_shift_t bits_count) {
+  assert(bits_count <= 32);
+  bit_shift_t appended_bits_count = read_buf_bits_count_;
+  uint32_t result = static_cast<uint32_t>(read_buf_);
+  while (appended_bits_count < bits_count) {
+    PopulateReadBuf();
+    result |= static_cast<uint32_t>(read_buf_) << appended_bits_count;
+    appended_bits_count += read_buf_bits_count_;
+  }
+  const bit_shift_t consumed_bits_count =
+      read_buf_bits_count_ + bits_count - appended_bits_count;
+
+  if (consumed_bits_count == 8 * sizeof(read_buf_)) {
+    read_buf_bits_count_ = 0;
+    read_buf_ = 0;
+  } else {
+    read_buf_bits_count_ -= consumed_bits_count;
+    read_buf_ >>= consumed_bits_count;
+  }
+  return bits_count == 32 ? result : result & ((1ull << bits_count) - 1);
 }
 
 MS_MR_SHARING_FORCEINLINE

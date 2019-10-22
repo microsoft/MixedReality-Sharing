@@ -22,10 +22,21 @@ class TestBehavior : public Behavior {
   uint32_t GetKeyReferenceCount(KeyHandle handle) const noexcept;
   uint32_t GetPayloadReferenceCount(PayloadHandle handle) const noexcept;
 
-  uint64_t GetHash(KeyHandle handle) const noexcept override;
+  uint64_t GetKeyHash(KeyHandle handle) const noexcept override;
+  uint64_t GetKeyHash(std::string_view serialized_key_handle) const
+      noexcept override;
+
   bool Equal(KeyHandle a, KeyHandle b) const noexcept override;
+  bool Equal(KeyHandle key_handle, std::string_view serialized_payload) const
+      noexcept override;
+
   bool Less(KeyHandle a, KeyHandle b) const noexcept override;
+  bool Less(std::string_view a, KeyHandle b) const noexcept override;
+  bool Less(KeyHandle a, std::string_view b) const noexcept override;
+
   bool Equal(PayloadHandle a, PayloadHandle b) const noexcept override;
+  bool Equal(PayloadHandle payload_handle,
+             std::string_view serialized_payload) const noexcept override;
 
   void Release(KeyHandle handle) noexcept override;
   void Release(PayloadHandle handle) noexcept override;
@@ -40,6 +51,17 @@ class TestBehavior : public Behavior {
 
   void LockWriterMutex() noexcept override;
   void UnlockWriterMutex() noexcept override;
+
+  size_t Serialize(KeyHandle handle,
+                   std::vector<std::byte>& byte_stream) override;
+
+  size_t Serialize(PayloadHandle handle,
+                   std::vector<std::byte>& byte_stream) override;
+
+  KeyHandle DeserializeKey(std::string_view serialized_payload) override;
+
+  PayloadHandle DeserializePayload(
+      std::string_view serialized_payload) override;
 
   uint64_t total_allocated_pages_count() const noexcept {
     return total_allocated_pages_count_.load(std::memory_order_relaxed);
