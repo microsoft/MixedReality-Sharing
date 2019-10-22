@@ -41,9 +41,8 @@ SubkeyTransactionLayout::SubkeyTransactionLayout(
   }
 }
 
-// FIXME: remove
 void SubkeyTransactionLayout::Serialize(
-    Serialization::BitstreamWriter& bitstream_writer) {
+    Serialization::BitstreamWriter& bitstream_writer) noexcept {
   const bool has_action = action_kind_ != SubkeyTransactionActionKind::NoAction;
   const bool has_requirement =
       requirement_kind_ != SubkeyTransactionRequirementKind::NoRequirement;
@@ -89,7 +88,7 @@ KeyTransactionLayout::KeyTransactionLayout(
 }
 
 void KeyTransactionLayout::Serialize(
-    Serialization::BitstreamWriter& bitstream_writer) {
+    Serialization::BitstreamWriter& bitstream_writer) noexcept {
   bitstream_writer.WriteExponentialGolombCode(key_size_);
   bitstream_writer.WriteExponentialGolombCode(subkeys_count_);
   const bool has_requirement = required_subkeys_count_.has_value();

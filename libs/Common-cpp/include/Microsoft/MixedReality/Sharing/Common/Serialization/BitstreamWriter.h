@@ -17,23 +17,23 @@ class BitstreamWriter {
   // Outputs the provided bits into the stream.
   // Expects that the provided value fits into bits_count bits,
   // otherwise the behavior is undefined.
-  void WriteBits(uint64_t value, bit_shift_t bits_count);
+  void WriteBits(uint64_t value, bit_shift_t bits_count) noexcept;
 
   // Encodes the provided value as an order-0 exponential-Golomb code
   // (Little-Endian variation that stores zeros in low bits).
   // Has a special shortened encoding for ~0ull since we are not interested
   // in arbitrarily large codes.
-  void WriteExponentialGolombCode(uint64_t value);
+  void WriteExponentialGolombCode(uint64_t value) noexcept;
 
   // Flushes the buffer and returns the view of it.
   // The stream is extended with '0' bits to become byte-aligned.
-  std::string_view Finalize();
+  std::string_view Finalize() noexcept;
 
  private:
-  void Grow(size_t new_capacity);
+  void Grow(size_t new_capacity) noexcept;
 
   // Writes a single '1' bit into the stream.
-  MS_MR_SHARING_FORCEINLINE void WriteOneBit();
+  MS_MR_SHARING_FORCEINLINE void WriteOneBit() noexcept;
 
   static constexpr size_t kInplaceElementsCount = 128;
   uint64_t inplace_buffer_[kInplaceElementsCount];
@@ -46,7 +46,7 @@ class BitstreamWriter {
 };
 
 MS_MR_SHARING_FORCEINLINE
-void BitstreamWriter::WriteOneBit() {
+void BitstreamWriter::WriteOneBit() noexcept {
   if (temp_bit_offset_ == 63) {
     if (offset_ == capacity_)
       Grow(capacity_ * 2);
@@ -60,7 +60,8 @@ void BitstreamWriter::WriteOneBit() {
 }
 
 MS_MR_SHARING_FORCEINLINE
-void BitstreamWriter::WriteBits(uint64_t value, bit_shift_t bits_count) {
+void BitstreamWriter::WriteBits(uint64_t value,
+                                bit_shift_t bits_count) noexcept {
   assert((bits_count == 64) || (bits_count < 64 && (value >> bits_count) == 0));
   temp_ |= value << temp_bit_offset_;
   temp_bit_offset_ += bits_count;
@@ -75,7 +76,7 @@ void BitstreamWriter::WriteBits(uint64_t value, bit_shift_t bits_count) {
 }
 
 MS_MR_SHARING_FORCEINLINE
-void BitstreamWriter::WriteExponentialGolombCode(uint64_t value) {
+void BitstreamWriter::WriteExponentialGolombCode(uint64_t value) noexcept {
   // This is a Little-Endian version of the encoding.
   // First, making the value non-zero by adding 1 and special-casing
   // the ~0ull case. Then for the input that looks like:

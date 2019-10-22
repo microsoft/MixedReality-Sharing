@@ -27,9 +27,10 @@ enum class SubkeyTransactionActionKind {
 struct SubkeyTransactionLayout {
   // Note: default-constructed layout is not valid and can't be serialized
   // (a valid subkey transaction must have an action, a requirement, or both).
-  SubkeyTransactionLayout() = default;
+  SubkeyTransactionLayout() noexcept = default;
   SubkeyTransactionLayout(Serialization::BitstreamReader& reader);
-  void Serialize(Serialization::BitstreamWriter& bitstream_writer);
+
+  void Serialize(Serialization::BitstreamWriter& bitstream_writer) noexcept;
 
   constexpr uint64_t bytestream_content_size() const noexcept {
     uint64_t result = action_kind_ == SubkeyTransactionActionKind::PutSubkey
@@ -56,9 +57,9 @@ struct KeyTransactionLayout {
   // Note: default-constructed layout is not valid and can't be serialized
   // (a valid key transaction must mention subkeys, have requirements or clear
   // the key).
-  KeyTransactionLayout() = default;
+  KeyTransactionLayout() noexcept = default;
   KeyTransactionLayout(Serialization::BitstreamReader& reader);
-  void Serialize(Serialization::BitstreamWriter& bitstream_writer);
+  void Serialize(Serialization::BitstreamWriter& bitstream_writer) noexcept;
 
   uint64_t key_size_{0};
   uint64_t subkeys_count_{0};

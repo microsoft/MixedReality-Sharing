@@ -10,13 +10,10 @@
 
 namespace Microsoft::MixedReality::Sharing::Serialization {
 
-void MonotonicSequenceEncoder::EncodeNext(uint64_t value,
-                                          BitstreamWriter& bitstream_writer) {
-  if (value < predicted_next_value_) {
-    throw std::invalid_argument{
-        "Can't encode a monotonic sequence: each value must be strictly "
-        "greater than the previous one"};
-  }
+void MonotonicSequenceEncoder::EncodeNext(
+    uint64_t value,
+    BitstreamWriter& bitstream_writer) noexcept {
+  assert(value >= predicted_next_value_);
   uint64_t diff = value - predicted_next_value_;
   bitstream_writer.WriteExponentialGolombCode(diff);
   if (value == ~0ull) {
