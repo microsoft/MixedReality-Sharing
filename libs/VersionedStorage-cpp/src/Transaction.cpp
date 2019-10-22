@@ -158,7 +158,7 @@ class SubkeyTransaction {
     layout_.required_version_ = required_version;
   }
 
-  void Serialize(Serialization::BitstreamWriter& writer,
+  void Serialize(Serialization::BitstreamWriter& bitstream_writer,
                  std::vector<std::byte>& byte_stream,
                  Behavior& behavior) noexcept {
     if (layout_.requirement_kind_ ==
@@ -169,7 +169,7 @@ class SubkeyTransaction {
     if (layout_.action_kind_ == SubkeyTransactionActionKind::PutSubkey) {
       layout_.new_payload_size_ = behavior.Serialize(new_payload_, byte_stream);
     }
-    layout_.Serialize(writer);
+    layout_.Serialize(bitstream_writer);
   }
 
  private:
@@ -398,18 +398,18 @@ class TransactionImpl : public TransactionBuilder {
         required_subkeys_count);
   }
 
-  void Serialize(Serialization::BitstreamWriter& writer,
+  void Serialize(Serialization::BitstreamWriter& bitstream_writer,
                  std::vector<std::byte>& byte_stream) noexcept override {
-    writer.WriteExponentialGolombCode(key_transactions_map_.size());
+    bitstream_writer.WriteExponentialGolombCode(key_transactions_map_.size());
     for (auto&& [key, key_transaction] : key_transactions_map_) {
       key_transaction.layout_.key_size_ =
           behavior_->Serialize(key, byte_stream);
       key_transaction.layout_.subkeys_count_ = key_transaction.subkeys_.size();
-      key_transaction.layout_.Serialize(writer);
+      key_transaction.layout_.Serialize(bitstream_writer);
       Serialization::MonotonicSequenceEncoder subkey_encoder;
       for (auto&& [subkey, subkey_transaction] : key_transaction.subkeys_) {
-        subkey_encoder.EncodeNext(subkey, writer);
-        subkey_transaction.Serialize(writer, byte_stream, *behavior_);
+        subkey_encoder.EncodeNext(subkey, bitstream_writer);
+        subkey_transaction.Serialize(bitstream_writer, byte_stream, *behavior_);
       }
     }
   }

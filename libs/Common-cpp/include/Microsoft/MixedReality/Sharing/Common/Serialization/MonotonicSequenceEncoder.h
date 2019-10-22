@@ -20,7 +20,7 @@ class MonotonicSequenceEncoder {
   // Encodes the next value of the monotonic sequence using the prediction based
   // on values observed so far. The provided value must be greater than any of
   // the previous values used with this encoder.
-  void EncodeNext(uint64_t value, BitstreamWriter& writer);
+  void EncodeNext(uint64_t value, BitstreamWriter& bitstream_writer);
 
   // Decodes the next value of the monotonic sequence using the prediction based
   // on values observed so far. Returned values will always be ordered in

@@ -149,7 +149,7 @@ class TransactionBuilder : public TransactionView {
   virtual void RequireSubkeysCount(KeyDescriptor& key,
                                    size_t required_subkeys_count) noexcept = 0;
 
-  virtual void Serialize(Serialization::BitstreamWriter& writer,
+  virtual void Serialize(Serialization::BitstreamWriter& bitstream_writer,
                          std::vector<std::byte>& byte_stream) noexcept = 0;
 
   static std::unique_ptr<TransactionBuilder> Create(

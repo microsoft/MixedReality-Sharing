@@ -29,7 +29,7 @@ struct SubkeyTransactionLayout {
   // (a valid subkey transaction must have an action, a requirement, or both).
   SubkeyTransactionLayout() = default;
   SubkeyTransactionLayout(Serialization::BitstreamReader& reader);
-  void Serialize(Serialization::BitstreamWriter& writer);
+  void Serialize(Serialization::BitstreamWriter& bitstream_writer);
 
   constexpr uint64_t bytestream_content_size() const noexcept {
     uint64_t result = action_kind_ == SubkeyTransactionActionKind::PutSubkey
@@ -58,7 +58,7 @@ struct KeyTransactionLayout {
   // the key).
   KeyTransactionLayout() = default;
   KeyTransactionLayout(Serialization::BitstreamReader& reader);
-  void Serialize(Serialization::BitstreamWriter& writer);
+  void Serialize(Serialization::BitstreamWriter& bitstream_writer);
 
   uint64_t key_size_{0};
   uint64_t subkeys_count_{0};
