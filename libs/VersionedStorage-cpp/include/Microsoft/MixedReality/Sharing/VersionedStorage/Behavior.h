@@ -4,6 +4,8 @@
 #pragma once
 #include <Microsoft/MixedReality/Sharing/VersionedStorage/enums.h>
 
+#include <vector>
+
 namespace Microsoft::MixedReality::Sharing::VersionedStorage {
 
 // A class that customizes the semantic of the storage, and hides all details
@@ -17,10 +19,21 @@ class Behavior {
   // If the behavior is used with a replicated storage, the hash must never
   // depend on non-deterministic conditions, such as addresses of allocated
   // keys.
-  [[nodiscard]] virtual uint64_t GetHash(KeyHandle handle) const noexcept = 0;
+  [[nodiscard]] virtual uint64_t GetKeyHash(KeyHandle handle) const
+      noexcept = 0;
+  [[nodiscard]] virtual uint64_t GetKeyHash(
+      std::string_view serialized_key_handle) const noexcept = 0;
 
   [[nodiscard]] virtual bool Equal(KeyHandle a, KeyHandle b) const noexcept = 0;
+  [[nodiscard]] virtual bool Equal(KeyHandle key_handle,
+                                   std::string_view serialized_payload) const
+      noexcept = 0;
+
   [[nodiscard]] virtual bool Less(KeyHandle a, KeyHandle b) const noexcept = 0;
+  [[nodiscard]] virtual bool Less(std::string_view a, KeyHandle b) const
+      noexcept = 0;
+  [[nodiscard]] virtual bool Less(KeyHandle a, std::string_view b) const
+      noexcept = 0;
 
   // Returns true if payloads are identical.
   // The implementation is allowed to just compare the handles if comparing the
@@ -33,6 +46,10 @@ class Behavior {
   //   "before" and "after" values (normally Equal() is called to filter-out
   //   unnecessary changes).
   [[nodiscard]] virtual bool Equal(PayloadHandle a, PayloadHandle b) const
+      noexcept = 0;
+
+  [[nodiscard]] virtual bool Equal(PayloadHandle payload_handle,
+                                   std::string_view serialized_payload) const
       noexcept = 0;
 
   virtual void Release(KeyHandle handle) noexcept = 0;
@@ -74,6 +91,23 @@ class Behavior {
 
   // Unlocks the mutex that restricts all modifications of the storage.
   virtual void UnlockWriterMutex() noexcept = 0;
+
+  // Serializes the key associated with the provided handle and returns the
+  // number of written bytes.
+  // The serialized data doesn't have to contain this size, as it will be saved
+  // separately and provided to the deserialization code (so, if the key is a
+  // string, the implementation can just append the string's data as is, without
+  // any size prefix or terminator).
+  virtual size_t Serialize(KeyHandle handle,
+                           std::vector<std::byte>& byte_stream) = 0;
+
+  virtual size_t Serialize(PayloadHandle handle,
+                           std::vector<std::byte>& byte_stream) = 0;
+
+  virtual KeyHandle DeserializeKey(std::string_view serialized_payload) = 0;
+
+  virtual PayloadHandle DeserializePayload(
+      std::string_view serialized_payload) = 0;
 
  protected:
   Behavior() = default;

@@ -3,7 +3,7 @@
 
 #pragma once
 #include <Microsoft/MixedReality/Sharing/Common/Platform.h>
-#include <Microsoft/MixedReality/Sharing/Common/Serialization.h>
+#include <Microsoft/MixedReality/Sharing/Common/Serialization/Serialization.h>
 
 #include <cassert>
 #include <cstddef>
@@ -23,13 +23,26 @@ class BitstreamReader {
   // any further non-empty reads).
   uint64_t ReadExponentialGolombCode();
 
+  // Reads up to 32 bits from the bitstream.
+  // Throws std::out_of_range if there is not enough input left
+  // (the error also advances the stream to the end, preventing
+  // any further non-empty reads).
+  uint32_t ReadBits32(bit_shift_t bits_count);
+
   // Reads up to 64 bits from the bitstream.
   // Throws std::out_of_range if there is not enough input left
   // (the error also advances the stream to the end, preventing
   // any further non-empty reads).
   uint64_t ReadBits64(bit_shift_t bits_count);
 
+  size_t untouched_bytes_count() const noexcept {
+    return remaining_size_ + read_buf_bits_count_ / 8;
+  }
+
  private:
+  template <typename T>
+  T ReadBits(bit_shift_t bits_count);
+
   void PopulateReadBuf();
 
   const char* next_;
@@ -62,19 +75,18 @@ void BitstreamReader::PopulateReadBuf() {
   }
 }
 
-MS_MR_SHARING_FORCEINLINE
-uint64_t BitstreamReader::ReadBits64(bit_shift_t bits_count) {
-  assert(bits_count <= 64);
+template <typename T>
+MS_MR_SHARING_FORCEINLINE T BitstreamReader::ReadBits(bit_shift_t bits_count) {
+  assert(bits_count <= 8 * sizeof(T));
   bit_shift_t appended_bits_count = read_buf_bits_count_;
-  uint64_t result = read_buf_;
+  T result = static_cast<T>(read_buf_);
   while (appended_bits_count < bits_count) {
     PopulateReadBuf();
-    result |= static_cast<uint64_t>(read_buf_) << appended_bits_count;
+    result |= static_cast<T>(read_buf_) << appended_bits_count;
     appended_bits_count += read_buf_bits_count_;
   }
   const bit_shift_t consumed_bits_count =
       read_buf_bits_count_ + bits_count - appended_bits_count;
-
   if (consumed_bits_count == 8 * sizeof(read_buf_)) {
     read_buf_bits_count_ = 0;
     read_buf_ = 0;
@@ -82,7 +94,18 @@ uint64_t BitstreamReader::ReadBits64(bit_shift_t bits_count) {
     read_buf_bits_count_ -= consumed_bits_count;
     read_buf_ >>= consumed_bits_count;
   }
-  return bits_count == 64 ? result : result & ((1ull << bits_count) - 1);
+  return bits_count == 8 * sizeof(T) ? result
+                                     : result & ((1ull << bits_count) - 1);
+}
+
+MS_MR_SHARING_FORCEINLINE
+uint32_t BitstreamReader::ReadBits32(bit_shift_t bits_count) {
+  return ReadBits<uint32_t>(bits_count);
+}
+
+MS_MR_SHARING_FORCEINLINE uint64_t
+BitstreamReader::ReadBits64(bit_shift_t bits_count) {
+  return ReadBits<uint64_t>(bits_count);
 }
 
 MS_MR_SHARING_FORCEINLINE

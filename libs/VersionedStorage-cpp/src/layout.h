@@ -41,51 +41,6 @@ struct IndexBlockSlot {
   std::atomic<DataBlockLocation> version_block_location_;
 };
 
-// Three-state value of a payload handle, useful for requirements etc.
-class OptionalPayloadStateOrDeletionMarker {
- public:
-  constexpr OptionalPayloadStateOrDeletionMarker() = default;
-  constexpr OptionalPayloadStateOrDeletionMarker(nullptr_t)
-      : state_{State::DeletionMarker} {}
-  constexpr OptionalPayloadStateOrDeletionMarker(PayloadHandle handle)
-      : state_{State::SpecificHandle}, handle_{handle} {}
-
-  operator bool() const noexcept { return state_ != State::NoState; }
-
-  constexpr bool operator!() const noexcept { return state_ == State::NoState; }
-  constexpr bool is_specific_handle() const noexcept {
-    return state_ == State::SpecificHandle;
-  }
-  constexpr bool is_deletion_marker() const noexcept {
-    return state_ == State::DeletionMarker;
-  }
-
-  PayloadHandle operator*() const noexcept {
-    assert(state_ == State::SpecificHandle);
-    return handle_;
-  }
-
-  [[nodiscard]] std::optional<PayloadHandle> release() noexcept {
-    assert(state_ != State::NoState);
-    if (state_ == State::SpecificHandle) {
-      state_ = State::NoState;
-      return handle_;
-    }
-    state_ = State::NoState;
-    return {};
-  }
-
- private:
-  enum class State {
-    NoState,
-    DeletionMarker,
-    SpecificHandle,
-  };
-
-  State state_{State::NoState};
-  PayloadHandle handle_{0};  // Irrelevant unless state_ is SpecificHandle
-};
-
 class KeyVersionBlock;
 class SubkeyVersionBlock;
 struct KeyStateAndIndexView;

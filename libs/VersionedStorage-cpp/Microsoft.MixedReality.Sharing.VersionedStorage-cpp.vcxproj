@@ -37,6 +37,7 @@
     <ClInclude Include="src\KeyStateView.h" />
     <ClInclude Include="src\KeyVersionBlock.h" />
     <ClInclude Include="src\layout.h" />
+    <ClInclude Include="src\TransactionLayout.h" />
     <ClInclude Include="src\pch.h" />
     <ClInclude Include="src\StateBlock.h" />
     <ClInclude Include="src\BlockIterator.h" />
@@ -58,6 +59,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="src\SubkeyIterator.cpp" />
+    <ClCompile Include="src\TransactionLayout.cpp" />
     <ClCompile Include="src\SubkeyVersionBlock.cpp" />
     <ClCompile Include="src\KeyIterator.cpp" />
     <ClCompile Include="src\Transaction.cpp" />

@@ -32,6 +32,8 @@ class KeyDescriptorWithHandle : public KeyDescriptor {
   KeyHandle MakeHandle() noexcept override;
   KeyHandle MakeHandle(KeyHandle existing_handle) noexcept override;
 
+  void ReplaceHandle(KeyHandle key_handle, bool has_handle_ownership) noexcept;
+
  protected:
   Behavior& behavior_;
   KeyHandle key_handle_;

@@ -62,8 +62,14 @@ class Storage {
   // outcomes above).
   // The operation may call LockWriterMutex()/UnlockWriterMutex() on the
   // Behavior object, but the callers should not rely on this.
+  // Note that the transactions are generally not reusable, and the state of the
+  // provided object can be irreversibly changed regardless of the success of
+  // the operation.
   [[nodiscard]] TransactionResult ApplyTransaction(
-      std::unique_ptr<Transaction> transaction) noexcept;
+      TransactionView& transaction) noexcept;
+
+  [[nodiscard]] TransactionResult ApplyTransaction(
+      std::string_view serialized_transaction) noexcept;
 
  private:
   std::shared_ptr<Behavior> behavior_;

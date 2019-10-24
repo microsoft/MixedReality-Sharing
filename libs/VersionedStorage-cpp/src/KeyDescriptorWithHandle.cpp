@@ -15,7 +15,7 @@ KeyDescriptorWithHandle::KeyDescriptorWithHandle(
     Behavior& behavior,
     KeyHandle key_handle,
     bool has_handle_ownership) noexcept
-    : KeyDescriptor{behavior.GetHash(key_handle)},
+    : KeyDescriptor{behavior.GetKeyHash(key_handle)},
       behavior_{behavior},
       key_handle_{key_handle},
       has_handle_ownership_{has_handle_ownership} {}
@@ -29,7 +29,7 @@ KeyDescriptorWithHandle::KeyDescriptorWithHandle(
       behavior_{behavior},
       key_handle_{key_handle},
       has_handle_ownership_{has_handle_ownership} {
-  assert(behavior.GetHash(key_handle) == key_hash);
+  assert(behavior.GetKeyHash(key_handle) == key_hash);
 }
 
 KeyDescriptorWithHandle::~KeyDescriptorWithHandle() {
@@ -62,6 +62,17 @@ KeyHandle KeyDescriptorWithHandle::MakeHandle(KeyHandle) noexcept {
   // The provided handle is ignored since this implementation already has a
   // handle.
   return MakeHandle();
+}
+
+void KeyDescriptorWithHandle::ReplaceHandle(
+    KeyHandle key_handle,
+    bool has_handle_ownership) noexcept {
+  if (has_handle_ownership_) {
+    behavior_.Release(key_handle_);
+  }
+  key_handle_ = key_handle;
+  has_handle_ownership_ = has_handle_ownership;
+  key_hash_ = behavior_.GetKeyHash(key_handle);
 }
 
 }  // namespace Microsoft::MixedReality::Sharing::VersionedStorage

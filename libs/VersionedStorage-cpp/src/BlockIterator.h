@@ -16,9 +16,14 @@ struct IndexBlockSlot;
 class IndexBlock;
 
 template <IndexLevel kLevel>
-class BlockIterator : public std::iterator<std::forward_iterator_tag,
-                                           StateAndIndexView<kLevel>> {
+class BlockIterator {
  public:
+  using iterator_category = std::forward_iterator_tag;
+  using value_type = StateAndIndexView<kLevel>;
+  using difference_type = ptrdiff_t;
+  using pointer = StateAndIndexView<kLevel>*;
+  using reference = StateAndIndexView<kLevel>&;
+
   class End {};
 
   BlockIterator() noexcept = default;
@@ -70,6 +75,8 @@ class BlockIterator : public std::iterator<std::forward_iterator_tag,
     assert(state_view_);
     return &state_view_;
   }
+
+  constexpr bool is_end() const noexcept { return !state_view_; }
 
  private:
   MS_MR_SHARING_FORCEINLINE

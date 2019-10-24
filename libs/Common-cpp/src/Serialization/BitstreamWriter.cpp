@@ -3,11 +3,11 @@
 
 #include "src/pch.h"
 
-#include <Microsoft/MixedReality/Sharing/Common/BitstreamWriter.h>
+#include <Microsoft/MixedReality/Sharing/Common/Serialization/BitstreamWriter.h>
 
 namespace Microsoft::MixedReality::Sharing::Serialization {
 
-void BitstreamWriter::Grow(size_t new_capacity) {
+void BitstreamWriter::Grow(size_t new_capacity) noexcept {
   assert(capacity_ < new_capacity);
   capacity_ = new_capacity;
   auto new_buffer_ = std::make_unique<uint64_t[]>(capacity_);
@@ -16,7 +16,7 @@ void BitstreamWriter::Grow(size_t new_capacity) {
   external_buffer_ = std::move(new_buffer_);
 }
 
-std::string_view BitstreamWriter::Finalize() {
+std::string_view BitstreamWriter::Finalize() noexcept {
   size_t size_bytes = offset_ * 8;
   if (temp_bit_offset_) {
     if (offset_ == capacity_)

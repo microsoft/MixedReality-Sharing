@@ -3,7 +3,7 @@
 
 #include "src/pch.h"
 
-#include <Microsoft/MixedReality/Sharing/Common/Serialization.h>
+#include <Microsoft/MixedReality/Sharing/Common/Serialization/Serialization.h>
 
 namespace Microsoft::MixedReality::Sharing::Serialization {
 

@@ -26,6 +26,13 @@ class Behavior;
 // found key.
 class Snapshot {
  public:
+  // Doesn't increment any reference counts (they should be pre-incremented).
+  Snapshot(uint64_t version,
+           Detail::HeaderBlock& header_block,
+           size_t keys_count,
+           size_t subkeys_count,
+           std::shared_ptr<Behavior> behavior) noexcept;
+
   Snapshot() noexcept;
   Snapshot(Snapshot&&) noexcept;
   Snapshot(const Snapshot&) noexcept;
@@ -63,13 +70,6 @@ class Snapshot {
   }
 
  private:
-  // Doesn't increment any reference counts (they should be pre-incremented).
-  Snapshot(uint64_t version,
-           Detail::HeaderBlock& header_block,
-           size_t keys_count,
-           size_t subkeys_count,
-           std::shared_ptr<Behavior> behavior) noexcept;
-
   Detail::HeaderBlock* header_block_{nullptr};
   std::shared_ptr<Behavior> behavior_;
   uint64_t version_{0};

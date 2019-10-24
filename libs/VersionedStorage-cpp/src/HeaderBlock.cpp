@@ -848,7 +848,7 @@ KeyStateAndIndexView MutatingBlobAccessor::InsertKeyBlock(
   assert(CanInsertStateBlocks(1));
   assert(!FindKeyState(KeyDescriptorWithHandle{behavior, key_handle, false}));
   HeaderBlock::KeyBlockInserter inserter{
-      *this, key_handle, behavior, {behavior.GetHash(key_handle)}};
+      *this, key_handle, behavior, {behavior.GetKeyHash(key_handle)}};
   return {&inserter.new_block(), nullptr, &inserter.index_block_slot()};
 }
 
@@ -861,7 +861,7 @@ SubkeyStateAndIndexView MutatingBlobAccessor::InsertSubkeyBlock(
       KeyDescriptorWithHandle{behavior, key_block.key_, false}, subkey));
 
   HeaderBlock::SubkeyBlockInserter inserter(
-      *this, key_block, subkey, {behavior.GetHash(key_block.key_), subkey});
+      *this, key_block, subkey, {behavior.GetKeyHash(key_block.key_), subkey});
   return {&inserter.new_block(), nullptr, &inserter.index_block_slot()};
 }
 

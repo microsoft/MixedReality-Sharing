@@ -10,6 +10,9 @@
     <Filter Include="include/Microsoft/MixedReality/Sharing/VersionedStorage\Detail">
       <UniqueIdentifier>{96243263-5fb5-4ea5-a327-5ad12754ab8c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\Detail">
+      <UniqueIdentifier>{fb017bed-8942-479a-ab40-ab54235ddb13}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\pch.h">
@@ -84,6 +87,9 @@
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\VersionedPayloadHandle.h">
       <Filter>include/Microsoft/MixedReality/Sharing/VersionedStorage</Filter>
     </ClInclude>
+    <ClInclude Include="src\TransactionLayout.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\pch.cpp">
@@ -117,6 +123,9 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\KeyIterator.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TransactionLayout.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

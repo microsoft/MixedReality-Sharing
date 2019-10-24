@@ -269,6 +269,10 @@ class MutatingBlobAccessor : public BlobAccessor {
     assert(header_block_.is_mutable_mode_);
     header_block_.is_mutable_mode_ = false;
   }
+
+  uint64_t next_version() const noexcept {
+    return header_block_.base_version() + header_block_.stored_versions_count();
+  }
 };
 
 }  // namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail
