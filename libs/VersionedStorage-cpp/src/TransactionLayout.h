@@ -24,6 +24,8 @@ enum class SubkeyTransactionActionKind {
   PutSubkey,
 };
 
+// The layout stores all the information about the subkey transaction except for
+// payloads (which are saved separately).
 struct SubkeyTransactionLayout {
   // Note: default-constructed layout is not valid and can't be serialized
   // (a valid subkey transaction must have an action, a requirement, or both).
@@ -53,6 +55,10 @@ struct SubkeyTransactionLayout {
   uint64_t new_payload_size_{0};
 };
 
+// The layout stores all the information about the key transaction except for
+// the key payload (which is saved separately) and the subkey transactions
+// (see above) which should be serialized right after the key transaction they
+// belong to.
 struct KeyTransactionLayout {
   // Note: default-constructed layout is not valid and can't be serialized
   // (a valid key transaction must mention subkeys, have requirements or clear

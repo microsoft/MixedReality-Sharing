@@ -12,12 +12,16 @@ namespace Microsoft::MixedReality::Sharing::VersionedStorage {
 
 SubkeyTransactionLayout::SubkeyTransactionLayout(
     Serialization::BitstreamReader& reader) {
-  bool has_action = reader.ReadBits32(1) == 0;
-  if (!has_action) {
-    const uint32_t prereq_kind_and_has_action = reader.ReadBits32(3);
-    has_action = (prereq_kind_and_has_action & 1) == 1;
-    requirement_kind_ =
-        SubkeyTransactionRequirementKind{1 + (prereq_kind_and_has_action >> 1)};
+  const bool has_requirement = reader.ReadBits32(1) == 1;
+  // Transaction must have either an action, a requirement, or both.
+  // The first bit indicates that there is a requirement. If there is no
+  // requirement, we know that there is an action.
+  bool has_action = !has_requirement;
+  if (has_requirement) {
+    const uint32_t requirement_kind_and_has_action = reader.ReadBits32(3);
+    has_action = (requirement_kind_and_has_action & 1) == 1;
+    requirement_kind_ = SubkeyTransactionRequirementKind{
+        1 + (requirement_kind_and_has_action >> 1)};
     if (requirement_kind_ == SubkeyTransactionRequirementKind::ExactVersion) {
       // FIXME: use different encoding
       required_version_ = reader.ReadExponentialGolombCode();

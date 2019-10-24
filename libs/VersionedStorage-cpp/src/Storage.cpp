@@ -254,6 +254,10 @@ class TransactionApplicator {
     bool is_clear_before_transaction_mode = false;
   };
 
+  // This method doesn't inspect the subkeys, so KeyBlockFlags::should_survive
+  // could be false even if the key should survive in the end due to the alive
+  // subscription on a missing subkey (in case where the user is waiting for
+  // some subkey to appear).
   static KeyBlockFlags GetKeyBlockFlags(
       const KeyStateView& key_state_view) noexcept {
     const KeyStateBlock& key_block = *key_state_view.state_block_;
@@ -386,7 +390,7 @@ class TransactionApplicator {
     return required_blocks_count;
   }
 
-  VersionedPayloadHandle GetMergedPayloadHandle(
+  VersionedPayloadHandle ReleaseOrCloneMergedPayloadHandle(
       const SubkeyStateView& state_view,
       bool is_clear_before_transaction_mode) noexcept {
     bool delete_if_unchanged = is_clear_before_transaction_mode;
@@ -488,7 +492,7 @@ class TransactionApplicator {
             // Should move the subscription to the new block.
             assert(!"Not implemented yet");
           }
-          if (VersionedPayloadHandle handle = GetMergedPayloadHandle(
+          if (VersionedPayloadHandle handle = ReleaseOrCloneMergedPayloadHandle(
                   subkey_state_view,
                   key_flags.is_clear_before_transaction_mode)) {
             new_subkey_state_block->PushFromWriterThread(handle.version(),
@@ -686,7 +690,7 @@ Storage::TransactionResult Storage::ApplyTransaction(
   Detail::TransactionApplicator applicator{behavior_, accessor};
   auto pair = applicator.Apply(transaction);
   if (pair.second == TransactionResult::FailedDueToInsufficientResources)
-    return TransactionResult::AppliedWithNoEffectDueToUnsatisfiedPrerequisites;
+    return TransactionResult::FailedDueToInsufficientResources;
 
   auto lock = std::lock_guard{latest_snapshot_reader_mutex_};
   latest_snapshot_ = std::move(pair.first);
