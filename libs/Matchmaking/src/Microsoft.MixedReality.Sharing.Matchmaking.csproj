@@ -5,4 +5,7 @@
     <LangVersion>7.3</LangVersion>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\Common.Utilities\src\Microsoft.MixedReality.Sharing.Utilities.csproj" />
+  </ItemGroup>
 </Project>
