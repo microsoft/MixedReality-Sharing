@@ -6,7 +6,7 @@
 
 MixedReality-Sharing is a collection of cross-platform libraries to enable rich multiuser experiences. In particular most mixed reality experiences need the following:
  - Matchmaking - find and join experiences
- - Streaming - transmit and recieve audio/video/data
+ - Streaming - transmit and receive audio/video/data
  - Localization - agree a shared reference frame (anchor)
 
 MixedReality-Sharing provides packages to fulfil each of the above needs. The packages are independent, meaning they can be adopted or replaced incrementally. Integration libraries are provided so that the packages work together seamlessly, both with each other and with external libraries.
