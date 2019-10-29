@@ -17,7 +17,7 @@ The [Matchmaking.Discovery](libs/Matchmaking/docs/index.md)  is based on a simpl
 
 ## Streaming
 
-We recommend [MixedReality-WebRTC](https://github.com/microsoft/MixedReality-WebRTC) for streaming audio, video and data. As with any WebRTC solution, an external signaling mechanism is required to establish a connection. We provide an in-process signalling solution to make this easy.
+We recommend [MixedReality-WebRTC](https://github.com/microsoft/MixedReality-WebRTC) for streaming audio, video and data. As with any WebRTC solution, an external signaling mechanism is required to establish a connection. We provide an in-process signaling solution to make this easy.
 
 ## Localization
 
