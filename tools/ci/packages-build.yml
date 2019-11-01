@@ -13,6 +13,11 @@ jobs:
   steps:
   - template: templates/steps-build-init.yml
 
+  - template: templates/steps-build-solution.yml
+    parameters:
+      platform: AnyCPU
+      configuration: Release
+
   - template: templates/steps-package-nuget.yml
     parameters:
       configuration: Release
