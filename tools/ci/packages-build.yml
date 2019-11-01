@@ -1,5 +1,8 @@
 # Package build.
 
+variables:
+  solution: '*.sln'
+
 jobs:
 
 #
