@@ -20,7 +20,7 @@ function Get-ScriptDirectory {
 
 # TODO proper escapes
 function FileNameFromUrl ($url) {
-    ($url -replace "/", "_") -replace ":", "_"
+    $url -replace "[/:\?=%]", "_"
 }
 
 # Download $url to local $cache_folder and return the cached path.
@@ -33,7 +33,7 @@ function FetchAndCache ($url, $cache_folder) {
     $headers = @{}
 
     # props is a json file with keys "etag" and "size"(of the file)
-    $props_text = Get-Content -ErrorAction Ignore "$cache_file.props" -raw
+    $props_text = Get-Content -ErrorAction Ignore -Path "$cache_file.props" -Raw
     if( $props_text ) {
         $props = ConvertFrom-Json -InputObject $props_text        
         $cur_size = (Get-Item -ErrorAction Ignore $cache_file).Length
@@ -63,7 +63,11 @@ function FetchAndCache ($url, $cache_folder) {
     
     # Fetched OK, move into place & update props
     Move-Item -Force "$cache_file.tmp" $cache_file
-    $props = @{ size=$response.Content.Length; etag=($response.Headers["ETag"].Trim("`"")) }
+    $props = @{ size=$response.Content.Length }
+    $etag = ""
+    if ($response.Headers.TryGetValue("ETag", [ref]$etag)) {
+        $props.Add("etag", $etag.Trim("`""))
+    }
     Set-Content -path "$cache_file.props" -value (ConvertTo-Json $props)
 
     return $cache_file
