@@ -50,7 +50,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// </summary>
         /// <param name="streamId">
         /// Associates the message to a stream. Messages from the same stream will be delivered in order.
-        /// No guarantees are made on messages from different stream. <see cref="Guid.Empty"/> can be used
+        /// No guarantees are made on messages from different stream. <see cref="System.Guid.Empty"/> can be used
         /// for messages that do not need ordering.
         /// </param>
         /// <param name="message">The buffer containing the message to send</param>
@@ -61,7 +61,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// </summary>
         /// <param name="streamId">
         /// Associates the message to a stream. Messages from the same stream will be delivered in order.
-        /// No guarantees are made on messages from different stream. <see cref="Guid.Empty"/> can be used
+        /// No guarantees are made on messages from different stream. <see cref="System.Guid.Empty"/> can be used
         /// for messages that do not need ordering.
         /// </param>
         /// <param name="message">The buffer containing the message to send</param>

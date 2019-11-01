@@ -9,16 +9,21 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
     /// <summary>
     /// Information about a matchmaking resource advertised on the network.
+    /// Use <see cref="IDiscoveryAgent.PublishAsync"/> to publish a new resource.
+    /// Use <see cref="IDiscoveryAgent.Subscribe"/> to discover resources.
     /// </summary>
     public interface IDiscoveryResource
     {
         /// <summary>
-        /// The category of the resource. This is an application-defined URI.
+        /// The category of the resource.
+        /// This is an application-defined URI. A common choice would be the
+        /// fully qualified name of the application.
         /// </summary>
         string Category { get; }
 
         /// <summary>
-        /// The unique identifier of this resource.
+        /// A unique identifier for both this resource and its publisher.
+        /// A new Guid is automatically created in each call to PublishAsync.
         /// </summary>
         Guid UniqueId { get; }
 
@@ -35,6 +40,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         /// <summary>
         /// If the backend allows it, return an interface to edit this resource. Otherwise return null.
+        /// For many implementations, only the resource creator may edit.
         /// </summary>
         IDiscoveryResourceEditor RequestEdit();
     }
