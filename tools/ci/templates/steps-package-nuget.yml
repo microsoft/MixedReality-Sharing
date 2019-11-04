@@ -7,6 +7,7 @@ steps:
       nobuild: 'true'
       verbosityPack: 'normal'
       configuration: 'Release'
+      arguments: '/p:platform=AnyCPU'
       packagesToPack: 'libs/Matchmaking/src/*.csproj'
       versioningScheme: 'byPrereleaseNumber'
       majorVersion: '0'
