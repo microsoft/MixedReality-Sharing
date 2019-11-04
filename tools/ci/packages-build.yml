@@ -16,12 +16,6 @@ jobs:
   steps:
   - template: templates/steps-build-init.yml
 
-  - template: templates/steps-build-project.yml
-    parameters:
-      project: libs\Matchmaking\src\*.csproj
-      platform: AnyCPU
-      configuration: Release
-
   - template: templates/steps-package-nuget.yml
     parameters:
       configuration: Release

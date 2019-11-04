@@ -3,17 +3,9 @@
 steps:
   - task: DotNetCoreCLI@2 # netcore or netstandard project use this instead of nuget task
     inputs:
-      # We would like to use 'pack', not 'custom' but the former doesn't pass the
-      # "arguments: '/p:platform=AnyCPU'" through. This means this task looks for
-      # build/bin/Release/Foo.dll instead of
-      # build/bin/Release/AnyCPU/Foo.dll
-      #command: 'pack'
-      command: 'custom'
       custom: 'pack'
-      nobuild: 'true'
       verbosityPack: 'normal'
       configuration: 'Release'
-      arguments: '/p:platform=AnyCPU'
       packagesToPack: 'libs/Matchmaking/src/*.csproj'
       versioningScheme: 'byPrereleaseNumber'
       majorVersion: '0'
