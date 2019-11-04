@@ -3,7 +3,7 @@
 steps:
   - task: DotNetCoreCLI@2 # netcore or netstandard project use this instead of nuget task
     inputs:
-      custom: 'pack'
+      command: 'pack'
       verbosityPack: 'normal'
       configuration: 'Release'
       packagesToPack: 'libs/Matchmaking/src/*.csproj'
