@@ -16,9 +16,10 @@ jobs:
   steps:
   - template: templates/steps-build-init.yml
 
-  - template: templates/steps-build-solution.yml
+  - template: templates/steps-build-project.yml
     parameters:
-      platform: x64
+      project: libs\Matchmaking\src\Microsoft.MixedReality.Sharing.Matchmaking.csproj
+      platform: AnyCPU
       configuration: Release
 
   - template: templates/steps-package-nuget.yml
