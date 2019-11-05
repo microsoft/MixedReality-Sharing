@@ -7,8 +7,7 @@ steps:
       verbosityPack: 'normal'
       configuration: 'Release'
       packagesToPack: |
-        'libs/Matchmaking/src/*.csproj'
-        'libs/Common.Utilities/src/*.csproj'
+        'libs/Matchmaking/src/*.csproj;libs/Common.Utilities/src/*.csproj'
       versioningScheme: 'byPrereleaseNumber'
       majorVersion: '0'
       minorVersion: '0'
