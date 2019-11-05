@@ -876,13 +876,14 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     /// <summary>
     /// Simple discovery agent for local networks.
     /// </summary>
-    public class PeerDiscoveryAgent : DisposableBase, IDiscoveryAgent
+    public class PeerDiscoveryAgent : IDiscoveryAgent
     {
         /// The transport for this agent.
         private readonly IPeerDiscoveryTransport transport_;
         private Server server_;
         private Client client_;
         private Options options_;
+        private int disposed_ = 0;
 
         // Counts how many things (local resources or discovery tasks) are using the transport.
         private int transportRefCount_ = 0;
@@ -950,19 +951,22 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
         }
 
-        protected override void OnUnmanagedDispose()
+        public void Dispose()
         {
-            server_?.Stop();
-            client_?.Stop();
-
-            // Give some time for the ByeBye message to be sent before shutting down the sockets.
-            // todo is there a smarter way to do this?
-            Task.Delay(1).Wait();
-
-            // Stop the network and prevent later disposals from trying to stop it again.
-            if (Interlocked.Exchange(ref transportRefCount_, 0) > 0)
+            if( Interlocked.CompareExchange(ref disposed_, 1, 0) == 0 )
             {
-                transport_.Stop();
+                server_?.Stop();
+                client_?.Stop();
+
+                // Give some time for the ByeBye message to be sent before shutting down the sockets.
+                // todo is there a smarter way to do this?
+                Task.Delay(1).Wait();
+
+                // Stop the network and prevent later disposals from trying to stop it again.
+                if (Interlocked.Exchange(ref transportRefCount_, 0) > 0)
+                {
+                    transport_.Stop();
+                }
             }
         }
     }

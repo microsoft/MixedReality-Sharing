@@ -16,7 +16,7 @@ namespace Microsoft.MixedReality.SpatialAlignment
     /// Helper base class for <see cref="ISpatialCoordinateService"/> implementations.
     /// </summary>
     /// <typeparam name="TKey">They key for the <see cref="ISpatialCoordinate"/>.</typeparam>
-    public abstract class SpatialCoordinateServiceBase<TKey> : DisposableBase, ISpatialCoordinateService
+    public abstract class SpatialCoordinateServiceBase<TKey> : ISpatialCoordinateService
     {
         /// <inheritdoc />
         public event Action<ISpatialCoordinate> CoordinatedDiscovered;
@@ -29,8 +29,18 @@ namespace Microsoft.MixedReality.SpatialAlignment
 
         private volatile bool isDiscovering = false;
         private volatile int discoveryOrCreateRequests = 0;
+        private int isDisposed = 0;
+
 
         protected readonly ConcurrentDictionary<TKey, ISpatialCoordinate> knownCoordinates = new ConcurrentDictionary<TKey, ISpatialCoordinate>();
+
+        protected void ThrowIfDisposed()
+        {
+            if (isDisposed != 0)
+            {
+                throw new ObjectDisposedException("SpatialCoordinateServiceBase");
+            }
+        }
 
         /// <inheritdoc />
         public bool IsTracking
@@ -55,15 +65,16 @@ namespace Microsoft.MixedReality.SpatialAlignment
             }
         }
 
-        protected override void OnManagedDispose()
+        public void Dispose()
         {
-            base.OnManagedDispose();
+            if (Interlocked.CompareExchange(ref isDisposed, 1, 0) == 0)
+            {
+                // Notify of dispose to any existing operations
+                disposedCTS.Cancel();
+                disposedCTS.Dispose();
 
-            // Notify of dispose to any existing operations
-            disposedCTS.Cancel();
-            disposedCTS.Dispose();
-
-            knownCoordinates.Clear();
+                knownCoordinates.Clear();
+            }
         }
 
         bool ISpatialCoordinateService.TryGetKnownCoordinate(string id, out ISpatialCoordinate spatialCoordinate)
