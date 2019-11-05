@@ -10,7 +10,7 @@ steps:
       versioningScheme: 'byPrereleaseNumber'
       majorVersion: '0'
       minorVersion: '0'
-      patchVersion: '0'
+      patchVersion: '1'
 
 # - task: NuGetCommand@2 # c++ needs an explicit nuspec
 #   inputs:
