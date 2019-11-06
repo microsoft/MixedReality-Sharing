@@ -883,7 +883,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         private Server server_;
         private Client client_;
         private Options options_;
-        private int disposed_ = 0;
+        private int isDisposed_ = 0;
 
         // Counts how many things (local resources or discovery tasks) are using the transport.
         private int transportRefCount_ = 0;
@@ -953,7 +953,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         public void Dispose()
         {
-            if( Interlocked.CompareExchange(ref disposed_, 1, 0) == 0 )
+            if( Interlocked.CompareExchange(ref isDisposed_, 1, 0) == 0 )
             {
                 server_?.Stop();
                 client_?.Stop();
