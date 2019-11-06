@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using Microsoft.MixedReality.Sharing.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -120,8 +119,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 // Socket has been disposed, terminate.
                 catch (NullReferenceException) { return; }
                 catch (ObjectDisposedException) { return; }
-                catch (SocketException e)
-                when (e.SocketErrorCode == SocketError.Interrupted || e.SocketErrorCode == SocketError.NotSocket)
+                catch (SocketException e) when (e.SocketErrorCode == SocketError.Interrupted || e.SocketErrorCode == SocketError.NotSocket)
                 {
                     return;
                 }
@@ -132,7 +130,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 }
                 catch (Exception e)
                 {
-                    LoggingUtility.LogError("Exception raised while handling message", e);
+                    Trace.TraceError("Exception raised while handling message {0}", e);
                 }
             }
         }
@@ -177,7 +175,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     }
                     else
                     {
-                        LoggingUtility.LogWarning($"UdpPeerNetwork.cs: " +
+                        Trace.TraceWarning($"UdpPeerNetwork.cs: " +
                             "Discarding message from {result.RemoteEndPoint} - too many streams");
                         handleMessage = false;
                     }
@@ -199,7 +197,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
                 // Delete all expired entries.
                 var expiryTime = DateTime.UtcNow - TimeSpan.FromMilliseconds(StreamLifetimeMs);
-                lock(receiveStreams_)
+                lock (receiveStreams_)
                 {
                     var toDelete = receiveStreams_.Where(pair => pair.Value.LastHeard < expiryTime).ToArray();
                     foreach (var entry in toDelete)
@@ -343,7 +341,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             var buffer = PrependHeader(guid, message);
             if (buffer.Length > LargeMessageLimit)
             {
-                LoggingUtility.LogWarning("UdpPeerNetwork.cs: Large UDP messages will be discarded");
+                Trace.TraceWarning("UdpPeerNetwork.cs: Large UDP messages will be discarded ({0} bytes)", buffer.Length);
                 return;
             }
             socket_.SendTo(buffer, SocketFlags.None, broadcastEndpoint_);
@@ -355,7 +353,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             var buffer = PrependHeader(guid, message);
             if (buffer.Length > LargeMessageLimit)
             {
-                LoggingUtility.LogWarning("UdpPeerNetwork.cs: Large UDP messages will be discarded");
+                Trace.TraceWarning("UdpPeerNetwork.cs: Large UDP messages will be discarded ({0} bytes)", buffer.Length);
                 return;
             }
             socket_.SendTo(buffer, SocketFlags.None, umsg.sender_);
