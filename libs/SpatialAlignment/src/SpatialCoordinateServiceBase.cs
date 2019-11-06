@@ -29,14 +29,14 @@ namespace Microsoft.MixedReality.SpatialAlignment
 
         private volatile bool isDiscovering = false;
         private volatile int discoveryOrCreateRequests = 0;
-        private int isDisposed = 0;
+        private bool isDisposed = false;
 
 
         protected readonly ConcurrentDictionary<TKey, ISpatialCoordinate> knownCoordinates = new ConcurrentDictionary<TKey, ISpatialCoordinate>();
 
         protected void ThrowIfDisposed()
         {
-            if (isDisposed != 0)
+            if (isDisposed)
             {
                 throw new ObjectDisposedException("SpatialCoordinateServiceBase");
             }
@@ -67,8 +67,9 @@ namespace Microsoft.MixedReality.SpatialAlignment
 
         public void Dispose()
         {
-            if (Interlocked.CompareExchange(ref isDisposed, 1, 0) == 0)
+            if (!isDisposed)
             {
+                isDisposed = true;
                 // Notify of dispose to any existing operations
                 disposedCTS.Cancel();
                 disposedCTS.Dispose();

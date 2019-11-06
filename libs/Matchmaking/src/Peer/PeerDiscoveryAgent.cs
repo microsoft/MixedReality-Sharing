@@ -404,7 +404,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 data = localResources_.Select(r => r.UniqueId).ToArray();
             }
             // Wait until the lock is acquired (all announcements in progress have been sent) and stop sending.
-            lock(announcementsLock_)
+            lock (announcementsLock_)
             {
                 stopAllAnnouncements_ = true;
             }
@@ -462,7 +462,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         private void OnResourceUpdated(LocalResource resource)
         {
             resource.LastAnnouncedTime = DateTime.UtcNow;
-            lock(announcementsLock_)
+            lock (announcementsLock_)
             {
                 if (!stopAllAnnouncements_)
                 {
@@ -854,7 +854,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         {
             var guid = msg.StreamId;
             DiscoveryTask[] tasksUpdated = Array.Empty<DiscoveryTask>();
-            lock(this)
+            lock (this)
             {
                 if (categoryFromResourceId_.TryGetValue(guid, out string category))
                 {
@@ -883,7 +883,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         private Server server_;
         private Client client_;
         private Options options_;
-        private int isDisposed_ = 0;
+        private bool isDisposed_ = false;
 
         // Counts how many things (local resources or discovery tasks) are using the transport.
         private int transportRefCount_ = 0;
@@ -953,8 +953,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         public void Dispose()
         {
-            if( Interlocked.CompareExchange(ref isDisposed_, 1, 0) == 0 )
+            if (!isDisposed_)
             {
+                isDisposed_ = true;
                 server_?.Stop();
                 client_?.Stop();
 
