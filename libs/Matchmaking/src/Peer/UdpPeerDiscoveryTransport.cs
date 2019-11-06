@@ -175,8 +175,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     }
                     else
                     {
-                        Trace.TraceWarning($"UdpPeerNetwork.cs: " +
-                            "Discarding message from {result.RemoteEndPoint} - too many streams");
+                        Trace.TraceWarning("UdpPeerNetwork.cs: Discarding message from {0} - too many streams", result.RemoteEndPoint);
                         handleMessage = false;
                     }
                 }
