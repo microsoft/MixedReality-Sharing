@@ -404,7 +404,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 data = localResources_.Select(r => r.UniqueId).ToArray();
             }
             // Wait until the lock is acquired (all announcements in progress have been sent) and stop sending.
-            lock(announcementsLock_)
+            lock (announcementsLock_)
             {
                 stopAllAnnouncements_ = true;
             }
@@ -462,7 +462,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         private void OnResourceUpdated(LocalResource resource)
         {
             resource.LastAnnouncedTime = DateTime.UtcNow;
-            lock(announcementsLock_)
+            lock (announcementsLock_)
             {
                 if (!stopAllAnnouncements_)
                 {
@@ -854,7 +854,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         {
             var guid = msg.StreamId;
             DiscoveryTask[] tasksUpdated = Array.Empty<DiscoveryTask>();
-            lock(this)
+            lock (this)
             {
                 if (categoryFromResourceId_.TryGetValue(guid, out string category))
                 {
@@ -876,13 +876,14 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     /// <summary>
     /// Simple discovery agent for local networks.
     /// </summary>
-    public class PeerDiscoveryAgent : DisposableBase, IDiscoveryAgent
+    public class PeerDiscoveryAgent : IDiscoveryAgent
     {
         /// The transport for this agent.
         private readonly IPeerDiscoveryTransport transport_;
         private Server server_;
         private Client client_;
         private Options options_;
+        private bool isDisposed_ = false;
 
         // Counts how many things (local resources or discovery tasks) are using the transport.
         private int transportRefCount_ = 0;
@@ -950,19 +951,23 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
         }
 
-        protected override void OnUnmanagedDispose()
+        public void Dispose()
         {
-            server_?.Stop();
-            client_?.Stop();
-
-            // Give some time for the ByeBye message to be sent before shutting down the sockets.
-            // todo is there a smarter way to do this?
-            Task.Delay(1).Wait();
-
-            // Stop the network and prevent later disposals from trying to stop it again.
-            if (Interlocked.Exchange(ref transportRefCount_, 0) > 0)
+            if (!isDisposed_)
             {
-                transport_.Stop();
+                isDisposed_ = true;
+                server_?.Stop();
+                client_?.Stop();
+
+                // Give some time for the ByeBye message to be sent before shutting down the sockets.
+                // todo is there a smarter way to do this?
+                Task.Delay(1).Wait();
+
+                // Stop the network and prevent later disposals from trying to stop it again.
+                if (Interlocked.Exchange(ref transportRefCount_, 0) > 0)
+                {
+                    transport_.Stop();
+                }
             }
         }
     }
