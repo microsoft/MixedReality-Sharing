@@ -36,14 +36,8 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         }
 
         /// <summary>
-        /// Returns underlying bytes of the internal binary representation of the key.
+        /// Returns underlying bytes of the internal binary representation of the value.
         /// </summary>
-        /// <remarks>
-        /// Keys constructed from bytes will always contain return the same bytes,
-        /// regardless of the content.
-        /// Keys constructed from strings will return the binary representation
-        /// of the string after it was converted to UTF-8.
-        /// </remarks>
         public ReadOnlySpan<byte> ToSpan()
         {
             return ToSpan(handle);

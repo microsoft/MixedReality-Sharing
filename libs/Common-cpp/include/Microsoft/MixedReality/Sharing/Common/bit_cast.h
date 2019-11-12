@@ -23,24 +23,30 @@ MS_MR_SHARING_FORCEINLINE
   return dst;
 }
 
+// bit-casts a 64-bit enum to a pointer, dropping high bits if the pointer is
+// smaller. Expected to be used on enums that are either 0-initialized or
+// obtained by calling pointer_to_enum64().
 template <class To, class From>
 MS_MR_SHARING_FORCEINLINE
-    typename std::enable_if_t<(sizeof(To) <= sizeof(From)) &&
+    typename std::enable_if_t<(sizeof(From) == 64) &&
+                                  (sizeof(To) <= sizeof(From)) &&
                                   std::is_enum_v<From> && std::is_pointer_v<To>,
                               To>
-    enum_to_pointer(From src) noexcept {
+    enum64_to_pointer(From src) noexcept {
   // Note: it is allowed to restore 32-bit pointers from 64-bit enums.
   To dst;
   memcpy(&dst, &src, sizeof(dst));
   return dst;
 }
 
+// bit-casts a pointer to a 64-bit enum, extending it with zeros if the pointer
+// is smaller. Stored pointers can be retrieved with enum64_to_pointer().
 template <class To, class From>
 MS_MR_SHARING_FORCEINLINE
     typename std::enable_if_t<(sizeof(To) >= sizeof(From)) &&
                                   std::is_enum_v<To> && std::is_pointer_v<From>,
                               To>
-    pointer_to_enum(From src) noexcept {
+    pointer_to_enum64(From src) noexcept {
   To dst{0};
   // Note: the enum can be larger than the pointer, in which case the top bits
   // will stay zeroed.

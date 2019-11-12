@@ -29,8 +29,9 @@ struct KeyShard {
   struct KeyPtrEqual {
     MS_MR_SHARING_FORCEINLINE
     size_t operator()(const Key* a, const Key* b) const noexcept {
-      return a == b || a->size() == b->size() && a->hash() == b->hash() &&
-                           0 == memcmp(a->data(), b->data(), a->size());
+      return (a == b) ||
+             ((a->size() == b->size()) && (a->hash() == b->hash()) &&
+              (0 == memcmp(a->data(), b->data(), a->size())));
     }
   };
 
