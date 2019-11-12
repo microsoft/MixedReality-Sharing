@@ -5,6 +5,8 @@
 #include "src/IndexBlock.h"
 #include "src/SubkeyStateView.h"
 
+#include <Microsoft/MixedReality/Sharing/VersionedStorage/Detail/BlobLayout.h>
+
 #include <Microsoft/MixedReality/Sharing/Common/Platform.h>
 
 #include <cassert>
@@ -29,9 +31,8 @@ class BlockIterator {
   BlockIterator() noexcept = default;
 
   BlockIterator(IndexSlotLocation first_location,
-                IndexBlock* index_begin,
-                std::byte* data_begin) noexcept
-      : index_begin_{index_begin}, data_begin_{data_begin} {
+                const BlobLayout& blob_layout) noexcept
+      : blob_layout_{blob_layout} {
     AdvanceTo(first_location);
   }
 
@@ -82,11 +83,12 @@ class BlockIterator {
   MS_MR_SHARING_FORCEINLINE
   void AdvanceTo(IndexSlotLocation location) noexcept {
     if (location != IndexSlotLocation::kInvalid) {
-      IndexBlockSlot& slot = IndexBlock::GetSlot(index_begin_, location);
+      IndexBlockSlot& slot =
+          IndexBlock::GetSlot(blob_layout_.index_begin_, location);
 
       state_view_.index_block_slot_ = &slot;
       state_view_.state_block_ = &GetBlockAt<StateBlock<kLevel>>(
-          data_begin_, slot.state_block_location_);
+          blob_layout_.data_begin_, slot.state_block_location_);
       Platform::Prefetch(state_view_.state_block_);
       auto location =
           slot.version_block_location_.load(std::memory_order_acquire);
@@ -98,8 +100,8 @@ class BlockIterator {
         // present in the version. Special internal cases, such as the code that
         // reallocates the blob, will almost always want to know the most recent
         // version (and for that they will have to read the version block).
-        state_view_.version_block_ =
-            &GetBlockAt<VersionBlock<kLevel>>(data_begin_, location);
+        state_view_.version_block_ = &GetBlockAt<VersionBlock<kLevel>>(
+            blob_layout_.data_begin_, location);
         Platform::Prefetch(state_view_.version_block_);
       } else {
         state_view_.version_block_ = nullptr;
@@ -112,8 +114,7 @@ class BlockIterator {
   }
 
   StateAndIndexView<kLevel> state_view_;
-  IndexBlock* index_begin_{nullptr};
-  std::byte* data_begin_{nullptr};
+  BlobLayout blob_layout_;
 };
 
 using KeyBlockIterator = BlockIterator<IndexLevel::Key>;

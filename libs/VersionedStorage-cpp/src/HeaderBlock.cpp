@@ -155,7 +155,8 @@ class HeaderBlock::BlockInserter {
   }
 
   IndexBlockSlot& index_block_slot() const noexcept {
-    return IndexBlock::GetSlot(accessor_.index_begin_, index_slot_location_);
+    return IndexBlock::GetSlot(accessor_.blob_layout_.index_begin_,
+                               index_slot_location_);
   }
 
  protected:
@@ -418,7 +419,7 @@ BlobAccessor::FindState(const IndexOffsetAndSlotHashes& hashes,
   const uint32_t index_blocks_mask = header_block_.index_blocks_mask_;
   for (uint32_t index_offset = hashes.index_offset_hash;; ++index_offset) {
     const uint32_t index_block_id = index_offset & index_blocks_mask;
-    IndexBlock& index_block = index_begin_[index_block_id];
+    IndexBlock& index_block = blob_layout_.index_begin_[index_block_id];
 
     const auto counts_and_hashes =
         index_block.counts_and_hashes_.load(std::memory_order_acquire);

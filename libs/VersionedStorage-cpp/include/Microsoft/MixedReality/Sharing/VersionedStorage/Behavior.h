@@ -4,6 +4,7 @@
 #pragma once
 #include <Microsoft/MixedReality/Sharing/VersionedStorage/enums.h>
 
+#include <string_view>
 #include <vector>
 
 namespace Microsoft::MixedReality::Sharing::VersionedStorage {
@@ -98,6 +99,7 @@ class Behavior {
   // separately and provided to the deserialization code (so, if the key is a
   // string, the implementation can just append the string's data as is, without
   // any size prefix or terminator).
+  // FIXME: make all Serialize methods noexcept
   virtual size_t Serialize(KeyHandle handle,
                            std::vector<std::byte>& byte_stream) = 0;
 

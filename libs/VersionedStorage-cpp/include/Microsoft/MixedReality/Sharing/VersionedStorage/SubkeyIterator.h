@@ -2,11 +2,9 @@
 // Licensed under the MIT License.
 
 #pragma once
-#include <Microsoft/MixedReality/Sharing/VersionedStorage/Detail/layout.h>
-#include <Microsoft/MixedReality/Sharing/VersionedStorage/SubkeyView.h>
+#include <Microsoft/MixedReality/Sharing/VersionedStorage/Detail/IteratorState.h>
 
 #include <cassert>
-#include <cstddef>
 #include <iterator>
 
 namespace Microsoft::MixedReality::Sharing::VersionedStorage {
@@ -41,49 +39,45 @@ class SubkeyIterator {
 
   bool operator==(const SubkeyIterator& other) const noexcept {
     // Should only be called for iterators related to the same version.
-    assert(version_ == other.version_);
-    return current_state_block_ == other.current_state_block_;
+    assert(state_.version_ == other.state_.version_);
+    return state_.current_state_block_ == other.state_.current_state_block_;
   }
 
   constexpr bool operator==(End) const noexcept {
-    return current_state_block_ == nullptr;
+    return state_.current_state_block_ == nullptr;
   }
 
   bool operator!=(const SubkeyIterator& other) const noexcept {
     // Should only be called for iterators related to the same version.
-    assert(version_ == other.version_);
-    return current_state_block_ != other.current_state_block_;
+    assert(state_.version_ == other.state_.version_);
+    return state_.current_state_block_ != other.state_.current_state_block_;
   }
 
   constexpr bool operator!=(End) const noexcept {
-    return current_state_block_ != nullptr;
+    return state_.current_state_block_ != nullptr;
   }
 
   SubkeyView operator*() const noexcept {
-    assert(current_state_block_ != nullptr);
+    assert(state_.current_state_block_ != nullptr);
     // We have to return a copy instead of a reference because advancing the
     // iterator will update the state of current_subkey_view_.
     return current_subkey_view_;
   }
 
   const SubkeyView* operator->() const noexcept {
-    assert(current_state_block_ != nullptr);
+    assert(state_.current_state_block_ != nullptr);
     return &current_subkey_view_;
   }
 
   constexpr bool is_end() const noexcept {
-    return current_state_block_ == nullptr;
+    return state_.current_state_block_ == nullptr;
   }
 
  private:
   void Advance() noexcept;
-  void AdvanceUntilPayloadFound(Detail::IndexSlotLocation location) noexcept;
 
-  uint64_t version_{0};
+  Detail::SubkeyIteratorState state_;
   SubkeyView current_subkey_view_;
-  Detail::SubkeyStateBlock* current_state_block_ = nullptr;
-  Detail::IndexBlock* index_begin_ = nullptr;
-  std::byte* data_begin_ = nullptr;
 };
 
 class SubkeyIteratorRange {

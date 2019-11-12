@@ -65,6 +65,7 @@ void SubkeyTransactionLayout::Serialize(
   } else if (has_action) {
     bitstream_writer.WriteBits(0, 1);
   } else {
+    // FIXME: shouldn't throw
     throw std::invalid_argument{
         "Can't serialize a subkey transaction that has neither actions nor "
         "requirements."};

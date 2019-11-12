@@ -18,49 +18,6 @@
 namespace Microsoft::MixedReality::Sharing::VersionedStorage {
 namespace {
 
-class PayloadRequirement {
- public:
-  PayloadRequirement() noexcept = default;
-
-  PayloadRequirement(SubkeyTransactionRequirementKind kind) noexcept
-      : kind_{kind} {
-    assert(kind != SubkeyTransactionRequirementKind::ExactPayload &&
-           kind != SubkeyTransactionRequirementKind::ExactVersion);
-  }
-
-  PayloadRequirement(PayloadHandle required_handle) noexcept
-      : kind_{SubkeyTransactionRequirementKind::ExactPayload},
-        required_handle_{required_handle} {}
-
-  PayloadRequirement(uint64_t required_version) noexcept
-      : kind_{SubkeyTransactionRequirementKind::ExactVersion},
-        required_version_{required_version} {}
-
-  SubkeyTransactionRequirementKind kind_{
-      SubkeyTransactionRequirementKind::NoRequirement};
-  union {
-    PayloadHandle required_handle_;
-    uint64_t required_version_;
-  };
-};
-
-class PayloadOperation {
- public:
-  constexpr PayloadOperation() noexcept = default;
-  constexpr PayloadOperation(SubkeyTransactionActionKind kind) noexcept
-      : kind_{kind} {
-    assert(kind != SubkeyTransactionActionKind::PutSubkey);
-  }
-
-  constexpr PayloadOperation(PayloadHandle handle) noexcept
-      : kind_{SubkeyTransactionActionKind::PutSubkey}, handle_{handle} {}
-
-  constexpr SubkeyTransactionActionKind kind() const noexcept { return kind_; }
-
-  SubkeyTransactionActionKind kind_{SubkeyTransactionActionKind::NoAction};
-  PayloadHandle handle_{0};  // Irrelevant unless kind_ is Kind::Put
-};
-
 class SubkeyTransaction {
  public:
   void Reset(Behavior& behavior) noexcept {

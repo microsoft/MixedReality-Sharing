@@ -71,6 +71,8 @@ class Storage {
   [[nodiscard]] TransactionResult ApplyTransaction(
       std::string_view serialized_transaction) noexcept;
 
+  const auto& behavior() const noexcept { return behavior_; }
+
  private:
   std::shared_ptr<Behavior> behavior_;
   Snapshot latest_snapshot_;

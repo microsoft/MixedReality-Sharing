@@ -19,6 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\Detail\BlobLayout.h" />
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\Detail\IteratorState.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\Detail\layout.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\KeyDescriptor.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\VersionedStorage\KeyDescriptorWithHandle.h" />

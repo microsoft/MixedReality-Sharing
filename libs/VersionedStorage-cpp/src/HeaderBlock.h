@@ -5,6 +5,8 @@
 #include <Microsoft/MixedReality/Sharing/VersionedStorage/KeyDescriptor.h>
 #include <Microsoft/MixedReality/Sharing/VersionedStorage/SubkeyIterator.h>
 
+#include <Microsoft/MixedReality/Sharing/VersionedStorage/Detail/BlobLayout.h>
+
 #include "src/BlockIterator.h"
 #include "src/IndexBlock.h"
 #include "src/KeyStateView.h"
@@ -110,21 +112,23 @@ class BlobAccessor {
  public:
   BlobAccessor(HeaderBlock& header_block)
       : header_block_{header_block},
-        index_begin_{reinterpret_cast<IndexBlock*>(&header_block + 1)},
-        data_begin_{reinterpret_cast<std::byte*>(
-            &header_block +
-            static_cast<size_t>(header_block_.index_blocks_mask_) + 2)} {}
+        blob_layout_{
+            reinterpret_cast<IndexBlock*>(&header_block + 1),
+            reinterpret_cast<std::byte*>(
+                &header_block +
+                static_cast<size_t>(header_block_.index_blocks_mask_) + 2)} {}
 
   HeaderBlock& header_block() noexcept { return header_block_; }
   auto base_version() const noexcept { return header_block_.base_version(); }
 
   template <typename TBlock>
   TBlock& GetBlockAt(DataBlockLocation location) noexcept {
-    return VersionedStorage::Detail::GetBlockAt<TBlock>(data_begin_, location);
+    return VersionedStorage::Detail::GetBlockAt<TBlock>(
+        blob_layout_.data_begin_, location);
   }
 
   IndexBlock& GetIndexBlock(uint32_t index_block_id) {
-    return index_begin_[index_block_id];
+    return blob_layout_.index_begin_[index_block_id];
   }
 
   KeyStateView FindKeyState(const KeyDescriptor& key) noexcept;
@@ -139,7 +143,7 @@ class BlobAccessor {
 
   KeyBlockIterator begin() const noexcept {
     return {header_block_.keys_list_head_.load(std::memory_order_acquire),
-            index_begin_, data_begin_};
+            blob_layout_};
   }
 
   constexpr KeyBlockIterator::End end() const noexcept { return {}; }
@@ -152,7 +156,7 @@ class BlobAccessor {
                      ? key_state_view.state_block_->subkeys_list_head_.load(
                            std::memory_order_acquire)
                      : IndexSlotLocation::kInvalid,
-                 accessor.index_begin_, accessor.data_begin_} {}
+                 accessor.blob_layout_} {}
 
     constexpr SubkeyBlockIterator begin() const noexcept { return begin_; }
     constexpr SubkeyBlockIterator::End end() const noexcept { return {}; }
@@ -188,8 +192,7 @@ class BlobAccessor {
   };
 
   HeaderBlock& header_block_;
-  IndexBlock* const index_begin_;
-  std::byte* const data_begin_;
+  BlobLayout blob_layout_;
 
  protected:
   template <IndexLevel kLevel, typename TSearchResult, typename TEqualPredicate>

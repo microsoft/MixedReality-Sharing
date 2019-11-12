@@ -546,10 +546,11 @@ class TransactionApplicator {
         }
       }
     }
-    return {
-        {new_version_, new_accessor.header_block_, new_accessor.keys_count(),
-         new_accessor.subkeys_count(), std::move(behavior_)},
-        successful_result};
+    return {{new_accessor.header_block_,
+             std::move(behavior_),
+             {new_version_, new_accessor.keys_count(),
+              new_accessor.subkeys_count()}},
+            successful_result};
   }
 
   Snapshot ApplyToExistingBlob() noexcept {
@@ -612,8 +613,9 @@ class TransactionApplicator {
       for (; it != it_end; ++it)
         Publish(*it, key_block);
     }
-    return {new_version_, accessor_.header_block_, accessor_.keys_count(),
-            accessor_.subkeys_count(), std::move(behavior_)};
+    return {accessor_.header_block_,
+            std::move(behavior_),
+            {new_version_, accessor_.keys_count(), accessor_.subkeys_count()}};
   }
 
   void Clear() {
@@ -659,8 +661,9 @@ namespace Microsoft::MixedReality::Sharing::VersionedStorage {
 
 Storage::Storage(std::shared_ptr<Behavior> behavior)
     : behavior_{std::move(behavior)},
-      latest_snapshot_{0, *Detail::HeaderBlock::CreateBlob(*behavior_, 0, 0), 0,
-                       0, behavior_} {
+      latest_snapshot_{*Detail::HeaderBlock::CreateBlob(*behavior_, 0, 0),
+                       behavior_,
+                       {}} {
   assert(behavior_);
 }
 

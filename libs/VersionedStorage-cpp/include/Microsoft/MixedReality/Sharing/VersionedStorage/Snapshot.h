@@ -13,6 +13,12 @@ namespace Microsoft::MixedReality::Sharing::VersionedStorage {
 class KeyDescriptor;
 class Behavior;
 
+struct SnapshotInfo {
+  uint64_t version_{0};
+  size_t keys_count_{0};
+  size_t subkeys_count_{0};
+};
+
 // References an immutable state of the storage at some specific version.
 // A snapshot can be taken from the Storage at any time, and it is going to
 // reference the same state for as long as it's alive.
@@ -27,11 +33,9 @@ class Behavior;
 class Snapshot {
  public:
   // Doesn't increment any reference counts (they should be pre-incremented).
-  Snapshot(uint64_t version,
-           Detail::HeaderBlock& header_block,
-           size_t keys_count,
-           size_t subkeys_count,
-           std::shared_ptr<Behavior> behavior) noexcept;
+  Snapshot(Detail::HeaderBlock& header_block,
+           std::shared_ptr<Behavior> behavior,
+           const SnapshotInfo& info) noexcept;
 
   Snapshot() noexcept;
   Snapshot(Snapshot&&) noexcept;
@@ -42,9 +46,11 @@ class Snapshot {
   Snapshot& operator=(Snapshot&&) noexcept;
   Snapshot& operator=(const Snapshot&) noexcept;
 
-  constexpr uint64_t version() const noexcept { return version_; }
-  constexpr size_t keys_count() const noexcept { return keys_count_; }
-  constexpr size_t subkeys_count() const noexcept { return subkeys_count_; }
+  uint64_t version() const noexcept { return info_.version_; }
+  size_t keys_count() const noexcept { return info_.keys_count_; }
+  size_t subkeys_count() const noexcept { return info_.subkeys_count_; }
+
+  const SnapshotInfo& info() const noexcept { return info_; }
 
   // Returns a payload handle and a version of the storage when it was assigned.
   // If the subkey doesn't exist in this snapshot, result will be empty.
@@ -72,9 +78,7 @@ class Snapshot {
  private:
   Detail::HeaderBlock* header_block_{nullptr};
   std::shared_ptr<Behavior> behavior_;
-  uint64_t version_{0};
-  size_t keys_count_{0};
-  size_t subkeys_count_{0};
+  SnapshotInfo info_;
   friend class Storage;
   friend class KeyIterator;
   friend class SubkeyIterator;
