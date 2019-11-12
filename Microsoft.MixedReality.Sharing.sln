@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.MixedReality.Sharing.Network", "libs\Network\src\Microsoft.MixedReality.Sharing.Network.csproj", "{09BB4917-1C3B-4C31-B578-0614286E7EFC}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.MixedReality.Sharing.StateSync", "libs\StateSync.Managed\src\Microsoft.MixedReality.Sharing.StateSync.csproj", "{1F906578-3A91-4F95-AD37-282139D65EA8}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0D43D55E-3CAC-4CE8-A0F3-7C38A86EA792} = {0D43D55E-3CAC-4CE8-A0F3-7C38A86EA792}
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.MixedReality.Sharing.StateSync.Test", "libs\StateSync.Managed\tests\ManagedTests\Microsoft.MixedReality.Sharing.StateSync.Test.csproj", "{3A6EAB71-070D-4B03-B166-12A8886D0223}"
 EndProject
@@ -42,6 +45,12 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Microsoft.MixedReality.Sharing.VersionedStorage-cpp-tests", "libs\VersionedStorage-cpp\tests\Microsoft.MixedReality.Sharing.VersionedStorage-cpp-tests.vcxproj", "{F5697EA4-231B-4261-BE91-A6DCE9BFFA45}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Microsoft.MixedReality.Sharing.Common-cpp-tests", "libs\Common-cpp\tests\Microsoft.MixedReality.Sharing.Common-cpp-tests.vcxproj", "{55C0A650-3994-4E5F-A493-29D327DB7580}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Microsoft.MixedReality.Sharing.StateSync-cpp", "libs\StateSync-cpp\Microsoft.MixedReality.Sharing.StateSync-cpp.vcxproj", "{0D43D55E-3CAC-4CE8-A0F3-7C38A86EA792}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Microsoft.MixedReality.Sharing.StateSync-cpp-tests", "libs\StateSync-cpp\tests\Microsoft.MixedReality.Sharing.StateSync-cpp-tests.vcxproj", "{5EAF9E73-74F3-4BAA-8D0E-67238E857598}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Microsoft.MixedReality.Sharing.StateSync-pinvoke-cpp", "libs\StateSync-pinvoke-cpp\Microsoft.MixedReality.Sharing.StateSync-pinvoke-cpp.vcxproj", "{8357A430-25A7-41FE-B540-05FAD9CAED6B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -209,6 +218,36 @@ Global
 		{55C0A650-3994-4E5F-A493-29D327DB7580}.Release|x64.Build.0 = Release|x64
 		{55C0A650-3994-4E5F-A493-29D327DB7580}.Release|x86.ActiveCfg = Release|Win32
 		{55C0A650-3994-4E5F-A493-29D327DB7580}.Release|x86.Build.0 = Release|Win32
+		{0D43D55E-3CAC-4CE8-A0F3-7C38A86EA792}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{0D43D55E-3CAC-4CE8-A0F3-7C38A86EA792}.Debug|x64.ActiveCfg = Debug|x64
+		{0D43D55E-3CAC-4CE8-A0F3-7C38A86EA792}.Debug|x64.Build.0 = Debug|x64
+		{0D43D55E-3CAC-4CE8-A0F3-7C38A86EA792}.Debug|x86.ActiveCfg = Debug|Win32
+		{0D43D55E-3CAC-4CE8-A0F3-7C38A86EA792}.Debug|x86.Build.0 = Debug|Win32
+		{0D43D55E-3CAC-4CE8-A0F3-7C38A86EA792}.Release|Any CPU.ActiveCfg = Release|Win32
+		{0D43D55E-3CAC-4CE8-A0F3-7C38A86EA792}.Release|x64.ActiveCfg = Release|x64
+		{0D43D55E-3CAC-4CE8-A0F3-7C38A86EA792}.Release|x64.Build.0 = Release|x64
+		{0D43D55E-3CAC-4CE8-A0F3-7C38A86EA792}.Release|x86.ActiveCfg = Release|Win32
+		{0D43D55E-3CAC-4CE8-A0F3-7C38A86EA792}.Release|x86.Build.0 = Release|Win32
+		{5EAF9E73-74F3-4BAA-8D0E-67238E857598}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{5EAF9E73-74F3-4BAA-8D0E-67238E857598}.Debug|x64.ActiveCfg = Debug|x64
+		{5EAF9E73-74F3-4BAA-8D0E-67238E857598}.Debug|x64.Build.0 = Debug|x64
+		{5EAF9E73-74F3-4BAA-8D0E-67238E857598}.Debug|x86.ActiveCfg = Debug|Win32
+		{5EAF9E73-74F3-4BAA-8D0E-67238E857598}.Debug|x86.Build.0 = Debug|Win32
+		{5EAF9E73-74F3-4BAA-8D0E-67238E857598}.Release|Any CPU.ActiveCfg = Release|Win32
+		{5EAF9E73-74F3-4BAA-8D0E-67238E857598}.Release|x64.ActiveCfg = Release|x64
+		{5EAF9E73-74F3-4BAA-8D0E-67238E857598}.Release|x64.Build.0 = Release|x64
+		{5EAF9E73-74F3-4BAA-8D0E-67238E857598}.Release|x86.ActiveCfg = Release|Win32
+		{5EAF9E73-74F3-4BAA-8D0E-67238E857598}.Release|x86.Build.0 = Release|Win32
+		{8357A430-25A7-41FE-B540-05FAD9CAED6B}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{8357A430-25A7-41FE-B540-05FAD9CAED6B}.Debug|x64.ActiveCfg = Debug|x64
+		{8357A430-25A7-41FE-B540-05FAD9CAED6B}.Debug|x64.Build.0 = Debug|x64
+		{8357A430-25A7-41FE-B540-05FAD9CAED6B}.Debug|x86.ActiveCfg = Debug|Win32
+		{8357A430-25A7-41FE-B540-05FAD9CAED6B}.Debug|x86.Build.0 = Debug|Win32
+		{8357A430-25A7-41FE-B540-05FAD9CAED6B}.Release|Any CPU.ActiveCfg = Release|Win32
+		{8357A430-25A7-41FE-B540-05FAD9CAED6B}.Release|x64.ActiveCfg = Release|x64
+		{8357A430-25A7-41FE-B540-05FAD9CAED6B}.Release|x64.Build.0 = Release|x64
+		{8357A430-25A7-41FE-B540-05FAD9CAED6B}.Release|x86.ActiveCfg = Release|Win32
+		{8357A430-25A7-41FE-B540-05FAD9CAED6B}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

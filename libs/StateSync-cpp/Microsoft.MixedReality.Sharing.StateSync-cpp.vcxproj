@@ -19,35 +19,31 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\bit_cast.h" />
-    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\hash.h" />
-    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Platform.h" />
-    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\RefPtr.h" />
-    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Serialization\BitstreamReader.h" />
-    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Serialization\BitstreamWriter.h" />
-    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Serialization\MonotonicSequenceEncoder.h" />
-    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Serialization\Serialization.h" />
-    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Span.h" />
-    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\VirtualRefCountedBase.h" />
-    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\windows.h" />
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\StateSync\Key.h" />
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\StateSync\Value.h" />
     <ClInclude Include="src\pch.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\hash.cpp" />
+    <ClCompile Include="src\Key.cpp" />
+    <ClCompile Include="src\Value.cpp" />
     <ClCompile Include="src\pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="src\Platform.cpp" />
-    <ClCompile Include="src\Serialization\BitstreamWriter.cpp" />
-    <ClCompile Include="src\Serialization\MonotonicSequenceEncoder.cpp" />
-    <ClCompile Include="src\Serialization\Serialization.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Common-cpp\Microsoft.MixedReality.Sharing.Common-cpp.vcxproj">
+      <Project>{aa3f1a41-20ee-477e-9edb-791c7c418527}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\VersionedStorage-cpp\Microsoft.MixedReality.Sharing.VersionedStorage-cpp.vcxproj">
+      <Project>{ede49eea-778c-4901-84bd-4715bff58a20}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
-    <ProjectGuid>{AA3F1A41-20EE-477E-9EDB-791C7C418527}</ProjectGuid>
+    <ProjectGuid>{0D43D55E-3CAC-4CE8-A0F3-7C38A86EA792}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>MicrosoftMixedRealitySharingCommoncpp</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
@@ -99,19 +95,19 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>.;include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>.;include;..\VersionedStorage-cpp\include;..\Common-cpp\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>.;include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>.;include;..\VersionedStorage-cpp\include;..\Common-cpp\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>.;include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>.;include;..\VersionedStorage-cpp\include;..\Common-cpp\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>.;include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>.;include;..\VersionedStorage-cpp\include;..\Common-cpp\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>

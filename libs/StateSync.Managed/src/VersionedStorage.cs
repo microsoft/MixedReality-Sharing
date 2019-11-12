@@ -44,9 +44,8 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// <returns>A token to unregister the subscription.</returns>
         public SubscriptionToken SubscribeToKey(KeyRef key, IKeySubscription subscription)
         {
-            ThrowIfDisposed();
-
-            return new SubscriptionToken(StateSyncAPI.Subscription_Allocate(Pointer, key.Pointer, subscription));
+            // TODO: This class is about to be replaced, this is a temporary stub
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -58,9 +57,8 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// <returns>A token to unregister the subscription.</returns>
         public SubscriptionToken SubscribeToKey(KeyRef key, ulong subkey, ISubkeySubscription subscription)
         {
-            ThrowIfDisposed();
-
-            return new SubscriptionToken(StateSyncAPI.Subscription_Allocate(Pointer, key.Pointer, subkey, subscription));
+            // TODO: This class is about to be replaced, this is a temporary stub
+            throw new NotImplementedException();
         }
 
         protected override void ReleasePointer(IntPtr pointer)

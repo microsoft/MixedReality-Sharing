@@ -31,9 +31,8 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// <param name="subkey">The required subkey.</param>
         public void Require(KeyRef key, ulong subkey)
         {
-            ThrowIfDisposed();
-
-            StateSyncAPI.Transaction_Require(Pointer, key.Pointer);
+            // TODO: This class is about to be replaced, this is a temporary stub
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -44,14 +43,8 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// <param name="value">The binary value.</param>
         public void Put(KeyRef key, ulong subkey, ReadOnlySpan<byte> value)
         {
-            if (value.Length == 0)
-            {
-                throw new ArgumentException("Given value is empty, if you intend to clear a value associated with key and subkey, use Clear.");
-            }
-
-            ThrowIfDisposed();
-
-            StateSyncAPI.Transaction_Put(Pointer, key.Pointer, subkey, value);
+            // TODO: This class is about to be replaced, this is a temporary stub
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -61,9 +54,8 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// <param name="subkey">Subkey for which to remove the associated value.</param>
         public void Delete(KeyRef key, ulong subkey)
         {
-            ThrowIfDisposed();
-
-            StateSyncAPI.Transaction_Delete(Pointer, key.Pointer, subkey);
+            // TODO: This class is about to be replaced, this is a temporary stub
+            throw new NotImplementedException();
         }
 
         /// <summary>
