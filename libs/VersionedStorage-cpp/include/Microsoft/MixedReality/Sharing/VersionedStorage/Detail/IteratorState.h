@@ -14,15 +14,12 @@ namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail {
 class KeyStateBlock;
 class SubkeyStateBlock;
 
-// Exposed for PInvoke, matches the layout of SubkeyIteratorState the C# side.
+// Exposed for PInvoke, matches the layout of KeyIteratorState the C# side.
 struct KeyIteratorState {
   constexpr KeyIteratorState() = default;
   BlobLayout blob_layout_;
   uint64_t version_{0};
   KeyStateBlock* current_state_block_{nullptr};
-
-  // SubkeyView AdvanceUntilPayloadFound(IndexSlotLocation next_location)
-  // noexcept; SubkeyView AdvanceUntilPayloadFound() noexcept;
 };
 
 // Exposed for PInvoke, matches the layout of SubkeyIteratorState the C# side.
