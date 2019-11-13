@@ -44,9 +44,8 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// <returns>True if there is a value associated with key/subkey, otherwise false.</returns>
         public bool TryGetValue(KeyRef key, ulong subkey, out ReadOnlySpan<byte> readOnlySpan)
         {
-            ThrowIfDisposed();
-
-            return StateSyncAPI.Snapshot_TryGet(Pointer, key.Pointer, subkey, out readOnlySpan);
+            // TODO: This class is about to be replaced, this is a temporary stub
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -57,9 +56,8 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// <returns>True if there is an entry for the key/subkey.</returns>
         public bool Contains(KeyRef key, ulong subkey)
         {
-            ThrowIfDisposed();
-
-            return StateSyncAPI.Snapshot_Contains(Pointer, key.Pointer, subkey);
+            // TODO: This class is about to be replaced, this is a temporary stub
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -69,9 +67,8 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// <returns>The span of subkeys associated with the key, empty if none.</returns>
         public SubkeyValueCollection GetSubkeys(KeyRef key)
         {
-            ThrowIfDisposed();
-
-            return new SubkeyValueCollection(Pointer, key.Pointer, StateSyncAPI.Snapshot_GetSubkeyCount(Pointer, key.Pointer));
+            // TODO: This class is about to be replaced, this is a temporary stub
+            throw new NotImplementedException();
         }
 
         /// <summary>

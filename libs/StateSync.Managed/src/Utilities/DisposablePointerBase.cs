@@ -5,9 +5,8 @@ using System;
 
 namespace Microsoft.MixedReality.Sharing.StateSync
 {
-    /// <summary>
-    /// Helper utility class for implementing IDispose when working with IntPtr's that need to be released.
-    /// </summary>
+    // TODO: delete (replacing the classes that depend on it is not a part of this review)
+
     public abstract class DisposablePointerBase : IDisposable
     {
         internal IntPtr Pointer { get; private set; }
