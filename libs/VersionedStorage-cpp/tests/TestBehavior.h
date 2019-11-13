@@ -68,7 +68,7 @@ class TestBehavior : public Behavior {
   }
 
  private:
-  std::mutex writer_mutex;
+  std::mutex writer_mutex_;
 
   struct KeyState {
     std::atomic_uint32_t reference_count_{0};

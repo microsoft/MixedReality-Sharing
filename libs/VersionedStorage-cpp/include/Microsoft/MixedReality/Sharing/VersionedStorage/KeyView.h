@@ -4,6 +4,8 @@
 #pragma once
 #include <Microsoft/MixedReality/Sharing/VersionedStorage/Detail/layout.h>
 
+#include <cassert>
+
 namespace Microsoft::MixedReality::Sharing::VersionedStorage {
 
 class KeyView {

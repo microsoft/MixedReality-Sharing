@@ -4,6 +4,8 @@
 #pragma once
 #include <Microsoft/MixedReality/Sharing/VersionedStorage/KeyView.h>
 
+#include <Microsoft/MixedReality/Sharing/VersionedStorage/Detail/BlobLayout.h>
+
 #include <cassert>
 #include <cstddef>
 #include <iterator>
@@ -81,8 +83,7 @@ class KeyIterator {
 
   KeyView current_key_view_;
   Detail::VersionOffset version_offset_{0};
-  Detail::IndexBlock* index_begin_{nullptr};
-  std::byte* data_begin_{nullptr};
+  Detail::BlobLayout blob_layout_;
 };
 
 }  // namespace Microsoft::MixedReality::Sharing::VersionedStorage

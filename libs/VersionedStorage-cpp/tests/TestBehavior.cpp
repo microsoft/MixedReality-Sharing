@@ -148,11 +148,11 @@ void TestBehavior::FreePages(void* address) noexcept {
 }
 
 void TestBehavior::LockWriterMutex() noexcept {
-  writer_mutex.lock();
+  writer_mutex_.lock();
 }
 
 void TestBehavior::UnlockWriterMutex() noexcept {
-  writer_mutex.unlock();
+  writer_mutex_.unlock();
 }
 
 size_t TestBehavior::Serialize(KeyHandle handle,

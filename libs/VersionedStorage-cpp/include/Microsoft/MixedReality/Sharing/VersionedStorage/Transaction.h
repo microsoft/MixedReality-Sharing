@@ -97,55 +97,68 @@ class TransactionBuilder : public TransactionView {
  public:
   virtual ~TransactionBuilder() noexcept = default;
 
-  // The transaction will write new_payload to the provided subkey
-  // (inserting it if it was missing).
-  // The effect of any previous Delete call on the same subkey within this
-  // transaction is canceled.
+  // Instructs the transaction to write the value to the subkey of the key.
+  // The effect of any previous Put() or Delete() calls on the same subkey
+  // within this transaction will be overwritten by this call. When the
+  // transaction is applied, the new value will overwrite any previous value
+  // that this subkey had (or insert it if it was missing).
   virtual void Put(KeyDescriptor& key,
                    uint64_t subkey,
                    PayloadHandle new_payload) noexcept = 0;
 
-  // The transaction will delete the specified subkey if it exists at the moment
-  // of application.
-  // The effect of any previous Put call on the same subkey within this
-  // transaction is canceled.
+  // Instructs the transaction to delete the subkey of the key.
+  // The effect of any previous Put() or Delete() calls on the same subkey
+  // within this transaction will be overwritten by this call.
   virtual void Delete(KeyDescriptor& key, uint64_t subkey) noexcept = 0;
 
-  // All existing subkeys will be deleted before inserting any subkeys specified
-  // by Put calls.
-  // Note that the deletion will happen after checking the prerequisites
-  // specified with Require calls.
+  // Instructs the transaction to delete all existing subkeys of the key before
+  // applying any other changes.
+  // Subkeys will be removed after the prerequisites of the transaction are
+  // checked, but before any other changes are applied.
   virtual void ClearBeforeTransaction(KeyDescriptor& key) noexcept = 0;
 
-  // Applying the transaction will fail unless the subkey is present.
-  // Overrides any other requirements for the same subkey.
+  // Instructs the transaction to check that the subkey is present before
+  // applying the transaction. The transaction will fail if the subkey is
+  // missing.
+  // The effect of any previous Require* call on the same subkey within this
+  // transaction will be overwritten by this call.
   virtual void RequirePresentSubkey(KeyDescriptor& key,
                                     uint64_t subkey) noexcept = 0;
 
-  // Applying the transaction will fail unless the subkey is missing.
-  // Overrides any other requirements for the same subkey.
+  // Instructs the transaction to check that the subkey is missing before
+  // applying the transaction. The transaction will fail if the subkey is
+  // present.
+  // The effect of any previous Require* call on the same subkey within this
+  // transaction will be overwritten by this call.
   virtual void RequireMissingSubkey(KeyDescriptor& key,
                                     uint64_t subkey) noexcept = 0;
 
-  // Applying the transaction will fail unless the value of the subkey is
-  // present and equal to the required_payload.
-  // Overrides any other requirements for the same subkey.
+  // FIXME: rename
+  // Instructs the transaction to check that the subkey has the provided value
+  // before applying the transaction. The transaction will fail if the value is
+  // different, or the subkey is missing.
+  // The effect of any previous Require* call on the same subkey within this
+  // transaction will be overwritten by this call.
   virtual void RequireExactPayload(KeyDescriptor& key,
                                    uint64_t subkey,
                                    PayloadHandle required_payload) noexcept = 0;
 
-  // Applying the transaction will fail unless the value of the subkey is
-  // present and the version that set it to this value is equal to the
-  // required_version.
-  // Overrides any other requirements for the same subkey.
+  // FIXME: rename
+  // Instructs the transaction to check that the subkey has the provided
+  // version before applying the transaction. The transaction will fail if the
+  // version is different, or the subkey is missing.
+  // The effect of any previous Require* call on the same subkey
+  // within this transaction will be overwritten by this call.
   virtual void RequireExactVersion(KeyDescriptor& key,
                                    uint64_t subkey,
                                    uint64_t required_version) noexcept = 0;
 
-  // Applying the transaction will fail unless the number of subkeys is equal to
-  // required_subkeys_count.
-  // The effect of any previous RequireMissingSubkey call on the same subkey
-  // within this transaction is canceled.
+  // Instructs the transaction to check that the number of subkeys of the key
+  // is equal to the provided number.
+  // The transaction will fail if the number of subkeys is different.
+  // Any number is allowed, including 0 (to require that the entire key is
+  // missing). The effect of any previous Require* call on the same subkey
+  // within this transaction will be overwritten by this call.
   virtual void RequireSubkeysCount(KeyDescriptor& key,
                                    size_t required_subkeys_count) noexcept = 0;
 

@@ -21,9 +21,9 @@ void KeyIterator::AdvanceUntilSubkeysFound(
     Detail::IndexSlotLocation location) noexcept {
   while (location != Detail::IndexSlotLocation::kInvalid) {
     Detail::IndexBlockSlot& index_block_slot =
-        Detail::IndexBlock::GetSlot(index_begin_, location);
+        Detail::IndexBlock::GetSlot(blob_layout_.index_begin_, location);
     auto& key_state_block = Detail::GetBlockAt<Detail::KeyStateBlock>(
-        data_begin_, index_block_slot.state_block_location_);
+        blob_layout_.data_begin_, index_block_slot.state_block_location_);
     const Detail::DataBlockLocation version_block_location =
         index_block_slot.version_block_location_.load(
             std::memory_order_acquire);
@@ -31,7 +31,7 @@ void KeyIterator::AdvanceUntilSubkeysFound(
     if (version_block_location != Detail::DataBlockLocation::kInvalid) {
       Platform::Prefetch(&key_state_block);
       Detail::KeyVersionBlock& version_block =
-          Detail::GetBlockAt<Detail::KeyVersionBlock>(data_begin_,
+          Detail::GetBlockAt<Detail::KeyVersionBlock>(blob_layout_.data_begin_,
                                                       version_block_location);
       if (auto count = version_block.GetSubkeysCount(version_offset_)) {
         current_key_view_ = {count, &key_state_block};
@@ -50,9 +50,8 @@ KeyIterator::KeyIterator(const Snapshot& snapshot) noexcept {
   if (snapshot.header_block_) {
     Detail::BlobAccessor accessor(*snapshot.header_block_);
     version_offset_ = Detail::MakeVersionOffset(
-        snapshot.version_, snapshot.header_block_->base_version());
-    index_begin_ = accessor.index_begin_;
-    data_begin_ = accessor.data_begin_;
+        snapshot.info_.version_, snapshot.header_block_->base_version());
+    blob_layout_ = accessor.blob_layout_;
     AdvanceUntilSubkeysFound(snapshot.header_block_->keys_list_head_acquire());
   }
 }
