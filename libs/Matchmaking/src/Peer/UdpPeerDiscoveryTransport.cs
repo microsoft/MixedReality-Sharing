@@ -130,7 +130,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 }
                 catch (Exception e)
                 {
-                    Trace.TraceError("Exception raised while handling message {0}", e);
+                    MMLog.LogError(e, "Exception raised while handling message");
                 }
             }
         }
@@ -175,7 +175,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     }
                     else
                     {
-                        Trace.TraceWarning("UdpPeerNetwork.cs: Discarding message from {0} - too many streams", result.RemoteEndPoint);
+                        MMLog.LogWarning("UdpPeerNetwork.cs: Discarding message from {0} - too many streams", result.RemoteEndPoint);
                         handleMessage = false;
                     }
                 }
@@ -340,7 +340,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             var buffer = PrependHeader(guid, message);
             if (buffer.Length > LargeMessageLimit)
             {
-                Trace.TraceWarning("UdpPeerNetwork.cs: Large UDP messages will be discarded ({0} bytes)", buffer.Length);
+                MMLog.LogWarning("UdpPeerNetwork.cs: Large UDP messages will be discarded ({0} bytes)", buffer.Length);
                 return;
             }
             socket_.SendTo(buffer, SocketFlags.None, broadcastEndpoint_);
@@ -352,7 +352,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             var buffer = PrependHeader(guid, message);
             if (buffer.Length > LargeMessageLimit)
             {
-                Trace.TraceWarning("UdpPeerNetwork.cs: Large UDP messages will be discarded ({0} bytes)", buffer.Length);
+                MMLog.LogWarning("UdpPeerNetwork.cs: Large UDP messages will be discarded ({0} bytes)", buffer.Length);
                 return;
             }
             socket_.SendTo(buffer, SocketFlags.None, umsg.sender_);

@@ -109,7 +109,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                         }
                         catch(Exception e)
                         {
-                            Trace.TraceError("Exception raised while handling message {0}", e);
+                            MMLog.LogError(e, "Exception raised while handling message");
                         }
                     }
                 }
