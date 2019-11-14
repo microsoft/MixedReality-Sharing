@@ -10,7 +10,7 @@ param(
     # DocFX pollutes the source folder with obj folders. We delete these
     # by default, but this breaks incremental builds. This option keeps
     # the https://github.com/dotnet/docfx/issues/1156
-    [switch]$incremental = $false 
+    [switch]$incremental = $false
 )
 
 # Where to find the docfx binaries
@@ -48,7 +48,7 @@ function Run-Quietly {
     }
 }
 
-# Download $url to local $cache_folder and return the cached path.
+# Download $url to local $cache_folder and return a tuple of (the_cached_path:string, cache_hit:bool)
 # Note that the cached path may have a long name such as https___example.com_path_to_download_v2.1_foo.zip
 # This method uses ETag to avoid refetching, and the value is stored in a sidecar ".props" file
 function FetchAndCache ($url, $cache_folder) {
