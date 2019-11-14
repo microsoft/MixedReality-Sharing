@@ -75,7 +75,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         public event Action<IPeerDiscoveryTransport> Started;
 
         /// <summary>
-        /// The transport has started stopped for messages. Called on <see cref="Stop()"/>;
+        /// The transport has stopped listening for messages. Called on <see cref="Stop()"/>;
         /// </summary>
         public event Action<IPeerDiscoveryTransport> Stopped;
 

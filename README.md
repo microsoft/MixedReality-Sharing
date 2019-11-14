@@ -4,12 +4,12 @@
 [![Licensed under the MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/microsoft/MixedReality-WebRTC/blob/master/LICENSE)
 [![Under active development](https://img.shields.io/badge/status-active-green.svg)](https://github.com/microsoft/MixedReality-Sharing/commits/master)
 
-MixedReality-Sharing is a collection of cross-platform libraries to enable rich multiuser experiences. In particular most mixed reality experiences need the following:
+MixedReality-Sharing is a cross-platform solution to enable rich multiuser experiences. In particular most mixed reality experiences need the following:
  - Matchmaking - find and join experiences
  - Streaming - transmit and receive audio/video/data
  - Localization - agree a shared reference frame (anchor)
 
-MixedReality-Sharing provides packages to fulfil each of the above needs. The packages are independent, meaning they can be adopted or replaced incrementally. Integration libraries are provided so that the packages work together seamlessly, both with each other and with external libraries.
+MixedReality-Sharing provides library packages to fulfil each of the above needs. The packages are independent, meaning they can be adopted or replaced incrementally. Integration libraries are provided so that the packages work together seamlessly, both with each other and with external libraries.
 
 ## Matchmaking
 

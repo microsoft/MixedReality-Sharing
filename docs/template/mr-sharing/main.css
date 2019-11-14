@@ -1,0 +1,104 @@
+
+
+/* Customizing for the top-level index.html */
+
+article[data-uid="index"] h2 {
+  clear: left;
+  padding-top: 30px;
+}
+
+article[data-uid="index"] li, article[data-uid="index"] p {
+  font-weight: normal;
+  font-size: 16px;
+}
+
+article[data-uid="index"] h2 ~ * {
+  padding-left: 0;
+}
+
+article[data-uid="index"] h2 ~ * > li {
+  float: left;
+  width: 285px;
+  margin-right: 30px;
+  font-size: 18px;
+  font-weight: bold;
+  list-style-type: none;
+}
+
+article[data-uid="index"] h2 ~ ol > li > ol, article[data-uid="index"] h2 ~ ul > li > ul {
+  padding-left: 16px;
+  list-style-type: disc;
+}
+
+article[data-uid="index"] h2 ~ ol > li > ol > li > ul {
+  padding-left: 0;
+  list-style-type: none;
+}
+
+article[data-uid="index"] h2 ~ ol > li > ol > li > ul > li {
+  font-size: 13px;
+  margin-bottom: 5px;
+}
+
+article[data-uid="index"] h2 ~ ul > li > ul > li > ul {
+  padding-left: 15px;
+  list-style-type: circle;
+}
+
+/** Change the default color of code and links **/
+
+code {
+  color: #717374;
+  background-color: #f1f2f3;
+}
+
+a code {
+  color: #337ab7; /** Same as standard links **/
+  background-color: #f1f2f3;
+}
+
+a code:hover {
+  text-decoration: underline;
+}
+
+.hljs-keyword {
+  color: rgb(86,156,214);
+}
+
+.hljs-string {
+  color: rgb(214, 157, 133);
+}
+
+pre {
+  border: 0;
+}
+
+/** Color theme for API **/
+
+/** These are not important, tune down **/
+.decalaration, .fieldValue, .parameters, .returns, .eventType {
+  color: #a2a2a2;
+}
+
+/** Major sections, increase visibility **/
+#fields, #properties, #methods, #events {
+    color: #337ac4;
+    font-weight: bold;
+    margin-top: 2em;
+}
+
+article h4 {
+  border: 0;
+  font-weight: bold;
+  margin-top: 2em;
+}
+
+/** Spacing !!! **/
+
+.level0.summary {
+  margin: 2em 0 2em 0;
+}
+
+.level1.summary {
+  margin: 1em 0 1em 0;
+}
