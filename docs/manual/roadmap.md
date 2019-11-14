@@ -30,7 +30,7 @@ Goal: Provide a mechanism for automatic configuration. Remove the need for expli
 
 This milestone adds v0.0.1 of [Matchmaking](xref:Microsoft.MixedReality.Sharing.Matchmaking) discovery mechanism which allows simple network autoconfiguration. This initial implementation works via UDP broadcast. In other words, all devices must be on the same subnet. Future versions will lift this restriction.
 
-This release will be integrated into [SpectatorView](https://microsoft.github.io/MixedReality-SpectatorView/). As well as the portable C# implementation, there will be some Unity specific UI components for things such as choosing a session if there are several available.
+This release will be used as an integration test in a branch of [SpectatorView](https://microsoft.github.io/MixedReality-SpectatorView/). As well as the portable C# implementation, there will be some Unity specific UI components for things such as choosing a session if there are several available.
 
 ## Spatial Alignment
 
