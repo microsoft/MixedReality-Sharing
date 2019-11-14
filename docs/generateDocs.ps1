@@ -7,11 +7,14 @@ param(
     # Serve the generated docs on a temporary web server @ localhost
     # The docs are not completely static, so will not work if not served.
     [switch]$serve = $false,
-    #
-    [switch]$incremental = $false,
-    # Where to find the docfx binaries
-    $docfx_url = "https://github.com/dotnet/docfx/releases/download/v2.47/docfx.zip"
+    # DocFX pollutes the source folder with obj folders. We delete these
+    # by default, but this breaks incremental builds. This option keeps
+    # the https://github.com/dotnet/docfx/issues/1156
+    [switch]$incremental = $false 
 )
+
+# Where to find the docfx binaries
+$docfx_url = "https://github.com/dotnet/docfx/releases/download/v2.47/docfx.zip"
 
 # Return the directory containing this script
 function Get-ScriptDirectory {
@@ -65,15 +68,14 @@ function FetchAndCache ($url, $cache_folder) {
         }
     }
 
-    # do the fetch
+    # do the web request
     Try {
         # Invoke-Webrequest has a bug which means $response.Content is wrong for binary files unless outfile is used
         $response = Run-Quietly { Invoke-WebRequest -Uri $url -Headers $headers -OutFile "$cache_file.tmp" -PassThru }
     }
     Catch [System.Net.WebException] {
-        if( $_.Exception.Response.StatusCode.value__ -eq 304) { # not modified
-            Write-Host "Using cached version"
-            return $cache_file
+        if( $_.Exception.Response.StatusCode.value__ -eq 304) { # etag matches, not modified
+            return $cache_file, $true
         }
         throw $_.Exception # any other error
     }
@@ -87,7 +89,7 @@ function FetchAndCache ($url, $cache_folder) {
     }
     Set-Content -path "$cache_file.props" -value (ConvertTo-Json $props)
 
-    return $cache_file
+    return $cache_file, $false
 }
 
 # Setup
@@ -107,10 +109,16 @@ mkdir -ErrorAction Ignore $cache_root | out-null
 
 # Fetch docfx
 Write-Host "Fetching $docfx_url"
-$docfx_zip = FetchAndCache $docfx_url $cache_root
-Write-Host "Fetching $docfx_url"
-Run-Quietly { Expand-Archive $docfx_zip -DestinationPath "$build_root\docfx" }
-$docfx_exe = "$build_root\docfx\docfx.exe"
+$docfx_zip, $cached = FetchAndCache $docfx_url $cache_root
+
+$docfx_exe = "$cache_root\docfx\docfx.exe"
+if( $cached -and (Test-Path -Path $docfx_exe -PathType leaf)) {
+    Write-Host "Using cached $docfx_exe"
+}
+else {
+    Write-Host "Unzipping $docfx_zip"
+    Run-Quietly { Expand-Archive $docfx_zip -DestinationPath "$cache_root\docfx" }
+}
 
 # Generate the documentation
 Invoke-Expression "$docfx_exe docfx.json --intermediateFolder $build_root\obj -o $build_root $(if ($serve) {' --serve --port 8081 '} else {''})"
