@@ -10,9 +10,9 @@ using System.Diagnostics;
 
 namespace Microsoft.MixedReality.Sharing.Matchmaking
 {
-    internal static class MMLog
+    internal static class Log
     {
-        internal static void LogError(Exception exception, string message)
+        internal static void Error(Exception exception, string message)
         {
 #if NETFX_CORE
             _channel.LogMessage(message, LoggingLevel.Error);
@@ -29,7 +29,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 #endif
         }
 
-        internal static void LogWarning(string fmt, params object[] args)
+        internal static void Warning(string fmt, params object[] args)
         {
 #if NETFX_CORE
             _channel.LogMessage(String.Format(fmt, args), LoggingLevel.Warning);
