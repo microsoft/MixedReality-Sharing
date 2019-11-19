@@ -54,8 +54,8 @@ class BlobReader {
   template <typename T>
   T ReadWithSingleFetch(bit_shift_t bits_count);
 
-  void PopulateReadBuf();
-  void PopulateReadBuf(bit_shift_t min_bits_count);
+  void PopulateBitBuf();
+  void PopulateBitBuf(bit_shift_t min_bits_count);
 
   const char* unread_bytes_begin_;
   size_t unread_bytes_count_;

@@ -8,7 +8,7 @@
 namespace Microsoft::MixedReality::Sharing::Serialization {
 
 MS_MR_SHARING_FORCEINLINE
-void BlobReader::PopulateReadBuf() {
+void BlobReader::PopulateBitBuf() {
   if (unread_bytes_count_ >= sizeof(bit_buf_)) {
     unread_bytes_count_ -= sizeof(bit_buf_);
     memcpy(&bit_buf_, unread_bytes_begin_ + unread_bytes_count_,
@@ -29,7 +29,7 @@ void BlobReader::PopulateReadBuf() {
 }
 
 MS_MR_SHARING_FORCEINLINE
-void BlobReader::PopulateReadBuf(bit_shift_t min_bits_count) {
+void BlobReader::PopulateBitBuf(bit_shift_t min_bits_count) {
   assert(min_bits_count <= kBitBufferBitsCount);
   if (unread_bytes_count_ >= sizeof(bit_buf_)) {
     unread_bytes_count_ -= sizeof(bit_buf_);
@@ -56,12 +56,29 @@ std::string_view BlobReader::ReadBytes(size_t bytes_count) {
     unread_bytes_count_ -= bytes_count;
     unread_bytes_begin_ += bytes_count;
   } else if (bytes_count <= unread_bytes_count_ + bit_buf_bits_count_ / 8) {
-    // Can steal some bytes from the bit buffer.
-    auto borrowed_bits_count =
+    // The bit buffer optimistically loads size_t-large chunks (or any bytes
+    // that are available) when it runs out of bits.
+    // Since it is unknown where exactly two streams will meet, it is possible
+    // that some of the bits currently stored in bit_buf_ should belong to the
+    // byte stream:
+    //   [byte stream data][bit stream data]
+    //                  |    |
+    //                  [xxxx]
+    //                  ^ last chunk loaded into bit_buf_
+    //
+    // The bytes themselves are still where they should be (in the original
+    // input), but if we want to return them here, we should clear the bits from
+    // the bit_buf_.
+    // As we read bits from bit_buf_, we shift the remaining ones up, so they
+    // may be located in a different place from where they originally were,
+    // so if we want to take N bytes from the bit_buf_, we should clear N*8
+    // lowest available bits from the correct position.
+
+    auto removed_bits_count =
         static_cast<bit_shift_t>(bytes_count - unread_bytes_count_) * 8;
     unread_bytes_count_ = 0;
-    bit_buf_bits_count_ -= borrowed_bits_count;
-    // Clearing out borrowed bytes.
+    bit_buf_bits_count_ -= removed_bits_count;
+    // Clearing out bits of the removed bytes from the buffer.
     if (bit_buf_bits_count_ == 0) {
       bit_buf_ = 0;
     } else {
@@ -85,9 +102,9 @@ BlobReader::ReadWithSingleFetch(bit_shift_t bits_count) {
     result = bit_buf_ >> shift;
     bits_count -= bit_buf_bits_count_;
     shift += bit_buf_bits_count_;
-    PopulateReadBuf(bits_count);
+    PopulateBitBuf(bits_count);
   } else {
-    PopulateReadBuf(bits_count);
+    PopulateBitBuf(bits_count);
     if (bits_count == kBitBufferBitsCount) {
       result = bit_buf_;
       bit_buf_ = 0;
@@ -141,11 +158,11 @@ MS_MR_SHARING_FORCEINLINE T BlobReader::ReadBits(bit_shift_t bits_count) {
         return result | ReadWithSingleFetch<T>(bits_count);
       }
     }
-    PopulateReadBuf();
+    PopulateBitBuf();
     assert(bits_count > 32 && bit_buf_bits_count_ != 0);
     result |= static_cast<T>(bit_buf_) << (bits_count - 32);
     bits_count -= bit_buf_bits_count_;
-    PopulateReadBuf(bits_count);
+    PopulateBitBuf(bits_count);
     assert(bits_count > 0);
     result |= static_cast<T>(bit_buf_ >> (32 - bits_count));
     if (bits_count != 32) {
@@ -187,7 +204,7 @@ uint64_t BlobReader::ReadExponentialGolombCode() {
       bit_buf_bits_count_ = zeroes_count - 64;
       return ~0ull;
     }
-    PopulateReadBuf();
+    PopulateBitBuf();
   }
   static constexpr bit_shift_t kLastBitPosition = kBitBufferBitsCount - 1;
   const bit_shift_t new_zeros_count = kLastBitPosition - set_bit_position;
