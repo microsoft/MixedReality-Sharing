@@ -4,7 +4,6 @@
 #pragma once
 #include <Microsoft/MixedReality/Sharing/Common/Serialization/Serialization.h>
 
-#include <algorithm>
 #include <string_view>
 
 namespace Microsoft::MixedReality::Sharing::Serialization {
@@ -21,13 +20,13 @@ class BlobReader {
   // had thrown an exception.
   std::string_view ReadBytes(size_t bytes_count);
 
-  // Reads up to 32 bits from the bitstream.
+  // Reads up to 32 bits from the bit stream.
   // Throws std::out_of_range if there is not enough input left.
   // The behavior is undefined if the reader is reused after it
   // had thrown an exception, or if bits_count is not in [1, 32].
   uint32_t ReadBits32(bit_shift_t bits_count);
 
-  // Reads up to 64 bits from the bitstream.
+  // Reads up to 64 bits from the bit stream.
   // Throws std::out_of_range if there is not enough input left.
   // The behavior is undefined if the reader is reused after it
   // had thrown an exception, or if bits_count is not in [1, 64].
@@ -44,8 +43,8 @@ class BlobReader {
   // The reader can't tell the difference between zero padding
   // (in case where the number of written bits wasn't divisible by 8)
   // and actual data bits that are 0, therefore "probably".
-  // This method should only be used as an integrity check after the reading,
-  // is done, not as an indication for when to stop reading.
+  // This method should only be used as an integrity check after the reading
+  // is done, and not as an indication for when to stop reading.
   bool ProbablyNoMoreData() const noexcept;
 
  private:
