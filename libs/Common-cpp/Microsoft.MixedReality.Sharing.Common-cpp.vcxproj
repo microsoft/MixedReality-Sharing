@@ -25,6 +25,8 @@
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\RefPtr.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Serialization\BitstreamReader.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Serialization\BitstreamWriter.h" />
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Serialization\BlobReader.h" />
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Serialization\BlobWriter.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Serialization\MonotonicSequenceEncoder.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Serialization\Serialization.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Span.h" />
@@ -43,6 +45,8 @@
     </ClCompile>
     <ClCompile Include="src\Platform.cpp" />
     <ClCompile Include="src\Serialization\BitstreamWriter.cpp" />
+    <ClCompile Include="src\Serialization\BlobReader.cpp" />
+    <ClCompile Include="src\Serialization\BlobWriter.cpp" />
     <ClCompile Include="src\Serialization\MonotonicSequenceEncoder.cpp" />
     <ClCompile Include="src\Serialization\Serialization.cpp" />
   </ItemGroup>
