@@ -37,6 +37,12 @@
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\VirtualRefCountedBase.h">
       <Filter>include/Microsoft/MixedReality/Sharing/Common</Filter>
     </ClInclude>
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Serialization\BlobReader.h">
+      <Filter>include/Microsoft/MixedReality/Sharing/Common\Serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Serialization\BlobWriter.h">
+      <Filter>include/Microsoft/MixedReality/Sharing/Common\Serialization</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\pch.cpp">
@@ -55,6 +61,12 @@
       <Filter>src\Serialization</Filter>
     </ClCompile>
     <ClCompile Include="src\Serialization\BitstreamWriter.cpp">
+      <Filter>src\Serialization</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Serialization\BlobWriter.cpp">
+      <Filter>src\Serialization</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Serialization\BlobReader.cpp">
       <Filter>src\Serialization</Filter>
     </ClCompile>
   </ItemGroup>
