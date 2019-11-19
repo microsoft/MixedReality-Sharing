@@ -28,6 +28,7 @@
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Serialization\MonotonicSequenceEncoder.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Serialization\Serialization.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Span.h" />
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Testing\Testing.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\VirtualRefCountedBase.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\windows.h" />
     <ClInclude Include="src\pch.h" />

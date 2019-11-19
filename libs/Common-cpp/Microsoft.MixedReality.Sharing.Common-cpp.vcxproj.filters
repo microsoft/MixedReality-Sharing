@@ -37,6 +37,9 @@
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\VirtualRefCountedBase.h">
       <Filter>include/Microsoft/MixedReality/Sharing/Common</Filter>
     </ClInclude>
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Testing\Testing.h">
+      <Filter>include/Microsoft/MixedReality/Sharing/Common\Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\pch.cpp">
@@ -70,6 +73,9 @@
     </Filter>
     <Filter Include="src\Serialization">
       <UniqueIdentifier>{9b6308d0-0c07-4372-9bc3-be89c63ac93e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include/Microsoft/MixedReality/Sharing/Common\Testing">
+      <UniqueIdentifier>{cbe0b046-5dde-4d5e-833f-46c289c6ece5}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
