@@ -10,8 +10,11 @@
 #include "TestBehavior.h"
 #include "src/StateBlock.h"
 
+#include <algorithm>
 #include <memory>
+#include <numeric>
 #include <random>
+#include <thread>
 
 namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail {
 
@@ -614,74 +617,81 @@ TEST_F(HeaderBlock_Test, insertion_order_fuzzing) {
   // Tries inserting a predefined set of subkeys in various random orders,
   // expecting that the subkeys are discoverable and ordered after the
   // insertion.
-  size_t kIndexCapacity = 1024;
+  static constexpr size_t kIndexCapacity = 1024;
 
-  std::vector<uint64_t> subkeys(kIndexCapacity - 1);
-  for (size_t i = 0; i < kIndexCapacity - 1; ++i) {
-    subkeys[i] = 123'000'000'000ull + i;
+  const int threads_count = std::thread::hardware_concurrency();
+  const int runs_per_thread = std::max(300 / threads_count, 1);
+  std::vector<std::thread> threads;
+  threads.reserve(threads_count);
+  for (int i = 0; i < threads_count; ++i) {
+    threads.emplace_back([&] {
+      std::vector<uint64_t> subkeys(kIndexCapacity - 1);
+      std::iota(subkeys.begin(), subkeys.end(), 123'000'000'000ull);
+
+      std::mt19937 rng{std::random_device{}()};
+
+      for (int run_id = 0; run_id < runs_per_thread; ++run_id) {
+        HeaderBlock* header_block =
+            HeaderBlock::CreateBlob(*behavior_, kBaseVersion, kIndexCapacity);
+        ASSERT_NE(header_block, nullptr);
+
+        MutatingBlobAccessor accessor(*header_block);
+
+        EXPECT_EQ(accessor.remaining_index_slots_capacity(), kIndexCapacity);
+        EXPECT_TRUE(accessor.CanInsertStateBlocks(kIndexCapacity));
+        EXPECT_FALSE(accessor.CanInsertStateBlocks(kIndexCapacity + 1));
+
+        accessor.InsertKeyBlock(*behavior_, behavior_->MakeKey(5));
+        KeyStateAndIndexView key_state_view =
+            accessor.FindKeyStateAndIndex(MakeKeyDescriptor(5));
+        ASSERT_TRUE(key_state_view.state_block_);
+        EXPECT_EQ(key_state_view.key(), KeyHandle{5});
+
+        std::shuffle(begin(subkeys), end(subkeys), rng);
+
+        EXPECT_TRUE(accessor.CanInsertStateBlocks(subkeys.size()));
+        EXPECT_FALSE(accessor.CanInsertStateBlocks(subkeys.size() + 1));
+
+        for (uint64_t subkey : subkeys) {
+          accessor.InsertSubkeyBlock(*behavior_, *key_state_view.state_block_,
+                                     subkey);
+        }
+        // The index is full
+        EXPECT_FALSE(accessor.CanInsertStateBlocks(1));
+
+        KeyBlockIterator key_it = accessor.begin();
+        ASSERT_NE(key_it, accessor.end());
+        EXPECT_EQ(key_it->version_block_, nullptr);
+        EXPECT_EQ(key_it->key(), KeyHandle{5});
+
+        SubkeyBlockIterator subkey_it = accessor.GetSubkeys(*key_it).begin();
+        const auto search_key = MakeKeyDescriptor(5);
+
+        // Iterator traverses through subkeys in sorted order.
+        for (size_t i = 0; i < subkeys.size(); ++i) {
+          const uint64_t subkey = 123'000'000'000ull + i;
+          ASSERT_NE(subkey_it, SubkeyBlockIterator::End{});
+          EXPECT_EQ(subkey_it->version_block_, nullptr);
+          EXPECT_EQ(subkey_it->key(), KeyHandle{5});
+          EXPECT_EQ(subkey_it->subkey(), subkey);
+
+          // The subkey can also be found directly.
+          const SubkeyStateBlock* block =
+              accessor.FindSubkeyState(search_key, subkey).state_block_;
+          ASSERT_TRUE(block);
+          EXPECT_EQ(block->key_, KeyHandle{5});
+          EXPECT_EQ(block->subkey_, subkey);
+          ++subkey_it;
+        }
+        EXPECT_EQ(subkey_it, SubkeyBlockIterator::End{});
+        ++key_it;
+        EXPECT_EQ(key_it, accessor.end());
+        header_block->RemoveSnapshotReference(kBaseVersion, *behavior_);
+      }
+    });
   }
-
-  std::mt19937 rng{std::random_device{}()};
-
-  for (int fuzz_iteration = 0; fuzz_iteration < 300; ++fuzz_iteration) {
-    HeaderBlock* header_block =
-        HeaderBlock::CreateBlob(*behavior_, kBaseVersion, kIndexCapacity);
-    ASSERT_NE(header_block, nullptr);
-
-    MutatingBlobAccessor accessor(*header_block);
-
-    EXPECT_EQ(accessor.remaining_index_slots_capacity(), kIndexCapacity);
-    EXPECT_TRUE(accessor.CanInsertStateBlocks(kIndexCapacity));
-    EXPECT_FALSE(accessor.CanInsertStateBlocks(kIndexCapacity + 1));
-
-    accessor.InsertKeyBlock(*behavior_, behavior_->MakeKey(5));
-    KeyStateAndIndexView key_state_view =
-        accessor.FindKeyStateAndIndex(MakeKeyDescriptor(5));
-    ASSERT_TRUE(key_state_view.state_block_);
-    EXPECT_EQ(key_state_view.key(), KeyHandle{5});
-
-    std::shuffle(begin(subkeys), end(subkeys), rng);
-
-    EXPECT_TRUE(accessor.CanInsertStateBlocks(subkeys.size()));
-    EXPECT_FALSE(accessor.CanInsertStateBlocks(subkeys.size() + 1));
-
-    for (size_t i = 0; i < subkeys.size(); ++i) {
-      uint64_t subkey = subkeys[i];
-      accessor.InsertSubkeyBlock(*behavior_, *key_state_view.state_block_,
-                                 subkey);
-    }
-    // The index is full
-    EXPECT_FALSE(accessor.CanInsertStateBlocks(1));
-
-    KeyBlockIterator key_it = accessor.begin();
-    ASSERT_NE(key_it, accessor.end());
-    EXPECT_EQ(key_it->version_block_, nullptr);
-    EXPECT_EQ(key_it->key(), KeyHandle{5});
-
-    SubkeyBlockIterator subkey_it = accessor.GetSubkeys(*key_it).begin();
-    const auto search_key = MakeKeyDescriptor(5);
-
-    // Iterator traverses through subkeys in sorted order.
-    for (size_t i = 0; i < subkeys.size(); ++i) {
-      const uint64_t subkey = 123'000'000'000ull + i;
-      ASSERT_NE(subkey_it, SubkeyBlockIterator::End{});
-      EXPECT_EQ(subkey_it->version_block_, nullptr);
-      EXPECT_EQ(subkey_it->key(), KeyHandle{5});
-      EXPECT_EQ(subkey_it->subkey(), subkey);
-
-      // The subkey can also be found directly.
-      const SubkeyStateBlock* block =
-          accessor.FindSubkeyState(search_key, subkey).state_block_;
-      ASSERT_TRUE(block);
-      EXPECT_EQ(block->key_, KeyHandle{5});
-      EXPECT_EQ(block->subkey_, subkey);
-      ++subkey_it;
-    }
-    EXPECT_EQ(subkey_it, SubkeyBlockIterator::End{});
-    ++key_it;
-    EXPECT_EQ(key_it, accessor.end());
-    header_block->RemoveSnapshotReference(kBaseVersion, *behavior_);
-  }
+  for (auto& thread : threads)
+    thread.join();
 }
 
 TEST_F(HeaderBlock_Test, subkey_hashes_fuzzing) {
@@ -689,83 +699,90 @@ TEST_F(HeaderBlock_Test, subkey_hashes_fuzzing) {
   // that the subkeys are discoverable and ordered after the insertion.
   // This test is likely to encounter all kinds of small hash collisions, index
   // block overflows etc.
-  size_t kIndexCapacity = 256;
+  static constexpr size_t kIndexCapacity = 256;
 
-  std::vector<uint64_t> sorted_subkeys(kIndexCapacity - 1);
-  std::vector<uint64_t> shuffled_subkeys(kIndexCapacity - 1);
+  const int threads_count = std::thread::hardware_concurrency();
+  const int runs_per_thread = std::max(1000 / threads_count, 1);
+  std::vector<std::thread> threads;
+  threads.reserve(threads_count);
+  for (int i = 0; i < threads_count; ++i) {
+    threads.emplace_back([&] {
+      std::vector<uint64_t> sorted_subkeys(kIndexCapacity - 1);
+      std::vector<uint64_t> shuffled_subkeys(kIndexCapacity - 1);
 
-  std::mt19937 rng{std::random_device{}()};
-  std::uniform_int_distribution<uint64_t> distribution(0, ~0ull);
+      std::mt19937 rng{std::random_device{}()};
+      std::uniform_int_distribution<uint64_t> distribution(0, ~0ull);
 
-  for (int fuzz_iteration = 0; fuzz_iteration < 1000; ++fuzz_iteration) {
-    for (auto& subkey : shuffled_subkeys) {
-      subkey = distribution(rng);
-    }
-    sorted_subkeys = shuffled_subkeys;
-    std::sort(begin(sorted_subkeys), end(sorted_subkeys));
-    if (std::unique(begin(sorted_subkeys), end(sorted_subkeys)) !=
-        end(sorted_subkeys)) {
-      // The collision between subkeys is unlikely, so we simply skip the
-      // iteration in case of it.
-      // The test below expects all random subkeys to be unique.
-      continue;
-    }
+      for (int run_id = 0; run_id < runs_per_thread; ++run_id) {
+        for (auto& subkey : shuffled_subkeys)
+          subkey = distribution(rng);
+        sorted_subkeys = shuffled_subkeys;
+        std::sort(begin(sorted_subkeys), end(sorted_subkeys));
+        if (std::unique(begin(sorted_subkeys), end(sorted_subkeys)) !=
+            end(sorted_subkeys)) {
+          // The collision between subkeys is unlikely, so we simply skip the
+          // iteration in case of it.
+          // The test below expects all random subkeys to be unique.
+          continue;
+        }
 
-    HeaderBlock* header_block =
-        HeaderBlock::CreateBlob(*behavior_, kBaseVersion, kIndexCapacity);
-    ASSERT_NE(header_block, nullptr);
+        HeaderBlock* header_block =
+            HeaderBlock::CreateBlob(*behavior_, kBaseVersion, kIndexCapacity);
+        ASSERT_NE(header_block, nullptr);
 
-    MutatingBlobAccessor accessor(*header_block);
+        MutatingBlobAccessor accessor(*header_block);
 
-    EXPECT_EQ(accessor.remaining_index_slots_capacity(), kIndexCapacity);
-    EXPECT_TRUE(accessor.CanInsertStateBlocks(kIndexCapacity));
-    EXPECT_FALSE(accessor.CanInsertStateBlocks(kIndexCapacity + 1));
+        EXPECT_EQ(accessor.remaining_index_slots_capacity(), kIndexCapacity);
+        EXPECT_TRUE(accessor.CanInsertStateBlocks(kIndexCapacity));
+        EXPECT_FALSE(accessor.CanInsertStateBlocks(kIndexCapacity + 1));
 
-    accessor.InsertKeyBlock(*behavior_, behavior_->MakeKey(5));
-    KeyStateAndIndexView key_state_view =
-        accessor.FindKeyStateAndIndex(MakeKeyDescriptor(5));
-    ASSERT_TRUE(key_state_view.state_block_);
-    EXPECT_EQ(key_state_view.key(), KeyHandle{5});
+        accessor.InsertKeyBlock(*behavior_, behavior_->MakeKey(5));
+        KeyStateAndIndexView key_state_view =
+            accessor.FindKeyStateAndIndex(MakeKeyDescriptor(5));
+        ASSERT_TRUE(key_state_view.state_block_);
+        EXPECT_EQ(key_state_view.key(), KeyHandle{5});
 
-    ASSERT_TRUE(accessor.CanInsertStateBlocks(shuffled_subkeys.size()));
-    EXPECT_FALSE(accessor.CanInsertStateBlocks(shuffled_subkeys.size() + 1));
+        ASSERT_TRUE(accessor.CanInsertStateBlocks(shuffled_subkeys.size()));
+        EXPECT_FALSE(
+            accessor.CanInsertStateBlocks(shuffled_subkeys.size() + 1));
 
-    for (size_t i = 0; i < shuffled_subkeys.size(); ++i) {
-      uint64_t subkey = shuffled_subkeys[i];
-      accessor.InsertSubkeyBlock(*behavior_, *key_state_view.state_block_,
-                                 subkey);
-    }
-    // The index is full
-    EXPECT_FALSE(accessor.CanInsertStateBlocks(1));
+        for (uint64_t subkey : shuffled_subkeys)
+          accessor.InsertSubkeyBlock(*behavior_, *key_state_view.state_block_,
+                                     subkey);
+        // The index is full
+        EXPECT_FALSE(accessor.CanInsertStateBlocks(1));
 
-    KeyBlockIterator key_it = accessor.begin();
-    ASSERT_NE(key_it, accessor.end());
-    EXPECT_EQ(key_it->version_block_, nullptr);
-    EXPECT_EQ(key_it->key(), KeyHandle{5});
-    SubkeyBlockIterator subkey_it = accessor.GetSubkeys(*key_it).begin();
-    const auto search_key = MakeKeyDescriptor(5);
+        KeyBlockIterator key_it = accessor.begin();
+        ASSERT_NE(key_it, accessor.end());
+        EXPECT_EQ(key_it->version_block_, nullptr);
+        EXPECT_EQ(key_it->key(), KeyHandle{5});
+        SubkeyBlockIterator subkey_it = accessor.GetSubkeys(*key_it).begin();
+        const auto search_key = MakeKeyDescriptor(5);
 
-    // Iterator traverses through subkeys in sorted order.
-    for (size_t i = 0; i < sorted_subkeys.size(); ++i) {
-      const uint64_t subkey = sorted_subkeys[i];
-      ASSERT_NE(subkey_it, SubkeyBlockIterator::End{});
-      EXPECT_EQ(subkey_it->version_block_, nullptr);
-      EXPECT_EQ(subkey_it->key(), KeyHandle{5});
-      EXPECT_EQ(subkey_it->subkey(), subkey);
+        // Iterator traverses through subkeys in sorted order.
+        for (uint64_t subkey : sorted_subkeys) {
+          ASSERT_NE(subkey_it, SubkeyBlockIterator::End{});
+          EXPECT_EQ(subkey_it->version_block_, nullptr);
+          EXPECT_EQ(subkey_it->key(), KeyHandle{5});
+          EXPECT_EQ(subkey_it->subkey(), subkey);
 
-      // The subkey can also be found directly.
-      const SubkeyStateBlock* block =
-          accessor.FindSubkeyState(search_key, subkey).state_block_;
-      ASSERT_TRUE(block);
-      EXPECT_EQ(block->key_, KeyHandle{5});
-      EXPECT_EQ(block->subkey_, subkey);
-      ++subkey_it;
-    }
-    EXPECT_EQ(subkey_it, SubkeyBlockIterator::End{});
-    ++key_it;
-    EXPECT_EQ(key_it, accessor.end());
-    header_block->RemoveSnapshotReference(kBaseVersion, *behavior_);
+          // The subkey can also be found directly.
+          const SubkeyStateBlock* block =
+              accessor.FindSubkeyState(search_key, subkey).state_block_;
+          ASSERT_TRUE(block);
+          EXPECT_EQ(block->key_, KeyHandle{5});
+          EXPECT_EQ(block->subkey_, subkey);
+          ++subkey_it;
+        }
+        EXPECT_EQ(subkey_it, SubkeyBlockIterator::End{});
+        ++key_it;
+        EXPECT_EQ(key_it, accessor.end());
+        header_block->RemoveSnapshotReference(kBaseVersion, *behavior_);
+      }
+    });
   }
+  for (auto& thread : threads)
+    thread.join();
 }
 
 TEST_F(HeaderBlock_Test, empty_versions) {
