@@ -1,7 +1,6 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License. See LICENSE in the project root for license information.
+﻿// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 
-using Microsoft.MixedReality.Sharing.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -110,7 +109,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                         }
                         catch(Exception e)
                         {
-                            LoggingUtility.LogError("Exception raised while handling message", e);
+                            Log.Error(e, "Exception raised while handling message");
                         }
                     }
                 }

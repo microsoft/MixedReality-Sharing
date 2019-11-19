@@ -1,7 +1,6 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License. See LICENSE in the project root for license information.
+﻿// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 
-using Microsoft.MixedReality.Sharing.Utilities;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -874,7 +873,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     }
 
     /// <summary>
-    /// Simple discovery agent for local networks.
+    /// Simple discovery agent with pluggable network transport.
     /// </summary>
     public class PeerDiscoveryAgent : IDiscoveryAgent
     {
@@ -888,11 +887,13 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         // Counts how many things (local resources or discovery tasks) are using the transport.
         private int transportRefCount_ = 0;
 
+        /// Options for this agent
         public class Options
         {
             public int ResourceExpirySec = 30;
         }
 
+        /// Create a discovery agent with the given transport and options.
         public PeerDiscoveryAgent(IPeerDiscoveryTransport transport, Options options = null)
         {
             transport_ = transport;
