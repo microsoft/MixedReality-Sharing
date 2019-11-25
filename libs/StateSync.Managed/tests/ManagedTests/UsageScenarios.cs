@@ -290,7 +290,8 @@ namespace Microsoft.MixedReality.Sharing.StateSync.Test
 
     public class UsageScenarios
     {
-        [Fact]
+        // The test is switched off and currently exists for illustration purposes.
+        //[Fact]
         public void StatePingPong()
         {
             // What's missing from this example:
