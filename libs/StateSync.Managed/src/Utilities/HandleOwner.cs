@@ -31,6 +31,6 @@ namespace Microsoft.MixedReality.Sharing.StateSync.Utilities
 
         [DllImport(PInvokeAPI.LibraryName, EntryPoint =
             "Microsoft_MixedReality_Sharing_StateSync_VirtualRefCountedBase_RemoveRef")]
-        public static extern void VirtualRefCountedBase_RemoveRef(IntPtr handle);
+        private static extern void VirtualRefCountedBase_RemoveRef(IntPtr handle);
     }
 }

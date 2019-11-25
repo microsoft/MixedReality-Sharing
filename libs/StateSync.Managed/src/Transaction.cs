@@ -1,83 +1,67 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License. See LICENSE in the project root for license information.
+﻿// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 
 using System;
-using System.Threading.Tasks;
 
 namespace Microsoft.MixedReality.Sharing.StateSync
 {
-    public enum TransactionResult
-    {
-        Succeeded,
-        Conflict,
-        Failed
-    }
-
     /// <summary>
-    /// Transactions are used to mutate the storage, adding/updated/removing values for keys.
+    /// An immutable object that represents a change to the state.
+    /// Can be applied to a state to transition it to the next version.
     /// </summary>
-    public class Transaction : DisposablePointerBase
+    public class Transaction : Utilities.VirtualRefCountedBase
     {
-        public Transaction(IntPtr transactionPointer)
-            : base(transactionPointer)
+        public enum Outcome
         {
+            /// <summary>
+            /// The transaction was successfully applied, and the version was incremented.
+            /// </summary>
+            /// <remarks>The outcome means that all prerequisites were satisfied,
+            /// and all requested changes were effectively made. However, it doesn't
+            /// mean that the number of modifications is the same as requested
+            /// (and can even be zero).
+            /// For example, if some subkey already had a value X, a request to
+            /// write X to that subkey won't generate an edit, but the overall
+            /// outcome of the transaction will be successful.
+            /// If this is not the desired behavior, use explicit requirements
+            /// while building the transaction. </remarks>
+            Applied,
+
+            /// <summary>
+            /// The operations in the transaction couldn't be applied due to unsatisfied
+            /// prerequisites, but the version was incremented anyway.
+            /// </summary>
+            PrerequisitesFailed,
+
+            /// <summary>
+            /// The transaction couldn't be persisted (usually because of the connectivity
+            /// issues), and therefore it wasn't applied.
+            /// </summary>
+            FailedToPersist,
+
+            /// <summary>
+            /// The outcome of the transaction is unknown, usually because the connection
+            /// was lost after the attempt to commit the transaction was made.
+            /// </summary>
+            Unknown,
+
+            /// <summary>
+            /// The transaction couldn't be applied due to insufficient resources.
+            /// The version is not incremented since this this result could be specific
+            /// to this machine and not be reproducible under different conditions (and
+            /// thus incrementing the version could make the behavior non-deterministic),
+            /// and no further modifications can be made to the same state.
+            /// Old snapshots can still be safely observed. 
+            /// </summary>
+            InsufficientResources,
         }
 
-        /// <summary>
-        /// Specifies a key as an immutable constraints in order for this transaction to be commited succesfully.
-        /// If the value associated with key/subkey changes, this transaction will be rejected.
-        /// </summary>
-        /// <param name="key">The required key.</param>
-        /// <param name="subkey">The required subkey.</param>
-        public void Require(KeyRef key, ulong subkey)
+        // TODO: there should be multiple constructors for trivial transactions,
+        // and only the complex ones should require the TransactionBuilder.
+
+        internal Transaction(IntPtr handle)
         {
-            // TODO: This class is about to be replaced, this is a temporary stub
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// Adds a value to be applied to the storage with a given key and subkey combination.
-        /// </summary>
-        /// <param name="key">Key to associate the value with.</param>
-        /// <param name="subkey">Subkey to associate the value with.</param>
-        /// <param name="value">The binary value.</param>
-        public void Put(KeyRef key, ulong subkey, ReadOnlySpan<byte> value)
-        {
-            // TODO: This class is about to be replaced, this is a temporary stub
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// Removes a value associated wiht a key and subkey.
-        /// </summary>
-        /// <param name="key">Key for which to remove the associated value.</param>
-        /// <param name="subkey">Subkey for which to remove the associated value.</param>
-        public void Delete(KeyRef key, ulong subkey)
-        {
-            // TODO: This class is about to be replaced, this is a temporary stub
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// Asynchronously commit the transaction, returning the <see cref="TransactionResult"/> on completion.
-        /// </summary>
-        /// <returns>The awaitable task with result of the transaction.</returns>
-        public async Task<TransactionResult> CommitAsync()
-        {
-            ThrowIfDisposed();
-
-            TaskCompletionSource<TransactionResult> tcs = new TaskCompletionSource<TransactionResult>();
-
-            StateSyncAPI.Transaction_Commit(Pointer, tcs.SetResult);
-
-            return await tcs.Task;
-        }
-
-        protected override void ReleasePointer(IntPtr pointer)
-        {
-            ThrowIfDisposed();
-
-            StateSyncAPI.Transaction_Release(pointer);
+            this.handle = handle;
         }
     }
 }

@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Snapshots\" />
+    <Folder Include="Subscriptions\" />
   </ItemGroup>
 
 </Project>
