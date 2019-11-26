@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace Microsoft.MixedReality.Sharing.StateSync
 {
@@ -41,13 +42,13 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// <summary>
         /// Commits the transaction.
         /// </summary>
-        public Action<Transaction.Outcome> Commit(Transaction transaction)
+        public Task<Transaction.Outcome> Commit(Transaction transaction)
         {
             throw new NotImplementedException();
         }
 
         // TODO: discuss:
-        // It feels like the clients don't necessarily need the Action-based interface,
+        // It feels like the clients don't necessarily need the Task-based interface,
         // especially if we want to separate the moment the transaction
         // is applied and the moment the updates are processed (see below).
         public void CommitSilently(Transaction transaction)
