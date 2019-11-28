@@ -189,7 +189,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync.Test
             StateSnapshot snapshot;
             for (bool hasMoreUpdates = true; hasMoreUpdates;)
             {
-                (snapshot, hasMoreUpdates) = _replicatedState.ProcessUpdates(this);
+                (snapshot, hasMoreUpdates) = _replicatedState.ProcessSingleUpdate(this);
             }
             switch (testStage)
             {
@@ -239,7 +239,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync.Test
             StateSnapshot snapshot;
             for (bool hasMoreUpdates = true; hasMoreUpdates;)
             {
-                (snapshot, hasMoreUpdates) = _replicatedState.ProcessUpdates(this);
+                (snapshot, hasMoreUpdates) = _replicatedState.ProcessSingleUpdate(this);
             }
             switch (testStage)
             {

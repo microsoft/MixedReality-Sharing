@@ -2,13 +2,13 @@
 // Licensed under the MIT License.
 
 using Microsoft.MixedReality.Sharing.StateSync.Snapshots;
+using System;
 
 namespace Microsoft.MixedReality.Sharing.StateSync
 {
     public readonly ref struct OnStateAdvancedArgs
     {
         /// WIP: incomplete.
-
 
         /// <summary>
         /// The snapshot of the state before it was advanced.
@@ -28,14 +28,14 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// WIP: incomplete.
 
         /// <summary>
-        /// senderId field that was originally provided by the sender of this transaction.
+        /// InstanceGuid field of the <see cref="ReplicatedState"/> instance that committed this transaction.
         /// </summary>
-        public readonly ulong senderId;
+        public readonly Guid SenderInstanceGuid;
 
         /// <summary>
-        /// senderEntryId field that was originally provided by the sender of this transaction
+        /// Sender-specific incremental id that was returned from <see cref="ReplicatedState.Commit(Transaction)"/>.
         /// </summary>
-        public readonly ulong senderEntryId;
+        public readonly ulong senderCommitId;
 
         /// <summary>
         /// The snapshot of the state before the transaction was applied.
@@ -68,14 +68,14 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// WIP: incomplete.
 
         /// <summary>
-        /// senderId field that was originally provided by the sender of this transaction.
+        /// InstanceGuid field of the <see cref="ReplicatedState"/> instance that committed this transaction.
         /// </summary>
-        public readonly ulong senderId;
+        public readonly Guid SenderInstanceGuid;
 
         /// <summary>
-        /// senderEntryId field that was originally provided by the sender of this transaction
+        /// Sender-specific incremental id that was returned from <see cref="ReplicatedState.Commit(Transaction)"/>.
         /// </summary>
-        public readonly ulong senderEntryId;
+        public readonly ulong senderCommitId;
         /// <summary>
 
         /// <summary>

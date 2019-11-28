@@ -14,50 +14,53 @@ namespace Microsoft.MixedReality.Sharing.StateSync
     public class ReplicatedState : Utilities.VirtualRefCountedBase
     {
         /// <summary>
+        /// The unique identifier of the replicated state.
+        /// </summary>
+        /// <remarks>Must be provided in the constructor for the <see cref="ReplicatedState"/>.</remarks>
+        public readonly Guid StateGuid;
+
+        /// <summary>
+        /// A unique identifier that is generated each time a new <see cref="ReplicatedState"/> object is created.
+        /// Identifies this particular instance of the <see cref="ReplicatedState"/> class.
+        /// </summary>
+        /// <remarks>This Guid will be attached to all transactions committed by this instance, and
+        /// then will be passed as an argument to the various methods of <see cref="UpdateListener"/>
+        /// when <see cref="ProcessSingleUpdate(UpdateListener)"/> is called.
+        /// This way the listener can tell its own transactions apart from similar transactions committed
+        /// by other instances (typically located on other devices).</remarks>
+        public readonly Guid InstanceGuid = Guid.NewGuid();
+
+        /// <summary>
         /// Constructs a new state.
         /// </summary>
-        /// <remarks>The initial version is 0, and the state is empty.</remarks>
+        /// <param name="stateGuid">The unique identifier of the replicated state.</param>
+        /// <remarks>After a new ReplicatedState is created, the initial version is 0,
+        /// and the state is empty.</remarks>
         /// TODO: the transport layer should also be provided as an argument.
-        public ReplicatedState(Guid guid) {
-            // TODO: use guid (this is a placeholder code)
+        public ReplicatedState(Guid stateGuid) {
+            StateGuid = stateGuid;
+            // TODO: use the guids (this is a placeholder code)
             handle = PInvoke_Create();
         }
-
-        // Why is this commented out:
-        // to make application of the transactions independent from processing their triggers,
-        // the user should use the workflow described in ProcessUpdates().
-        // This way transactions can be applied by the background thread, while the main
-        // thread of the application advances the state as fast as it can without dropping
-        // frames. This way a sudden burst of state modifications won't decrease the performance.
-
-        //         /// <summary>
-        //         /// Returns the latest snapshot of this state.
-        //         /// </summary>
-        //         /// <returns>An immutable snapshot representing the current version of the state.</returns>
-        //         public unsafe StateSnapshot GetSnapshot()
-        //         {
-        //             return new StateSnapshot(this, handle);
-        //         }
 
         /// <summary>
         /// Commits the transaction.
         /// </summary>
-        public Task<Transaction.Outcome> Commit(Transaction transaction)
-        {
-            throw new NotImplementedException();
-        }
-
-        // TODO: discuss:
-        // It feels like the clients don't necessarily need the Task-based interface,
-        // especially if we want to separate the moment the transaction
-        // is applied and the moment the updates are processed (see below).
-        public void CommitSilently(Transaction transaction)
+        /// <return>The local incremental ID of the commit that is sent together with <see cref="InstanceGuid"/>.</return>
+        /// <remarks>The method is non-blocking and will return immediately after the transaction is scheduled.
+        /// Calling <see cref="ProcessSingleUpdate(UpdateListener)"/> repeatedly may eventually trigger
+        /// a callback of an <see cref="UpdateListener"/> related to this commit,
+        /// assuming that this instance wasn't disconnected for a substantial amount of time,
+        /// in which case the history of commits may be lost, and the state may be advanced past this
+        /// transaction via <see cref="UpdateListener.OnStateAdvanced(OnStateAdvancedArgs)"/>.</remarks>
+        public ulong Commit(Transaction transaction)
         {
             throw new NotImplementedException();
         }
 
         /// <summary>
-        /// Processes some pending updates that are already validated and applied to the state.
+        /// Processes a single pending update from the queue, or returns immediately
+        /// if there are no pending updates.
         /// </summary>
         /// <returns>The snapshot of the state after the last processed update,
         /// and a flag that indicates whether there are more unprocessed updates in the queue.
@@ -69,7 +72,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// The caller can stop at any point, and resume processing the transactions
         /// on the next opportunity (for example, on the next frame's update step).
         /// </remarks>
-        public (StateSnapshot, bool) ProcessUpdates(UpdateListener listener)
+        public (StateSnapshot, bool) ProcessSingleUpdate(UpdateListener listener)
         {
             throw new NotImplementedException();
         }
