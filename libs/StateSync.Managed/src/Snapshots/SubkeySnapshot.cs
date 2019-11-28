@@ -54,8 +54,13 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// <summary>
         /// The span representing the value associated with this subkey.
         /// </summary>
-        /// <remarks>Note that the span can be empty, and it is not the same as
-        /// not having a subkey (subkeys with empty values can be used as flags).</remarks>
+        /// <remarks>Prefer this property to <see cref="GetValue"/> when the value doesn't need to be saved
+        /// independently from any snapshots (it's faster than creating a Value object).
+        /// 
+        /// The observed memory is guaranteed to stay valid for as long as it is referenced by
+        /// either a <see cref="Snapshot"/> or a <see cref="Value"/> object extracted from this
+        /// snapshot, so if the code just works with a <see cref="SubkeySnapshot"/> on the stack,
+        /// it's always better to use <see cref="ValueSpan"/>.</remarks>
         public ReadOnlySpan<byte> ValueSpan {
             get {
                 if (!Constants.IsVersionValid(Version))
