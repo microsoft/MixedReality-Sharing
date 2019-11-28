@@ -59,7 +59,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         {
             Snapshot = snapshot;
             _implState = new PInvokeAPI.SubkeyIteratorState();
-            this._keyHandleWrapper = keyHandleWrapper;
+            _keyHandleWrapper = keyHandleWrapper;
             _isBeforeFirst = true;
             PInvokeAPI.RawSubkeyView subkey_view = new PInvokeAPI.RawSubkeyView();
             PInvokeAPI.SubkeyIteratorState_Init(keyHandleWrapper, snapshotHandle, ref _implState, ref subkey_view);

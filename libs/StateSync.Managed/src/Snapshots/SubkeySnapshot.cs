@@ -93,9 +93,9 @@ namespace Microsoft.MixedReality.Sharing.StateSync
 
         internal unsafe SubkeySnapshot(StateSnapshot snapshot, ulong subkey, ulong version, byte* spanBegin, int spanSize)
         {
-            this.Snapshot = snapshot;
-            this.Subkey = subkey;
-            this.Version = version;
+            Snapshot = snapshot;
+            Subkey = subkey;
+            Version = version;
             _valueSpan = new ReadOnlySpan<byte>(spanBegin, spanSize);
         }
 

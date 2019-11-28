@@ -39,7 +39,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         internal KeySnapshotEnumerator(StateSnapshot snapshot, IntPtr internalHandle)
         {
             Snapshot = snapshot;
-            this._internalHandle = internalHandle;
+            _internalHandle = internalHandle;
         }
     }
 }
