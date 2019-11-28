@@ -6,10 +6,8 @@ using System;
 
 namespace Microsoft.MixedReality.Sharing.StateSync
 {
-    public readonly ref struct OnStateAdvancedArgs
+    public readonly ref struct OnStateFastForwardedArgs
     {
-        /// WIP: incomplete.
-
         /// <summary>
         /// The snapshot of the state before it was advanced.
         /// </summary>
@@ -25,8 +23,6 @@ namespace Microsoft.MixedReality.Sharing.StateSync
 
     public readonly ref struct OnTransactionAppliedArgs
     {
-        /// WIP: incomplete.
-
         /// <summary>
         /// InstanceGuid field of the <see cref="ReplicatedState"/> instance that committed this transaction.
         /// </summary>
@@ -65,8 +61,6 @@ namespace Microsoft.MixedReality.Sharing.StateSync
     }
     public readonly ref struct OnPrerequisitesFailedArgs
     {
-        /// WIP: incomplete.
-
         /// <summary>
         /// InstanceGuid field of the <see cref="ReplicatedState"/> instance that committed this transaction.
         /// </summary>
@@ -109,7 +103,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// state known to the client via individual transactions because the history
         /// of transactions has been trimmed, or because the listener starts from
         /// version 0 (initial empty state).</remarks>
-        void OnStateAdvanced(OnStateAdvancedArgs args);
+        void OnStateFastForwarded(OnStateFastForwardedArgs args);
 
         /// <summary>
         /// Invoked when the transaction is successfully applied.

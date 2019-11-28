@@ -62,18 +62,26 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// within this transaction will be overwritten by this call.</remarks>
         public void Delete(KeyRef key, ulong subkey)
         {
-            PInvoke_Delete(handle, key.handle, subkey);
+            PInvoke_DeleteSubkey(handle, key.handle, subkey);
         }
 
         /// <summary>
-        /// Instructs the transaction to delete all existing subkeys of the key before
-        /// applying any other changes.
+        /// Instructs the transaction to delete all subkeys of the key.
         /// </summary>
-        /// <remarks>Subkeys will be removed after the prerequisites of the transaction
-        /// are checked, but before any other changes are applied.</remarks>
-        public void ClearBeforeTransaction(KeyRef key)
+        /// <remarks>The effect of any previous Put() or Delete() calls on the same key
+        /// within this transaction will be overwritten by this call.
+        /// 
+        /// Note that this marks the whole key for deletion, and the exact number
+        /// of affected subkeys is only known only when the transaction is applied.
+        /// 
+        /// Use it to safely delete the key instead of calling <see cref="Delete(KeyRef, ulong)"/>
+        /// on individual subkeys when this is the intended effect.
+        /// 
+        /// You can call <see cref="Put"/> for the same key after calling <see cref="Delete(KeyRef)"/>
+        /// if you want to insert any subkeys within the same transaction.</remarks>
+        public void Delete(KeyRef key)
         {
-            PInvoke_ClearBeforeTransaction(handle, key.handle);
+            PInvoke_DeleteKey(handle, key.handle);
         }
 
         /// <summary>
@@ -148,12 +156,12 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         private static extern unsafe void PInvoke_PutBytes(IntPtr builderHandle, IntPtr keyHandle, ulong subkey, void* data, int size);
 
         [DllImport(PInvokeAPI.LibraryName, EntryPoint =
-            "Microsoft_MixedReality_Sharing_StateSync_TransactionBuilder_Delete")]
-        private static extern void PInvoke_Delete(IntPtr builderHandle, IntPtr keyHandle, ulong subkey);
+            "Microsoft_MixedReality_Sharing_StateSync_TransactionBuilder_DeleteSubkey")]
+        private static extern void PInvoke_DeleteSubkey(IntPtr builderHandle, IntPtr keyHandle, ulong subkey);
 
         [DllImport(PInvokeAPI.LibraryName, EntryPoint =
-            "Microsoft_MixedReality_Sharing_StateSync_TransactionBuilder_ClearBeforeTransaction")]
-        private static extern void PInvoke_ClearBeforeTransaction(IntPtr builderHandle, IntPtr keyHandle);
+            "Microsoft_MixedReality_Sharing_StateSync_TransactionBuilder_DeleteKey")]
+        private static extern void PInvoke_DeleteKey(IntPtr builderHandle, IntPtr keyHandle);
 
         [DllImport(PInvokeAPI.LibraryName, EntryPoint =
             "Microsoft_MixedReality_Sharing_StateSync_TransactionBuilder_RequirePresentSubkey")]

@@ -52,7 +52,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// a callback of an <see cref="UpdateListener"/> related to this commit,
         /// assuming that this instance wasn't disconnected for a substantial amount of time,
         /// in which case the history of commits may be lost, and the state may be advanced past this
-        /// transaction via <see cref="UpdateListener.OnStateAdvanced(OnStateAdvancedArgs)"/>.</remarks>
+        /// transaction via <see cref="UpdateListener.OnStateFastForwarded(OnStateFastForwardedArgs)"/>.</remarks>
         public ulong Commit(Transaction transaction)
         {
             throw new NotImplementedException();

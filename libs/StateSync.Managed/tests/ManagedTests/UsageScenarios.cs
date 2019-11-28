@@ -139,7 +139,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync.Test
             return guid.HasValue && _objects.Remove(guid.Value);
         }
 
-        public void OnStateAdvanced(OnStateAdvancedArgs args)
+        public void OnStateFastForwarded(OnStateFastForwardedArgs args)
         {
             // Re-creating the entire state from scratch (for this example).
             // More sophisticated clients can diff the two states and attempt to minimize the update.
