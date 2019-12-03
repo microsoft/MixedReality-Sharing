@@ -58,11 +58,19 @@ The [IDiscoveryResource](../src/IDiscoveryResource.cs) interface gives read acce
 
 ## Peer-to-peer discovery agent
 
-The discovery API is generic and can implemented on top of a variery of protocols/network transports. The Matchmaking library contains a simple implementation, useful for prototypes/demos where all the participant devices are joined to the same local network.
+The discovery API is generic and can implemented on top of a variery of protocols/network transports. The Matchmaking library contains a simple implementation, useful for prototypes/demos where all the participant devices are joined to the same local network or multicast group.
 
-TODO
-_Agent uses simple P2P protocol, based on [SSDP](https://tools.ietf.org/html/draft-cai-ssdp-v1-03). Can choose the transport - memory-based (for testing) or UDP-based. Examples_
+[PeerDiscoveryAgent](../src/Peer/PeerDiscoveryAgent.cs) implements IDiscoveryAgent using a simple peer-to-peer protocol loosely based on [SSDP](https://tools.ietf.org/html/draft-cai-ssdp-v1-03). When an agent publishes a resource, it starts periodically broadcasting announcement messages announcing its availability and attributes. When an agent subscribes to a category, it starts periodically broadcasting query messages; each publisher replies to the query with announcements about its published resources. Every announcement contains the resource lifetime in seconds - agents will consider a resource expired after an interval equal to its lifetime has passed from the last announcement about the resource.
+
+Messages are exchanged between agents using a [IPeerDiscoveryTransport](../src/Peer/PeerDiscoveryTransport.cs) specified on agent creation:
+```csharp
+var transport = new UdpPeerDiscoveryTransport(IPAddress.Broadcast, 45278);
+var agent = new PeerDiscoveryAgent(transport);
+```
+
+IPeerDiscoveryTransport is a simple convenience interface to send and receive broadcast messages among peers. The library contains an implementation that exchanges messages through UDP broadcast/multicast ([UdpPeerDiscoveryTransport](../src/Peer/UdpPeerDiscoveryTransport.cs)) plus a memory-based, in-process one for testing ([MemoryPeerDiscoveryTransport](../src/Peer/MemoryPeerDiscoveryTransport.cs)).
 
 ### Limitations
-TODO 
-_not production-ready - no performance, security etc. Only small packets(< UDP limit)_
+PeerDiscoveryAgent is meant to be used in small-size prototypes and is not recommended in production application that expect to handle many concurrent agents/resources. Importantly, the implementation assumes a trusted network and it is not suitable to applications that might handle malicious network traffic.
+
+UdpPeerDiscoveryTransport sends one UDP packet per resource announcement, including all the resource data - category, connection, attributes. Depending on the network configuration, UDP packets bigger than a certain size might be fragmented - increasing packet loss and decreasing performance - or dropped by the network stack. The implementation will therefore work reliably only if the total data for each resource is low - generally under 1KB.
