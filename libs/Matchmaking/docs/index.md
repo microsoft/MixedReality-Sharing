@@ -8,7 +8,7 @@ The Matchmaking library automates the process of discovering and joining MR expe
 
 Matchmaking is a C# .NET Standard 2.0 library. It is available as a [NuGet package](insert_link). Alternatively, the [Microsoft.MixedReality.Sharing.Matchmaking](../) project can be added to a Visual Studio solution and built from source.
 
-Currently the library contains a simple system to publish and discover arbitrary resources (application users, shared experiences, or others) on a local network using UDP.
+Currently the library contains a simple system to publish and discover arbitrary resources (application users, shared experiences, or others) on a local network using UDP. Check the [project roadmap](../../../docs/manual/roadmap.md) for planned features.
 
 ## Resource discovery
 
@@ -35,16 +35,26 @@ A resource has:
     ```csharp
     string category = "myapp/session";
     IDiscoverySubscription sessionSubscription = agent.Subscribe(category);
-    sessionSubscription.Updated += (IDiscoverySubscription sub) =>
+    IDiscoveryResource foundSession = null;
+    while (foundSession == null)
     {
-        foreach (IDiscoveryResource res in sub.Resources)
+        foreach (IDiscoveryResource res in sessionSubscription.Resources)
         {
-            Console.WriteLine("Discovered session: " + res.Category);
+            if (res.Attributes["environment"] == "house")
+            {
+                Console.WriteLine("Discovered session at " + res.Connection);
+                foundSession = res;
+                break;
+            }
         }
-    };
+    }
+    // Unsubscribe from further updates.
+    sessionSubscription.Dispose();
     ```
 
 The [IDiscoveryResource](../src/IDiscoveryResource.cs) interface gives read access to resources published and discovered. In general, the publisher of a resource can edit its attribute after publishing by calling `RequestEdit` on the `IDiscoveryResource` and using the obtained `IDiscoveryResourceEditor`.
+
+`IDiscoveryAgent.Dispose()` stops advertising resources and terminates any active subscriptions.
 
 ## Peer-to-peer discovery agent
 
