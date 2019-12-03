@@ -46,7 +46,12 @@
       },
       "markdownEngineName": "markdig",
       "dest": "generated",
-      "xrefService": [ "https://xref.docs.microsoft.com/query?uid={uid}" ] //msdn xref service for resolving crefs
+      "xrefService": [
+        "https://xref.docs.microsoft.com/query?uid={uid}" //msdn xref service for resolving crefs
+      ],
+      "xref": [
+        "../build/docs/generated/xrefmap.yml"
+      ]
     }
   }
   
