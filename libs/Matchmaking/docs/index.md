@@ -1,12 +1,12 @@
 ---
-uid: index
-title: Index
+uid: matchmaking
+title: matchmaking
 ---
 # MixedReality-Sharing Matchmaking 0.0.1
 
 The Matchmaking library automates the process of discovering and joining MR experiences over the network.
 
-Matchmaking is a C# .NET Standard 2.0 library. It is available as a [NuGet package](insert_link). Alternatively, the [Microsoft.MixedReality.Sharing.Matchmaking](../) project can be added to a Visual Studio solution and built from source.
+Matchmaking is a C# .NET Standard 2.0 library. It is available as a [NuGet package](insert_link). Alternatively, the Microsoft.MixedReality.Sharing.Matchmaking project can be added to a Visual Studio solution and built from source.
 
 Currently the library contains a simple system to publish and discover arbitrary resources (application users, shared experiences, or others) on a local network using UDP. Check the [project roadmap](../../../docs/manual/roadmap.md) for planned features.
 
@@ -19,7 +19,7 @@ A resource has:
 - a _category string_: an application-defined string that indicates the type of the resource. This can be used to distinguish between resources published by different applications or between different types of resources within the same application (e.g. users vs shared sessions).
 - a set of optional _attributes_, application-defined key-value pairs. These can be used to expose room properties or capabilities to the discovery system.
 
-[IDiscoveryAgent](../src/IDiscoveryAgent.cs) is the main entry point of the discovery system. Through an agent you can:
+[IDiscoveryAgent](xref:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent) is the main entry point of the discovery system. Through an agent you can:
 1. **publish** resources on the network for other application processes to discover:
 
     ```csharp
@@ -52,7 +52,7 @@ A resource has:
     sessionSubscription.Dispose();
     ```
 
-The [IDiscoveryResource](../src/IDiscoveryResource.cs) interface gives read access to resources published and discovered. In general, the publisher of a resource can edit its attribute after publishing by calling `RequestEdit` on the `IDiscoveryResource` and using the obtained [IDiscoveryResourceEditor](../src/IDiscoveryResource.cs).
+The [IDiscoveryResource](xref:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource) interface gives read access to resources published and discovered. In general, the publisher of a resource can edit its attribute after publishing by calling [IDiscoveryResource.RequestEdit](xref:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.RequestEdit) and using the obtained [IDiscoveryResourceEditor](xref:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResourceEditor).
 
 `IDiscoveryAgent.Dispose()` stops advertising resources and terminates any active subscriptions.
 
@@ -60,15 +60,15 @@ The [IDiscoveryResource](../src/IDiscoveryResource.cs) interface gives read acce
 
 The discovery API is generic and can be implemented on top of a variery of protocols/network transports. The Matchmaking library contains a simple implementation, useful for prototypes/demos where all the participant devices are joined to the same local network or multicast group.
 
-[PeerDiscoveryAgent](../src/Peer/PeerDiscoveryAgent.cs) implements IDiscoveryAgent using a simple peer-to-peer protocol loosely based on [SSDP](https://tools.ietf.org/html/draft-cai-ssdp-v1-03). When an agent publishes a resource, it starts periodically broadcasting announcement messages announcing its availability and attributes. When an agent subscribes to a category, it broadcasts a query message to which publishers reply with the current active resources, and starts listening for periodic announcements. Every announcement contains the resource lifetime in seconds - agents will consider a resource expired after an interval equal to its lifetime has passed from the last announcement about the resource.
+[PeerDiscoveryAgent](xref:Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent) implements IDiscoveryAgent using a simple peer-to-peer protocol loosely based on [SSDP](https://tools.ietf.org/html/draft-cai-ssdp-v1-03). When an agent publishes a resource, it starts periodically broadcasting announcement messages announcing its availability and attributes. When an agent subscribes to a category, it broadcasts a query message to which publishers reply with the current active resources, and starts listening for periodic announcements. Every announcement contains the resource lifetime in seconds - agents will consider a resource expired after an interval equal to its lifetime has passed from the last announcement about the resource.
 
-Messages are exchanged between agents using a [IPeerDiscoveryTransport](../src/Peer/PeerDiscoveryTransport.cs) specified on agent creation:
+Messages are exchanged between agents using a [IPeerDiscoveryTransport](xref:Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport) specified on agent creation:
 ```csharp
 var transport = new UdpPeerDiscoveryTransport(IPAddress.Broadcast, 45278);
 var agent = new PeerDiscoveryAgent(transport);
 ```
 
-IPeerDiscoveryTransport is a simple convenience interface to send and receive broadcast messages among peers. The library contains an implementation that exchanges messages through UDP broadcast/multicast ([UdpPeerDiscoveryTransport](../src/Peer/UdpPeerDiscoveryTransport.cs)) plus a memory-based, in-process one for testing ([MemoryPeerDiscoveryTransport](../src/Peer/MemoryPeerDiscoveryTransport.cs)).
+IPeerDiscoveryTransport is a simple convenience interface to send and receive broadcast messages among peers. The library contains an implementation that exchanges messages through UDP broadcast/multicast ([UdpPeerDiscoveryTransport](xref:Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport)) plus a memory-based, in-process one for testing ([MemoryPeerDiscoveryTransport](xref:Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport)).
 
 ### Limitations
 PeerDiscoveryAgent is meant to be used in small-size prototypes and is not recommended in production application that expect to handle many concurrent agents/resources. Importantly, the implementation assumes a trusted network and it is not suitable to applications that might deal with malicious network traffic.
