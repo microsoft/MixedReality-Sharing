@@ -6,7 +6,7 @@ title: Roadmap
 
 The goal of MixedReality-Sharing is to provide a set cross-platform networking libraries which provide a solid foundation for rich multi-user experiences. Concretely, this covers everything from discovering peers, establishing connections and exchanging messages with them. We do this via the following independent packages
 
-* [Discovery](xref:Microsoft.MixedReality.Sharing.Matchmaking) - Decide who is included in the experience
+* [Discovery](../../libs/Matchmaking/docs/index.md) - Decide who is included in the experience
 * [Audio/Video/Data streams](https://microsoft.github.io/MixedReality-WebRTC/) - Exchange media and data
 * [Spatial Alignment](xref:Microsoft.MixedReality.Sharing.SpatialAlignment) - Establish a shared frame of reference
 * Synchronization - High level state synchronization
@@ -28,7 +28,7 @@ This adds support for WebRTC on windows platforms. Developers still need to supp
 
 Goal: Provide a mechanism for automatic configuration. Remove the need for explicit IP addresses.
 
-This milestone adds v0.0.1 of [Matchmaking](xref:Microsoft.MixedReality.Sharing.Matchmaking) discovery mechanism which allows simple network autoconfiguration. This initial implementation works via UDP broadcast. In other words, all devices must be on the same subnet. Future versions will lift this restriction.
+This milestone adds v0.0.1 of [Matchmaking](../../libs/Matchmaking/docs/index.md) discovery mechanism which allows simple network autoconfiguration. This initial implementation works via UDP broadcast. In other words, all devices must be on the same subnet. Future versions will lift this restriction.
 
 This release will be used as an integration test in a branch of [SpectatorView](https://microsoft.github.io/MixedReality-SpectatorView/). As well as the portable C# implementation, there will be some Unity specific UI components for things such as choosing a session if there are several available.
 

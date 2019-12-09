@@ -19,6 +19,10 @@
         },
         { // generate html for conceptual docs
           "files": ["**/*.md", "**/*.yml"]
+        },
+        { // generate html for libs docs
+          "files": ["libs/Matchmaking/docs/*.md"],
+		  "src": "..",
         }
       ],
       "resource": [

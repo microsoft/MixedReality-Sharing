@@ -15,6 +15,7 @@ MixedReality-Sharing is a cross-platform solution to enable rich multiuser exper
 - Getting started
   - [Installation](manual/installation.md)
   - [Building from sources](manual/building.md)
+- [Matchmaking](../libs/Matchmaking/docs/index.md)
 
 ## API reference
 
