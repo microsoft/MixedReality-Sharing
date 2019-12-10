@@ -48,6 +48,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Microsoft.MixedReality.Shar
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Microsoft.MixedReality.Sharing.StateSync-pinvoke-cpp", "libs\StateSync-pinvoke-cpp\Microsoft.MixedReality.Sharing.StateSync-pinvoke-cpp.vcxproj", "{8357A430-25A7-41FE-B540-05FAD9CAED6B}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DiscoveryDemo", "libs\Matchmaking\examples\DiscoveryDemo\DiscoveryDemo.csproj", "{4A3B2041-75D1-44A2-880F-149BDAD21EBC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -220,6 +222,18 @@ Global
 		{8357A430-25A7-41FE-B540-05FAD9CAED6B}.Release|x64.Build.0 = Release|x64
 		{8357A430-25A7-41FE-B540-05FAD9CAED6B}.Release|x86.ActiveCfg = Release|Win32
 		{8357A430-25A7-41FE-B540-05FAD9CAED6B}.Release|x86.Build.0 = Release|Win32
+		{4A3B2041-75D1-44A2-880F-149BDAD21EBC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4A3B2041-75D1-44A2-880F-149BDAD21EBC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4A3B2041-75D1-44A2-880F-149BDAD21EBC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{4A3B2041-75D1-44A2-880F-149BDAD21EBC}.Debug|x64.Build.0 = Debug|Any CPU
+		{4A3B2041-75D1-44A2-880F-149BDAD21EBC}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{4A3B2041-75D1-44A2-880F-149BDAD21EBC}.Debug|x86.Build.0 = Debug|Any CPU
+		{4A3B2041-75D1-44A2-880F-149BDAD21EBC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4A3B2041-75D1-44A2-880F-149BDAD21EBC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4A3B2041-75D1-44A2-880F-149BDAD21EBC}.Release|x64.ActiveCfg = Release|Any CPU
+		{4A3B2041-75D1-44A2-880F-149BDAD21EBC}.Release|x64.Build.0 = Release|Any CPU
+		{4A3B2041-75D1-44A2-880F-149BDAD21EBC}.Release|x86.ActiveCfg = Release|Any CPU
+		{4A3B2041-75D1-44A2-880F-149BDAD21EBC}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -233,6 +247,7 @@ Global
 		{70C01C2C-A402-406A-A0C3-DFD27F76AE6C} = {F52CFF23-46BF-4ED7-A793-D30A9B242208}
 		{7F0C7C2C-B0F2-494A-AF4A-22E79569124E} = {05406592-5C61-46E9-8DA0-6BF05FC32DCE}
 		{C3E27C3C-CC73-4D3D-800C-C4A308DCC38B} = {05406592-5C61-46E9-8DA0-6BF05FC32DCE}
+		{4A3B2041-75D1-44A2-880F-149BDAD21EBC} = {05406592-5C61-46E9-8DA0-6BF05FC32DCE}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {1E8B3035-4568-4A6F-9147-A4F57DD5BB0B}
