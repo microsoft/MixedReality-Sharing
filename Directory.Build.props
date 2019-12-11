@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!-- Common properties -->
-  <PropertyGroup Condition="'$(MRS_DevOptOut'=='' OR '$(MRS_DevOptOut'=='false'">
+  <PropertyGroup Condition=" '$(MRS_DevOptOut)' == '' OR '$(MRS_DevOptOut)' == 'false' ">
     <!-- SolutionDir is not defined when building projects explicitly -->
     <SolutionDir Condition=" '$(SolutionDir)' == '' ">$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), Microsoft.MixedReality.Sharing.sln))\</SolutionDir>
 
