@@ -24,9 +24,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.DiscoveryDemo
         private const ushort ChatPort = 45679;
         private const string ParticipantCategory = "Microsoft.MixedReality.Sharing.Matchmaking.DiscoveryDemo/participant";
         private const string NameKey = "name";
+        private const string Prompt = "Write a message: ";
 
-        private readonly IDiscoveryAgent _discoveryAgent;
-        private readonly IDiscoverySubscription _discoverySubscription;
+        private IDiscoveryAgent _discoveryAgent;
+        private IDiscoverySubscription _discoverySubscription;
 
         // For the sake of simplicity, this demo keeps two connections between each pair of peers,
         // each of which used in one direction only. In a real application, on discovery there
@@ -43,19 +44,20 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.DiscoveryDemo
         // Used by this process to write messages to other peers.
         private List<TcpClient> _writers = new List<TcpClient>();
 
-        private readonly TcpListener _chatServer;
+        private TcpListener _chatServer;
 
-        private readonly string _username;
-        private readonly string _localAddrString;
+        private string _username;
+        private string _localAddrString;
 
         private readonly object _consoleLock = new object();
 
-        Program(string username, IPAddress broadcastAddress)
+        public void Run(string username, IPAddress broadcastAddress)
         {
             _username = username;
             _localAddrString = GetLocalIPAddress().ToString();
             _chatServer = new TcpListener(IPAddress.Any, ChatPort);
-            ListenForConnectionsAsync();
+            _chatServer.Start();
+            Task.Run(ListenForConnections);
 
             // Initialize the discovery agent
             _discoveryAgent = new PeerDiscoveryAgent(new UdpPeerDiscoveryTransport(broadcastAddress, DiscoveryPort));
@@ -67,14 +69,47 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.DiscoveryDemo
 
             // Subscribe to other participant resources.
             _discoverySubscription = _discoveryAgent.Subscribe(ParticipantCategory);
-            _discoverySubscription.Updated += subscription =>
+            Action<IDiscoverySubscription> onUpdateCallback = (IDiscoverySubscription subscription) =>
             {
-                // When the active resources change, refresh the readers list.
-                RefreshReaders(_discoverySubscription.Resources);
+                // Parse discovered resources.
+                var activePeers = new Dictionary<IPAddress, string>();
+                foreach (var res in subscription.Resources)
+                {
+                    if (res.Connection == _localAddrString)
+                    {
+                        // Exclude the local resource.
+                        continue;
+                    }
+                    try
+                    {
+                        var address = IPAddress.Parse(res.Connection);
+                        var name = res.Attributes[NameKey];
+                        activePeers.Add(address, name);
+                    }
+                    catch (Exception)
+                    {
+                        // Invalid resource format, or multiple resources per host.
+                        continue;
+                    }
+                }
+
+                // Create reader connections to the active peers.
+                RefreshReaderConnections(activePeers);
             };
+            _discoverySubscription.Updated += onUpdateCallback;
 
             // Initialize the readers list.
-            RefreshReaders(_discoverySubscription.Resources);
+            onUpdateCallback(_discoverySubscription);
+
+            // Loop waiting for input.
+            Console.CursorTop = Console.WindowHeight;
+            Console.Write(Prompt);
+            while (true)
+            {
+                string message = Console.ReadLine();
+                PostLocalMessageToConsole(message);
+                PostLocalMessageToPeers(message);
+            }
         }
 
         public void Dispose()
@@ -88,38 +123,18 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.DiscoveryDemo
             {
                 writer.Dispose();
             }
-            ((IDisposable)_chatServer).Dispose();
+            _chatServer?.Stop();
 
             // Dispose of the subscription (this is not strictly necessary if
             // disposing of the agent shortly after, but it is good form).
-            _discoverySubscription.Dispose();
+            _discoverySubscription?.Dispose();
 
             // Dispose of the agent.
-            _discoveryAgent.Dispose();
+            _discoveryAgent?.Dispose();
         }
 
-        void RefreshReaders(IEnumerable<IDiscoveryResource> resources)
+        void RefreshReaderConnections(Dictionary<IPAddress, string> activePeers)
         {
-            // Exclude the local resource.
-            resources = resources.Where(r => r.Connection != _localAddrString);
-
-            // Parse discovered resources.
-            var activePeers = new Dictionary<IPAddress, string>();
-            foreach (var res in resources)
-            {
-                try
-                {
-                    var address = IPAddress.Parse(res.Connection);
-                    var name = res.Attributes[NameKey];
-                    activePeers.Add(address, name);
-                }
-                catch(Exception)
-                {
-                    // Invalid resource format, or multiple resources per host.
-                    continue;
-                }
-            }
-
             Reader[] expiredReaders;
             lock(_readers)
             {
@@ -142,10 +157,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.DiscoveryDemo
                         {
                             // Connect to the peer and start listening for messages.
                             client.Connect(address, ChatPort);
-                            PostMessage($"{name} has joined");
+                            PostMessageToConsole($"{name} has joined");
                             var reader = new Reader { PeerName = name, Client = client };
                             _readers.Add(reader);
-                            ListenForMessagesAsync(reader);
+                            Task.Run(() => ListenForMessages(reader));
                         }
                         catch (SocketException e)
                         {
@@ -163,58 +178,51 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.DiscoveryDemo
             }
         }
 
-        #region Listening tasks
+        #region Listening loops
 
-        private Task ListenForConnectionsAsync()
+        private void ListenForConnections()
         {
-            _chatServer.Start();
-            return Task.Run(() =>
+            while (true)
             {
-                while (true)
-                {
-                    var client = _chatServer.AcceptTcpClient();
+                var client = _chatServer.AcceptTcpClient();
 
-                    // Start sending the local messages to this connection.
-                    lock (_writers)
-                    {
-                        _writers.Add(client);
-                    }
+                // Start sending the local messages to this connection.
+                lock (_writers)
+                {
+                    _writers.Add(client);
                 }
-            });
+            }
         }
 
-        Task ListenForMessagesAsync(Reader reader)
+        void ListenForMessages(Reader reader)
         {
-            return Task.Run(() =>
+            try
             {
-                try
+                using (var strReader = new BinaryReader(reader.Client.GetStream(), Encoding.UTF8, leaveOpen: true))
                 {
-                    using (var strReader = new BinaryReader(reader.Client.GetStream(), Encoding.UTF8, leaveOpen: true))
+                    while (true)
                     {
-                        while (true)
-                        {
-                            string message = strReader.ReadString();
-                            PostMessage($"{reader.PeerName}: {message}");
-                        }
+                        string message = strReader.ReadString();
+                        PostMessageToConsole($"{reader.PeerName}: {message}");
                     }
                 }
-                catch(Exception e)
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e);
+                lock (_readers)
                 {
-                    Debug.WriteLine(e);
-                    Debug.WriteLine("Stop listening");
-                    lock(_readers)
-                    {
-                        _readers.Remove(reader);
-                    }
+                    _readers.Remove(reader);
                 }
-            });
+                PostMessageToConsole($"{reader.PeerName} has left");
+            }
         }
 
         #endregion
 
-        #region Input/Output
+        #region Utilities
 
-        void PostMessage(string message)
+        void PostMessageToConsole(string message)
         {
             lock(_consoleLock)
             {
@@ -227,44 +235,37 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.DiscoveryDemo
                 Console.CursorLeft = oldLeft;
             }
         }
-        void ReadInput()
-        {
-            const string prompt = "Write a message: ";
-            Console.CursorTop = Console.WindowHeight;
-            Console.Write(prompt);
-            while (true)
-            {
-                string temp = Console.ReadLine();
-                lock (_consoleLock)
-                {
-                    Console.WindowTop = 0;
-                    Console.WindowLeft = 0;
-                    PostMessage($"{_username}: {temp}");
 
-                    Console.Write(prompt);
-                    for (int i = 0; i < temp.Length; ++i)
-                    {
-                        Console.Write(' ');
-                    }
-                    Console.CursorLeft -= temp.Length;
-                }
-                lock (_writers)
+        void PostLocalMessageToConsole(string message)
+        {
+            lock (_consoleLock)
+            {
+                Console.WindowTop = 0;
+                Console.WindowLeft = 0;
+                PostMessageToConsole($"{_username}: {message}");
+
+                Console.Write(Prompt);
+                for (int i = 0; i < message.Length; ++i)
                 {
-                    foreach (var peer in _writers)
+                    Console.Write(' ');
+                }
+                Console.CursorLeft -= message.Length;
+            }
+        }
+
+        void PostLocalMessageToPeers(string message)
+        {
+            lock (_writers)
+            {
+                foreach (var peer in _writers)
+                {
+                    using (var writer = new BinaryWriter(peer.GetStream(), Encoding.UTF8, leaveOpen: true))
                     {
-                        using (var writer = new BinaryWriter(peer.GetStream(), Encoding.UTF8, leaveOpen: true))
-                        {
-                            writer.Write(temp);
-                        }
+                        writer.Write(message);
                     }
                 }
             }
-
         }
-
-        #endregion
-
-        #region Utilities
 
         private static IPAddress GetLocalIPAddress()
         {
@@ -301,9 +302,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.DiscoveryDemo
                 broadcastAddress = IPAddress.Broadcast;
             }
 
-            using (var simpleChat = new Program(localName, broadcastAddress))
+            using (var simpleChat = new Program())
             {
-                simpleChat.ReadInput();
+                simpleChat.Run(localName, broadcastAddress);
             }
         }
     }
