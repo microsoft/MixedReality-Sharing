@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-using Microsoft.MixedReality.Sharing.Matchmaking;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,13 +11,13 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Microsoft.MixedReality.Sharing.Matchmaking.DiscoveryDemo
+namespace Microsoft.MixedReality.Sharing.Matchmaking.Example
 {
     /// <summary>
     /// Simple P2P chat app that exemplifies usage of <see cref="PeerDiscoveryAgent"/> and <see cref="UdpPeerDiscoveryTransport"/>.
-    /// Usage: SimpleChat [localUsername] [broadcastAddress]
+    /// Usage: P2PChat [localUsername] [broadcastAddress]
     /// </summary>
-    class Program : IDisposable
+    class P2PChat : IDisposable
     {
         private const ushort DiscoveryPort = 45678;
         private const ushort ChatPort = 45679;
@@ -86,9 +85,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.DiscoveryDemo
                         var name = res.Attributes[NameKey];
                         activePeers.Add(address, name);
                     }
-                    catch (Exception)
+                    catch (Exception e)
                     {
                         // Invalid resource format, or multiple resources per host.
+                        Debug.WriteLine($"Invalid resource: {e}");
                         continue;
                     }
                 }
@@ -302,7 +302,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.DiscoveryDemo
                 broadcastAddress = IPAddress.Broadcast;
             }
 
-            using (var simpleChat = new Program())
+            using (var simpleChat = new P2PChat())
             {
                 simpleChat.Run(localName, broadcastAddress);
             }
