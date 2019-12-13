@@ -1,61 +1,72 @@
 {
-    "metadata": [
-      { // generate meta data for api docs
-        "src": [
-          {
-            "files": [ "**/*.csproj"],
-            "src": "../libs/Matchmaking/src"
-          }
+  "metadata": [
+    { // generate meta data for api docs
+      "src": [
+        {
+          "files": [
+            "**/*.csproj"
+          ],
+          "src": "../libs/Matchmaking/src"
+        }
+      ],
+      "dest": "api"
+    }
+  ],
+  "build": {
+    "content": [
+      { // generate html for api docs
+        "files": [
+          "**/*.yml"
         ],
+        "src": "../build/docs/api", // temp meta data folder from previous step
         "dest": "api"
+      },
+      { // generate html for conceptual docs
+        "files": [
+          "**/*.md",
+          "**/*.yml"
+        ]
+      },
+      { // generate html for libs docs
+        "files": [
+          "libs/Matchmaking/docs/*.md"
+        ],
+        "src": ".."
       }
     ],
-    "build": {
-      "content": [
-        { // generate html for api docs
-          "files": [ "**/*.yml"],
-          "src": "../build/docs/api", // temp meta data folder from previous step
-          "dest": "api"
-        },
-        { // generate html for conceptual docs
-          "files": ["**/*.md", "**/*.yml"]
-        },
-        { // generate html for libs docs
-          "files": ["libs/Matchmaking/docs/*.md"],
-		  "src": "..",
-        }
-      ],
-      "resource": [
-        { // resource files that will be copied over without modifications
-          "files": ["**/*.png", "**/*.svg"]
-        }
-      ],
-      "template": [
-          // gets default template (html/css/jscript) from docfx and copies subsequent templates on top
-          "default",
-          "template/mr-sharing"
-      ],
-      "globalMetadata": {
-        // global docfx config - see docfx documentation for more config params (https://dotnet.github.io/docfx/tutorial/docfx.exe_user_manual.html)
-        "_appTitle": "MixedReality-Sharing Documentation",
-        "_enableSearch": true,
-        "_disableNavbar": false,
-        "_appLogoPath": "mr-sharing_icon.png",
-        "_appFaviconPath": "mr-sharing_icon.png"
-        // re-add this section if you want to publish a version of the docs that keeps the "improve this doc" link pointing to mrtk_development branch
-        //"_gitContribute": {
-        //  "repo": "https://github.com/Microsoft/MixedReality-Sharing",
-        //  "branch": "feature/docs"
-        //}
-      },
-      "markdownEngineName": "markdig",
-      "dest": "generated",
-      "xrefService": [
-        "https://xref.docs.microsoft.com/query?uid={uid}" //msdn xref service for resolving crefs
-      ],
-      "xref": [
-        "../build/docs/generated/xrefmap.yml"
-      ]
-    }
+    "resource": [
+      { // resource files that will be copied over without modifications
+        "files": [
+          "**/*.png",
+          "**/*.svg"
+        ]
+      }
+    ],
+    "template": [
+      // gets default template (html/css/jscript) from docfx and copies subsequent templates on top
+      "default",
+      "template/mr-sharing"
+    ],
+    "globalMetadata": {
+      // global docfx config - see docfx documentation for more config params (https://dotnet.github.io/docfx/tutorial/docfx.exe_user_manual.html)
+      "_appTitle": "MixedReality-Sharing Documentation",
+      "_enableSearch": true,
+      "_disableNavbar": false,
+      "_appLogoPath": "mr-sharing_icon.png",
+      "_appFaviconPath": "mr-sharing_icon.png"
+      // re-add this section if you want to publish a version of the docs that keeps the "improve this doc" link pointing to mrtk_development branch
+      //"_gitContribute": {
+      //  "repo": "https://github.com/Microsoft/MixedReality-Sharing",
+      //  "branch": "feature/docs"
+      //}
+    },
+    "markdownEngineName": "markdig",
+    "dest": "generated",
+    "xrefService": [
+      "https://xref.docs.microsoft.com/query?uid={uid}" //msdn xref service for resolving crefs
+    ],
+    "xref": [
+      "../build/docs/generated/xrefmap.yml"
+    ]
   }
-  
+}
