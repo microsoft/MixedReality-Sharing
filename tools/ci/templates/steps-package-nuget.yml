@@ -1,28 +1,28 @@
 # [Template] Build packages and publish artifacts
 
 steps:
-  - task: DotNetCoreCLI@2 # netcore or netstandard project  use this instead of nuget task
+  - task: DotNetCoreCLI@2 # netcore or netstandard project use this instead of nuget task
     inputs:
       command: 'pack'
-      nobuild: 'true'
       verbosityPack: 'normal'
-      configuration: 'Debug'
-      packagesToPack: 'libs/**/*.csproj'
+      configuration: 'Release'
+      packagesToPack: 'libs/Matchmaking/src/*.csproj'
+      #packagesToPack: 'libs/Common.Utilities/src/*.csproj'
       versioningScheme: 'byPrereleaseNumber'
       majorVersion: '0'
       minorVersion: '0'
-      patchVersion: '0'
+      patchVersion: '2'
 
-  - task: NuGetCommand@2 # c++ needs an explicit nuspec
-    inputs:
-      command: 'pack'
-      configuration: 'Debug'
-      packagesToPack: 'libs/**/*.nuspec'
-      buildProperties: OutputPath=..\..\..\build\bin\Debug # TODO not hardcoded
-      versioningScheme: 'byPrereleaseNumber'
-      majorVersion: '0'
-      minorVersion: '0'
-      patchVersion: '0'
+# - task: NuGetCommand@2 # c++ needs an explicit nuspec
+#   inputs:
+#     command: 'pack'
+#     configuration: 'Release'
+#     packagesToPack: 'libs/**/*.nuspec'
+#     buildProperties: OutputPath=..\..\..\build\bin\Release # TODO not hardcoded
+#     versioningScheme: 'byPrereleaseNumber'
+#     majorVersion: '0'
+#     minorVersion: '0'
+#     patchVersion: '0'
 
   - task: PublishBuildArtifacts@1
     inputs:
