@@ -2,7 +2,6 @@
 uid: building
 title: Building from Source
 ---
-# Building from source
 
 For convenience, we supply prebuilt [nuget packages](installation.md), but the packages can also be built from source if needed.
 
@@ -22,7 +21,7 @@ The solution uses Visual Studio 2019 with the following features:
 
 ## Cloning the Repository
 
-The official repository containing the source code of MixedReality-Sharing is https://github.com/microsoft/MixedReality-Sharing. Development is done on the master branch.
+The official repository containing the source code of MixedReality-Sharing is <https://github.com/microsoft/MixedReality-Sharing>. Development is done on the master branch.
 
 ```cmd
 git clone https://github.com/microsoft/MixedReality-Sharing
