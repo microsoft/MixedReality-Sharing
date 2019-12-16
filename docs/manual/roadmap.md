@@ -2,7 +2,7 @@
 uid: roadmap
 title: Roadmap
 ---
-# Project Goal
+## Project Goal
 
 The goal of MixedReality-Sharing is to provide a set cross-platform networking libraries which provide a solid foundation for rich multi-user experiences. Concretely, this covers everything from discovering peers, establishing connections and exchanging messages with them. We do this via the following independent packages
 
@@ -11,20 +11,20 @@ The goal of MixedReality-Sharing is to provide a set cross-platform networking l
 * [Spatial Alignment](xref:Microsoft.MixedReality.Sharing.SpatialAlignment) - Establish a shared frame of reference
 * Synchronization - High level state synchronization
 
-
-# Milestones
+## Milestones
 
 Milestones are only roughly in expected chronological order.
 
-## Audio/Video/Data (Shipped October 2019)
+### Audio/Video/Data (Shipped October 2019)
 
 Goal: Ship a networking solution which supports audio/video/data.
 
-Our solution is based on WebRTC. MixedReality-WebRTC 1.0.0 comes support for C#/C++, Desktop/UWP, ARM/x86/x64. https://github.com/microsoft/MixedReality-WebRTC/releases/tag/v1.0.0
+Our solution is based on WebRTC. MixedReality-WebRTC 1.0.0 comes support for C#/C++, Desktop/UWP, ARM/x86/x64. <https://github.com/microsoft/MixedReality-WebRTC/releases/tag/v1.0.0>
 
-This adds support for WebRTC on windows platforms. Developers still need to supply their own signalling solution (before opening a WebRTC connection, some out-of-band messages must be exchanged configure media types and perform NAT punchthrough)
+This adds support for WebRTC on windows platforms. Developers can be sure that our devices have good support. E.g. Hardware video encode/decode, integration with unusual devices such as mixed reality capture (mixed camera and rendered content) as as video source.
+Developers still need to supply their own signalling solution (before opening a WebRTC connection, some out-of-band messages must be exchanged configure media types and perform NAT punchthrough)
 
-## Network Autoconfiguration
+### Network Autoconfiguration
 
 Goal: Provide a mechanism for automatic configuration. Remove the need for explicit IP addresses.
 
@@ -32,7 +32,7 @@ This milestone adds v0.0.1 of [Matchmaking](../../libs/Matchmaking/docs/index.md
 
 This release will be used as an integration test in a branch of [SpectatorView](https://microsoft.github.io/MixedReality-SpectatorView/). As well as the portable C# implementation, there will be some Unity specific UI components for things such as choosing a session if there are several available.
 
-## Spatial Alignment
+### Spatial Alignment
 
 Goal: Simplify establishing a shared reference frame.
 
@@ -42,13 +42,13 @@ Several swappable backends are available. [QR code](https://en.wikipedia.org/wik
 
 The implementation is extracted and refined from [SpectatorView](https://microsoft.github.io/MixedReality-SpectatorView/). Naturally, SpectatorView will be the first consumer of the new API.
 
-## WebRTC Signalling
+### WebRTC Signalling
 
 Goal: Provide an integrated WebRTC signalling service. Remove the need for an external solution.
 
 WebRTC provides a lot of value. But the need to implement signalling can be an obstacle. With this milestone, a developer can easily get multiple devices connected, without the requirement to run a server.
 
-## Matchmaking Transport
+### Matchmaking Transport
 
 Goal: Make Matchmaking work without requiring devices to be on the same subnet.
 
