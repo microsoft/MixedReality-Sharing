@@ -57,6 +57,8 @@ The [IDiscoveryResource](xref:Microsoft.MixedReality.Sharing.Matchmaking.IDiscov
 
 `IDiscoveryAgent.Dispose()` stops advertising resources and terminates any active subscriptions.
 
+See the [P2PChat demo](../examples/P2PChat/P2PChat.cs) for a usage example.
+
 ## Peer-to-peer discovery agent
 
 The discovery API is generic and can be implemented on top of a variety of protocols/network transports. The Matchmaking library contains a simple implementation, useful for prototypes/demos where all the participant devices are joined to the same local network or multicast group.
