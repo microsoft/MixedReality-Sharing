@@ -6,7 +6,7 @@ The Matchmaking library automates the process of discovering and joining MR expe
 
 Matchmaking is a C# .NET Standard 2.0 library. It is available as a [NuGet package](insert_link). Alternatively, the Microsoft.MixedReality.Sharing.Matchmaking project can be added to a Visual Studio solution and built from source.
 
-Currently the library contains a simple system to publish and discover arbitrary resources (application users, shared experiences, or others) on a local network using UDP. Check the [project roadmap](../../../docs/manual/roadmap.md) for planned features.
+Currently the library contains a simple system to publish and discover arbitrary resources (application users, shared experiences, or others) on a local network using UDP. Check the [project roadmap](xref:roadmap.md) for planned features.
 
 ## Resource discovery
 

@@ -121,7 +121,7 @@ else {
 }
 
 # Generate the documentation
-Invoke-Expression "$docfx_exe docfx.json --intermediateFolder $build_root\obj -o $build_root $(if ($serve) {' --serve --port 8081 '} else {''})"
+Invoke-Expression "$docfx_exe $repo_root\docfx.json --intermediateFolder $build_root\obj -o $build_root $(if ($serve) {' --serve --port 8081 '} else {''})"
 Write-Host "Documentation generated in $build_root/generated."
 
 # Clean-up obj/xdoc folders generated outside build tree -- See https://github.com/dotnet/docfx/issues/1156
