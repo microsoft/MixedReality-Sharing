@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Common properties -->
+  <PropertyGroup Condition=" '$(MRS_DevOptOut)' == '' OR '$(MRS_DevOptOut)' == 'false' ">
+    <!-- SolutionDir is not defined when building projects explicitly -->
+    <SolutionDir Condition=" '$(SolutionDir)' == '' ">$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), Microsoft.MixedReality.Sharing.sln))\</SolutionDir>
+
+    <!-- Intermediate Output paths -->
+    <BaseIntermediateOutputPath>$(SolutionDir)build\obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+    <MSBuildProjectExtensionsPath>$(BaseIntermediateOutputPath)\</MSBuildProjectExtensionsPath>
+    <RestoreOutputPath>$(MSBuildProjectExtensionsPath)</RestoreOutputPath>
+
+    <!-- Don't transitively copy output files, since everything builds to the same folder. -->
+    <UseCommonOutputDirectory>True</UseCommonOutputDirectory>
+    <OutputPath>$(SolutionDir)build\bin\$(Configuration)\$(Platform)\</OutputPath>
+
+    <!-- C++ support -->
+    <OutDir>$(OutputPath)</OutDir>
+    <IntDir>$(BaseIntermediateOutputPath)\$(Configuration)\$(Platform)\</IntDir>
+  </PropertyGroup>
+</Project>

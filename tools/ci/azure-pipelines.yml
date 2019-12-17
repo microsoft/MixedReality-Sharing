@@ -1,0 +1,37 @@
+# CI build for developer builds.
+
+trigger:
+- feature/dev
+
+variables:
+  buildConfiguration: 'Release'
+  solution: '*.sln'
+
+jobs:
+
+#
+# VS2019
+#
+- job: VS2019
+
+  pool:
+    vmImage: 'windows-2019'
+
+  steps:
+  - template: templates/steps-build-init.yml
+
+  # Build
+  - template: templates/steps-build-solution.yml
+    parameters:
+      platform: x86
+      configuration: Debug
+  - template: templates/steps-build-solution.yml
+    parameters:
+      platform: x64
+      configuration: Debug
+
+  # Test
+  - template: templates/steps-test-unit.yml
+    parameters:
+      configuration: Debug
+  #- template: templates/steps-package-nuget.yml

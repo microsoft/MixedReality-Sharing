@@ -1,0 +1,21 @@
+# [Template] Prepare workspace for building
+
+steps:
+  - task: DeleteFiles@1
+    displayName: 'Cleaning artifacts folder'
+    inputs:
+      sourceFolder: '$(Build.ArtifactStagingDirectory)'
+      contents: '**'
+
+  - task: NuGetToolInstaller@0
+    inputs:
+      versionSpec: '>=4.9.2' # need this for <license> tag in nuspec
+
+  - script: dotnet --list-sdks
+    displayName: List installed dotnet sdks
+
+  - task: NuGetCommand@2
+    displayName: 'Restore NuGet Packages'
+    inputs:
+      command: 'restore'
+      restoreSolution: '$(solution)'
