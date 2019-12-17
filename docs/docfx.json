@@ -40,6 +40,12 @@
           "**/*.png",
           "**/*.svg"
         ]
+      },
+      { // copy over example file
+        "files": [
+          "libs/Matchmaking/examples/P2PChat/P2PChat.cs"
+        ],
+        "src": ".."
       }
     ],
     "template": [
