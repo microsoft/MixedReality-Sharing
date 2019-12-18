@@ -1,7 +1,7 @@
 # CI build for developer builds.
 
 trigger:
-- feature/dev
+- master
 
 variables:
   buildConfiguration: 'Release'
