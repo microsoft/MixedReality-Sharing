@@ -1,5 +1,5 @@
 
-# MixedReality-Sharing
+# MixedReality-Sharing 
 
 [![Licensed under the MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/microsoft/MixedReality-WebRTC/blob/master/LICENSE)
 [![Under active development](https://img.shields.io/badge/status-active-green.svg)](https://github.com/microsoft/MixedReality-Sharing/commits/master)
