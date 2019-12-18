@@ -28,6 +28,14 @@ namespace Microsoft.MixedReality.Sharing.StateSync
             return new Value(handle);
         }
 
+        /// <summary>
+        /// Returns underlying bytes of the internal binary representation of the value.
+        /// </summary>
+        public ReadOnlySpan<byte> ToSpan()
+        {
+            return Value.ToSpan(handle);
+        }
+
         internal ValueRef(IntPtr handle)
         {
             this.handle = handle;
