@@ -3,7 +3,7 @@
 
 namespace Microsoft.MixedReality.Sharing.StateSync
 {
-    public class Constants
+    public static class Constants
     {
         // Versions greater or equal to this value are considered to be invalid.
         public const ulong kInvalidVersion = 0x7FFF_FFFF_FFFF_FFFF;
