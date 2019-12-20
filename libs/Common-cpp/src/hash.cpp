@@ -14,6 +14,11 @@
 #pragma intrinsic(_umul128)
 #endif
 
+// Using the 32-bit-friendly variation to make the performance consistent
+// on all platforms.
+// It's slower than the default one on x64/ARM64, but much faster on x86.
+#define WYHASH32
+
 namespace Microsoft::MixedReality::Sharing {
 namespace {
 
@@ -23,7 +28,18 @@ constexpr uint64_t _wyp2 = 0x8ebc6af09c88c6e3ull;
 constexpr uint64_t _wyp3 = 0x589965cc75374cc3ull;
 constexpr uint64_t _wyp4 = 0x1d8e4e27c47d124full;
 
+MS_MR_SHARING_FORCEINLINE uint64_t _wyrotr(uint64_t v, unsigned k) {
+  return (v >> k) | (v << (64 - k));
+}
+
 MS_MR_SHARING_FORCEINLINE uint64_t _wymum(uint64_t A, uint64_t B) {
+#ifdef WYHASH32
+  uint64_t hh = (A >> 32) * (B >> 32);
+  uint64_t hl = (A >> 32) * (unsigned)B;
+  uint64_t lh = (unsigned)A * (B >> 32);
+  uint64_t ll = (uint64_t)(unsigned)A * (unsigned)B;
+  return _wyrotr(hl, 32) ^ _wyrotr(lh, 32) ^ hh ^ ll;
+#else
 #ifdef __SIZEOF_INT128__
   __uint128_t r = A;
   r *= B;
@@ -47,46 +63,23 @@ MS_MR_SHARING_FORCEINLINE uint64_t _wymum(uint64_t A, uint64_t B) {
   uint64_t hi = rh + (rm0 >> 32) + (rm1 >> 32) + c;
   return hi ^ lo;
 #endif
+#endif
 }
 
-MS_MR_SHARING_FORCEINLINE uint64_t _wymix0(uint64_t A,
-                                           uint64_t B,
-                                           uint64_t seed) {
-  return _wymum(A ^ seed ^ _wyp0, B ^ seed ^ _wyp1);
-}
-
-MS_MR_SHARING_FORCEINLINE uint64_t _wymix1(uint64_t A,
-                                           uint64_t B,
-                                           uint64_t seed) {
-  return _wymum(A ^ seed ^ _wyp2, B ^ seed ^ _wyp3);
-}
-
-MS_MR_SHARING_FORCEINLINE uint64_t _wyr08(const uint8_t* p) {
-  uint8_t v;
-  memcpy(&v, p, 1);
-  return v;
-}
-
-MS_MR_SHARING_FORCEINLINE uint64_t _wyr16(const uint8_t* p) {
-  uint16_t v;
-  memcpy(&v, p, 2);
-  return v;
-}
-
-MS_MR_SHARING_FORCEINLINE uint64_t _wyr32(const uint8_t* p) {
-  uint32_t v;
-  memcpy(&v, p, 4);
-  return v;
-}
-
-MS_MR_SHARING_FORCEINLINE uint64_t _wyr64(const uint8_t* p) {
+MS_MR_SHARING_FORCEINLINE uint64_t _wyr8(const uint8_t* p) {
   uint64_t v;
   memcpy(&v, p, 8);
   return v;
 }
 
-MS_MR_SHARING_FORCEINLINE uint64_t __wyr64(const uint8_t* p) {
-  return (_wyr32(p) << 32) | _wyr32(p + 4);
+MS_MR_SHARING_FORCEINLINE uint64_t _wyr4(const uint8_t* p) {
+  uint32_t v;
+  memcpy(&v, p, 4);
+  return v;
+}
+
+MS_MR_SHARING_FORCEINLINE uint64_t _wyr3(const uint8_t* p, unsigned k) {
+  return (((uint64_t)p[0]) << 16) | (((uint64_t)p[k >> 1]) << 8) | p[k - 1];
 }
 
 }  // namespace
@@ -94,140 +87,81 @@ MS_MR_SHARING_FORCEINLINE uint64_t __wyr64(const uint8_t* p) {
 uint64_t CalculateHash64(const char* data,
                          size_t size,
                          uint64_t seed) noexcept {
+  if (MS_MR_UNLIKELY(!size))
+    return 0;
+
+  uint64_t len = size;
+
   const uint8_t* p = reinterpret_cast<const uint8_t*>(data);
-  uint64_t len1 = size;
-  for (size_t i = 0; i + 32 <= size; i += 32, p += 32)
-    seed = _wymix0(_wyr64(p), _wyr64(p + 8), seed) ^
-           _wymix1(_wyr64(p + 16), _wyr64(p + 24), seed);
-  switch (size & 31) {
-    case 0:
-      len1 = _wymix0(len1, 0, seed);
-      break;
-    case 1:
-      seed = _wymix0(_wyr08(p), 0, seed);
-      break;
-    case 2:
-      seed = _wymix0(_wyr16(p), 0, seed);
-      break;
-    case 3:
-      seed = _wymix0((_wyr16(p) << 8) | _wyr08(p + 2), 0, seed);
-      break;
-    case 4:
-      seed = _wymix0(_wyr32(p), 0, seed);
-      break;
-    case 5:
-      seed = _wymix0((_wyr32(p) << 8) | _wyr08(p + 4), 0, seed);
-      break;
-    case 6:
-      seed = _wymix0((_wyr32(p) << 16) | _wyr16(p + 4), 0, seed);
-      break;
-    case 7:
-      seed = _wymix0((_wyr32(p) << 24) | (_wyr16(p + 4) << 8) | _wyr08(p + 6),
-                     0, seed);
-      break;
-    case 8:
-      seed = _wymix0(__wyr64(p), 0, seed);
-      break;
-    case 9:
-      seed = _wymix0(__wyr64(p), _wyr08(p + 8), seed);
-      break;
-    case 10:
-      seed = _wymix0(__wyr64(p), _wyr16(p + 8), seed);
-      break;
-    case 11:
+  if (len < 4)
+    return _wymum(_wymum(_wyr3(p, static_cast<unsigned>(size)) ^ seed ^ _wyp0,
+                         seed ^ _wyp1),
+                  len ^ _wyp4);
+  else if (len <= 8)
+    return _wymum(
+        _wymum(_wyr4(p) ^ seed ^ _wyp0, _wyr4(p + len - 4) ^ seed ^ _wyp1),
+        len ^ _wyp4);
+  else if (len <= 16)
+    return _wymum(
+        _wymum(_wyr8(p) ^ seed ^ _wyp0, _wyr8(p + len - 8) ^ seed ^ _wyp1),
+        len ^ _wyp4);
+  else if (len <= 24)
+    return _wymum(_wymum(_wyr8(p) ^ seed ^ _wyp0, _wyr8(p + 8) ^ seed ^ _wyp1) ^
+                      _wymum(_wyr8(p + len - 8) ^ seed ^ _wyp2, seed ^ _wyp3),
+                  len ^ _wyp4);
+  else if (len <= 32)
+    return _wymum(_wymum(_wyr8(p) ^ seed ^ _wyp0, _wyr8(p + 8) ^ seed ^ _wyp1) ^
+                      _wymum(_wyr8(p + 16) ^ seed ^ _wyp2,
+                             _wyr8(p + len - 8) ^ seed ^ _wyp3),
+                  len ^ _wyp4);
+  uint64_t see1 = seed, i = len;
+  if (i >= 256)
+    for (; i >= 256; i -= 256, p += 256) {
+      seed = _wymum(_wyr8(p) ^ seed ^ _wyp0, _wyr8(p + 8) ^ seed ^ _wyp1) ^
+             _wymum(_wyr8(p + 16) ^ seed ^ _wyp2, _wyr8(p + 24) ^ seed ^ _wyp3);
+      see1 =
+          _wymum(_wyr8(p + 32) ^ see1 ^ _wyp1, _wyr8(p + 40) ^ see1 ^ _wyp2) ^
+          _wymum(_wyr8(p + 48) ^ see1 ^ _wyp3, _wyr8(p + 56) ^ see1 ^ _wyp0);
       seed =
-          _wymix0(__wyr64(p), (_wyr16(p + 8) << 8) | _wyr08(p + 8 + 2), seed);
-      break;
-    case 12:
-      seed = _wymix0(__wyr64(p), _wyr32(p + 8), seed);
-      break;
-    case 13:
+          _wymum(_wyr8(p + 64) ^ seed ^ _wyp0, _wyr8(p + 72) ^ seed ^ _wyp1) ^
+          _wymum(_wyr8(p + 80) ^ seed ^ _wyp2, _wyr8(p + 88) ^ seed ^ _wyp3);
+      see1 =
+          _wymum(_wyr8(p + 96) ^ see1 ^ _wyp1, _wyr8(p + 104) ^ see1 ^ _wyp2) ^
+          _wymum(_wyr8(p + 112) ^ see1 ^ _wyp3, _wyr8(p + 120) ^ see1 ^ _wyp0);
       seed =
-          _wymix0(__wyr64(p), (_wyr32(p + 8) << 8) | _wyr08(p + 8 + 4), seed);
-      break;
-    case 14:
+          _wymum(_wyr8(p + 128) ^ seed ^ _wyp0, _wyr8(p + 136) ^ seed ^ _wyp1) ^
+          _wymum(_wyr8(p + 144) ^ seed ^ _wyp2, _wyr8(p + 152) ^ seed ^ _wyp3);
+      see1 =
+          _wymum(_wyr8(p + 160) ^ see1 ^ _wyp1, _wyr8(p + 168) ^ see1 ^ _wyp2) ^
+          _wymum(_wyr8(p + 176) ^ see1 ^ _wyp3, _wyr8(p + 184) ^ see1 ^ _wyp0);
       seed =
-          _wymix0(__wyr64(p), (_wyr32(p + 8) << 16) | _wyr16(p + 8 + 4), seed);
-      break;
-    case 15:
-      seed = _wymix0(
-          __wyr64(p),
-          (_wyr32(p + 8) << 24) | (_wyr16(p + 8 + 4) << 8) | _wyr08(p + 8 + 6),
-          seed);
-      break;
-    case 16:
-      seed = _wymix0(__wyr64(p), __wyr64(p + 8), seed);
-      break;
-    case 17:
-      seed = _wymix0(__wyr64(p), __wyr64(p + 8), seed) ^
-             _wymix1(_wyr08(p + 16), 0, seed);
-      break;
-    case 18:
-      seed = _wymix0(__wyr64(p), __wyr64(p + 8), seed) ^
-             _wymix1(_wyr16(p + 16), 0, seed);
-      break;
-    case 19:
-      seed = _wymix0(__wyr64(p), __wyr64(p + 8), seed) ^
-             _wymix1((_wyr16(p + 16) << 8) | _wyr08(p + 16 + 2), 0, seed);
-      break;
-    case 20:
-      seed = _wymix0(__wyr64(p), __wyr64(p + 8), seed) ^
-             _wymix1(_wyr32(p + 16), 0, seed);
-      break;
-    case 21:
-      seed = _wymix0(__wyr64(p), __wyr64(p + 8), seed) ^
-             _wymix1((_wyr32(p + 16) << 8) | _wyr08(p + 16 + 4), 0, seed);
-      break;
-    case 22:
-      seed = _wymix0(__wyr64(p), __wyr64(p + 8), seed) ^
-             _wymix1((_wyr32(p + 16) << 16) | _wyr16(p + 16 + 4), 0, seed);
-      break;
-    case 23:
-      seed = _wymix0(__wyr64(p), __wyr64(p + 8), seed) ^
-             _wymix1((_wyr32(p + 16) << 24) | (_wyr16(p + 16 + 4) << 8) |
-                         _wyr08(p + 16 + 6),
-                     0, seed);
-      break;
-    case 24:
-      seed = _wymix0(__wyr64(p), __wyr64(p + 8), seed) ^
-             _wymix1(__wyr64(p + 16), 0, seed);
-      break;
-    case 25:
-      seed = _wymix0(__wyr64(p), __wyr64(p + 8), seed) ^
-             _wymix1(__wyr64(p + 16), _wyr08(p + 24), seed);
-      break;
-    case 26:
-      seed = _wymix0(__wyr64(p), __wyr64(p + 8), seed) ^
-             _wymix1(__wyr64(p + 16), _wyr16(p + 24), seed);
-      break;
-    case 27:
-      seed = _wymix0(__wyr64(p), __wyr64(p + 8), seed) ^
-             _wymix1(__wyr64(p + 16),
-                     (_wyr16(p + 24) << 8) | _wyr08(p + 24 + 2), seed);
-      break;
-    case 28:
-      seed = _wymix0(__wyr64(p), __wyr64(p + 8), seed) ^
-             _wymix1(__wyr64(p + 16), _wyr32(p + 24), seed);
-      break;
-    case 29:
-      seed = _wymix0(__wyr64(p), __wyr64(p + 8), seed) ^
-             _wymix1(__wyr64(p + 16),
-                     (_wyr32(p + 24) << 8) | _wyr08(p + 24 + 4), seed);
-      break;
-    case 30:
-      seed = _wymix0(__wyr64(p), __wyr64(p + 8), seed) ^
-             _wymix1(__wyr64(p + 16),
-                     (_wyr32(p + 24) << 16) | _wyr16(p + 24 + 4), seed);
-      break;
-    case 31:
-      seed = _wymix0(__wyr64(p), __wyr64(p + 8), seed) ^
-             _wymix1(__wyr64(p + 16),
-                     (_wyr32(p + 24) << 24) | (_wyr16(p + 24 + 4) << 8) |
-                         _wyr08(p + 24 + 6),
-                     seed);
-      break;
+          _wymum(_wyr8(p + 192) ^ seed ^ _wyp0, _wyr8(p + 200) ^ seed ^ _wyp1) ^
+          _wymum(_wyr8(p + 208) ^ seed ^ _wyp2, _wyr8(p + 216) ^ seed ^ _wyp3);
+      see1 =
+          _wymum(_wyr8(p + 224) ^ see1 ^ _wyp1, _wyr8(p + 232) ^ see1 ^ _wyp2) ^
+          _wymum(_wyr8(p + 240) ^ see1 ^ _wyp3, _wyr8(p + 248) ^ see1 ^ _wyp0);
+    }
+  for (; i >= 32; i -= 32, p += 32) {
+    seed = _wymum(_wyr8(p) ^ seed ^ _wyp0, _wyr8(p + 8) ^ seed ^ _wyp1);
+    see1 = _wymum(_wyr8(p + 16) ^ see1 ^ _wyp2, _wyr8(p + 24) ^ see1 ^ _wyp3);
   }
-  return _wymum(seed ^ len1, _wyp4);
+  if (!i) {
+  } else if (i < 4)
+    seed =
+        _wymum(_wyr3(p, static_cast<unsigned>(i)) ^ seed ^ _wyp0, seed ^ _wyp1);
+  else if (i <= 8)
+    seed = _wymum(_wyr4(p) ^ seed ^ _wyp0, _wyr4(p + i - 4) ^ seed ^ _wyp1);
+  else if (i <= 16)
+    seed = _wymum(_wyr8(p) ^ seed ^ _wyp0, _wyr8(p + i - 8) ^ seed ^ _wyp1);
+  else if (i <= 24) {
+    seed = _wymum(_wyr8(p) ^ seed ^ _wyp0, _wyr8(p + 8) ^ seed ^ _wyp1);
+    see1 = _wymum(_wyr8(p + i - 8) ^ see1 ^ _wyp2, see1 ^ _wyp3);
+  } else {
+    seed = _wymum(_wyr8(p) ^ seed ^ _wyp0, _wyr8(p + 8) ^ seed ^ _wyp1);
+    see1 =
+        _wymum(_wyr8(p + 16) ^ see1 ^ _wyp2, _wyr8(p + i - 8) ^ see1 ^ _wyp3);
+  }
+  return _wymum(seed ^ see1, len ^ _wyp4);
 }
 
 uint64_t CalculateHash64(uint64_t value_a, uint64_t value_b) noexcept {
