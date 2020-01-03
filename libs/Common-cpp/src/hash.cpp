@@ -87,8 +87,10 @@ MS_MR_SHARING_FORCEINLINE uint64_t _wyr3(const uint8_t* p, unsigned k) {
 uint64_t CalculateHash64(const char* data,
                          size_t size,
                          uint64_t seed) noexcept {
+  // This is a deviation from the current reference implementation of wyhash
+  // (it would always return 0).
   if (MS_MR_UNLIKELY(!size))
-    return 0;
+    return _wymum(_wymum(seed ^ _wyp0, _wyp1), _wyp2);
 
   uint64_t len = size;
 
