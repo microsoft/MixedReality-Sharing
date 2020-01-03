@@ -114,7 +114,8 @@ uint64_t CalculateHash64(const char* data,
                       _wymum(_wyr8(p + 16) ^ seed ^ _wyp2,
                              _wyr8(p + len - 8) ^ seed ^ _wyp3),
                   len ^ _wyp4);
-  uint64_t see1 = seed, i = len;
+  uint64_t see1 = seed;
+  uint64_t i = len;
   if (i >= 256)
     for (; i >= 256; i -= 256, p += 256) {
       seed = _wymum(_wyr8(p) ^ seed ^ _wyp0, _wyr8(p + 8) ^ seed ^ _wyp1) ^
