@@ -60,16 +60,16 @@ namespace Microsoft.MixedReality.Sharing.StateSync.Test
         public void HashesAreExpected()
         {
             Key keyFoo = new Key("foo");
-            Assert.Equal(0xE7510899, (uint)keyFoo.GetHashCode());
-            Assert.Equal(0x7E9FD358E7510899ul, keyFoo.Hash);
+            Assert.Equal(0xCA796135, (uint)keyFoo.GetHashCode());
+            Assert.Equal(0x836E8217CA796135ul, keyFoo.Hash);
 
             Key keyBar = new Key("bar");
-            Assert.Equal(0x14C86F89, keyBar.GetHashCode());
-            Assert.Equal(0x8BBDFB3714C86F89, keyBar.Hash);
+            Assert.Equal(0x562585D9, keyBar.GetHashCode());
+            Assert.Equal(0x6E84777F562585D9ul, keyBar.Hash);
 
             Key keyWithZeros = new Key(bytesWithZeros);
-            Assert.Equal(0x791286E1, keyWithZeros.GetHashCode());
-            Assert.Equal(0x647D1028791286E1ul, keyWithZeros.Hash);
+            Assert.Equal(0x6B4EE12F, keyWithZeros.GetHashCode());
+            Assert.Equal(0x8F5FBB1D6B4EE12Ful, keyWithZeros.Hash);
         }
     }
 }

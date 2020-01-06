@@ -29,6 +29,15 @@
 #define MS_MR_SHARING_FORCEINLINE __attribute__((always_inline))
 #endif
 
+// This should be eventually replaced with C++20's [[likely]] and [[unlikely]]
+#if defined(__GNUC__) || defined(__clang__) || defined(__INTEL_COMPILER)
+#define MS_MR_LIKELY(EXPRESSION) __builtin_expect(bool(EXPRESSION), 1)
+#define MS_MR_UNLIKELY(EXPRESSION) __builtin_expect(bool(EXPRESSION), 0)
+#else
+#define MS_MR_LIKELY(EXPRESSION) bool(EXPRESSION)
+#define MS_MR_UNLIKELY(EXPRESSION) bool(EXPRESSION)
+#endif
+
 namespace Microsoft::MixedReality::Sharing::Platform {
 
 constexpr uint32_t kPageSize = 4096;
