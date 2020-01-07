@@ -12,8 +12,14 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.0" />
   </ItemGroup>
 
-  <ItemGroup>
+  <!-- Internal build, reference the projects directly -->
+  <ItemGroup Condition="True">
     <ProjectReference Include="..\..\..\Matchmaking\src\Microsoft.MixedReality.Sharing.Matchmaking.csproj" />
+  </ItemGroup>
+
+  <!-- External build, fetch the nuget package -->
+  <ItemGroup Condition="False">
+    <PackageReference Include="Microsoft.MixedReality.Sharing.Matchmaking" Version="0.0.0-CI-20190619-162149" />
   </ItemGroup>
 
 </Project>
