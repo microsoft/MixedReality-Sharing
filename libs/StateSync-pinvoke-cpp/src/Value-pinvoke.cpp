@@ -39,7 +39,7 @@ Microsoft_MixedReality_Sharing_StateSync_Value_view(intptr_t handle,
   if (auto* value = bit_cast<const Value*>(handle)) {
     auto view = value->view();
     // TODO: ensure that we never allow values larger than INT_MAX
-    assert(view.size() < std::numeric_limits<int>::max());
+    assert(view.size() < static_cast<size_t>(std::numeric_limits<int>::max()));
     *out_size = static_cast<int>(view.size());
     return view.data();
   }
