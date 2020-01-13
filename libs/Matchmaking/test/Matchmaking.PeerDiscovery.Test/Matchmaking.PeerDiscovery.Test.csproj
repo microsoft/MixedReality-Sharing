@@ -4,6 +4,8 @@
     <TargetFramework>netcoreapp2.1</TargetFramework>
 
     <IsPackable>false</IsPackable>
+    <UseNugetPackages Condition="'$(UseNugetPackages)'==''">$(Configuration.EndsWith('nuget'))</UseNugetPackages>
+    <Configurations>Debug;Release;Debug-nuget;Release-nuget</Configurations>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,8 +14,19 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\Matchmaking\src\Microsoft.MixedReality.Sharing.Matchmaking.csproj" />
-  </ItemGroup>
+  <Choose>
+    <When Condition="'$(UseNugetPackages)' == 'true'">
+      <!-- External build, fetch the nuget package -->
+      <ItemGroup>
+        <PackageReference Include="Microsoft.MixedReality.Sharing.Matchmaking" Version="*" />
+      </ItemGroup>
+    </When>
+    <Otherwise>
+      <!-- Internal build, reference the projects directly -->
+      <ItemGroup>
+        <ProjectReference Include="..\..\..\Matchmaking\src\Microsoft.MixedReality.Sharing.Matchmaking.csproj" />
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
 
 </Project>
