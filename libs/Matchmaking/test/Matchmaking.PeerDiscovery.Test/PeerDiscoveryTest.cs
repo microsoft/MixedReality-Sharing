@@ -22,6 +22,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
             discoveryAgentFactory_ = factory;
         }
 
+        protected abstract bool SimulatesPacketLoss { get; }
+
         [Fact]
         public void CreateResource()
         {
@@ -109,6 +111,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
         [Fact]
         public void AgentShutdownRemovesResources()
         {
+            if (SimulatesPacketLoss)
+            {
+                // Shutdown message might not be retried and its loss will make this test fail. Skip it.
+                return;
+            }
+
             const string category1 = "AgentShutdownRemovesResources1";
             const string category2 = "AgentShutdownRemovesResources2";
 
@@ -225,6 +233,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
         }
 
         public PeerDiscoveryTestUdp() : base(MakeDiscoveryAgent) { }
+
+        protected override bool SimulatesPacketLoss => false;
     }
 
     public class PeerDiscoveryTestUdpMulticast : PeerDiscoveryTest
@@ -236,6 +246,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
         }
 
         public PeerDiscoveryTestUdpMulticast() : base(MakeDiscoveryAgent) { }
+        protected override bool SimulatesPacketLoss => false;
     }
 
     public class PeerDiscoveryTestMemory : PeerDiscoveryTest
@@ -247,38 +258,51 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
         }
 
         public PeerDiscoveryTestMemory() : base(MakeDiscoveryAgent) { }
+        protected override bool SimulatesPacketLoss => false;
     }
 
     // Uses relay socket to reorder packets delivery.
-    public class PeerDiscoveryTestReordered : PeerDiscoveryTest, IDisposable
+    public abstract class PeerDiscoveryTestReordered : PeerDiscoveryTest, IDisposable
     {
         private const int MaxDelayMs = 25;
-        private const ushort Port = 45279;
+        private const int MaxRetries = 3;
 
         private readonly Socket relay_;
         private readonly Random random_;
         private readonly ITestOutputHelper output_;
+        private readonly ushort port_;
         private readonly List<IPEndPoint> recipients_ = new List<IPEndPoint>();
+        // See receive loop for usage.
+        private readonly Dictionary<EndPoint, int> dropCounters_;
+
+        protected override bool SimulatesPacketLoss => (dropCounters_ != null);
 
         private IDiscoveryAgent MakeDiscoveryAgent(int userIndex)
         {
             // Peers all send packets to the relay.
             var address = new IPAddress(0x0000007f + (userIndex << 24));
-            var net = new UdpPeerDiscoveryTransport(new IPAddress(0xfeffff7f), Port, address);
-            lock(recipients_)
+            var net = new UdpPeerDiscoveryTransport(new IPAddress(0xfeffff7f), port_, address,
+                new UdpPeerDiscoveryTransport.Options { MaxRetries = MaxRetries, MaxRetryDelay = 100 });
+            lock (recipients_)
             {
-                recipients_.Add(new IPEndPoint(address, Port));
+                var endpoint = new IPEndPoint(address, port_);
+                recipients_.Add(endpoint);
+                if (dropCounters_ != null)
+                {
+                    dropCounters_.Add(endpoint, random_.Next(0, MaxRetries));
+                }
             }
             return new PeerDiscoveryAgent(net, new PeerDiscoveryAgent.Options { ResourceExpirySec = int.MaxValue });
         }
 
-        public PeerDiscoveryTestReordered(ITestOutputHelper output) : base(null)
+        public PeerDiscoveryTestReordered(ITestOutputHelper output, bool packetLoss, ushort port) : base(null)
         {
             discoveryAgentFactory_ = MakeDiscoveryAgent;
             output_ = output;
+            port_ = port;
 
             relay_ = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            relay_.Bind(new IPEndPoint(new IPAddress(0xfeffff7f), Port));
+            relay_.Bind(new IPEndPoint(new IPAddress(0xfeffff7f), port_));
 
             var seed = new Random().Next();
             output_.WriteLine($"Seed for lossy network: {seed}");
@@ -290,6 +314,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
             uint SIO_UDP_CONNRESET = IOC_IN | IOC_VENDOR | 12;
             relay_.IOControl((int)SIO_UDP_CONNRESET, new byte[] { Convert.ToByte(false) }, null);
 
+            if (packetLoss)
+            {
+                dropCounters_ = new Dictionary<EndPoint, int>();
+            }
+
             Task.Run(async () =>
             {
                 try
@@ -297,11 +326,23 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
                     while (true)
                     {
                         byte[] buf_ = new byte[1024];
-                        var result = await relay_.ReceiveAsync(new ArraySegment<byte>(buf_), SocketFlags.None);
+                        var result = await relay_.ReceiveFromAsync(new ArraySegment<byte>(buf_), SocketFlags.None, new IPEndPoint(IPAddress.Any, 0));
+
+                        if (dropCounters_ != null)
+                        {
+                            // Keep a counter for every endpoint. Forward on packet every `MaxRetries` from any endpoint and drop the rest.
+                            // This simulates heavy packet loss while still guaranteeing that everything works.
+                            int shouldDrop = dropCounters_[result.RemoteEndPoint];
+                            dropCounters_[result.RemoteEndPoint] = (shouldDrop + 1) % MaxRetries;
+                            if (shouldDrop == 0)
+                            {
+                                continue;
+                            }
+                        }
 
                         // The relay sends the packets to all peers with a random delay.
                         IPEndPoint[] curRecipients;
-                        lock(recipients_)
+                        lock (recipients_)
                         {
                             curRecipients = recipients_.ToArray();
                         }
@@ -312,7 +353,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
                             {
                                 try
                                 {
-                                    relay_.SendToAsync(new ArraySegment<byte>(buf_, 0, result), SocketFlags.None, rec);
+                                    relay_.SendToAsync(new ArraySegment<byte>(buf_, 0, result.ReceivedBytes), SocketFlags.None, rec);
                                 }
                                 catch (ObjectDisposedException) { }
                                 catch (SocketException e) when (e.SocketErrorCode == SocketError.NotSocket) { }
@@ -395,6 +436,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
                 }
             }
         }
+    }
+
+    public class PeerDiscoveryTestReorderedReliable : PeerDiscoveryTestReordered
+    {
+        public PeerDiscoveryTestReorderedReliable(ITestOutputHelper output) : base(output, packetLoss: false, 45279) { }
 
         [Fact]
         public void NoAnnouncementsAfterDispose()
@@ -426,5 +472,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
                 }
             }
         }
+    }
+    public class PeerDiscoveryTestReorderedUnreliable : PeerDiscoveryTestReordered
+    {
+        public PeerDiscoveryTestReorderedUnreliable(ITestOutputHelper output) : base(output, packetLoss: true, 45280) { }
     }
 }
