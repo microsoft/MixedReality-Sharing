@@ -47,7 +47,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         public class Options
         {
             public int MaxRetries = 3;
-            public int MaxRetryDelay = 10000;
+            public int MaxRetryDelayMs = 10000;
         }
 
         private Options options_;
@@ -378,7 +378,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             {
                 for (int i = 0; i < options_.MaxRetries - 1; ++i)
                 {
-                    await Task.Delay(random_.Next(options_.MaxRetryDelay));
+                    await Task.Delay(random_.Next(options_.MaxRetryDelayMs / 4, options_.MaxRetryDelayMs));
                     Send(buffer, destination);
                 }
             });
@@ -399,7 +399,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
             catch (Exception e)
             {
-                Log.Error(e, "Exception raised while handling message");
+                Log.Error(e, "Exception raised while sending message");
             }
         }
     }
