@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -272,10 +273,49 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
         private readonly ITestOutputHelper output_;
         private readonly ushort port_;
         private readonly List<IPEndPoint> recipients_ = new List<IPEndPoint>();
-        // See receive loop for usage.
-        private readonly Dictionary<EndPoint, int> deliveryProbabilities;
 
-        protected override bool SimulatesPacketLoss => (deliveryProbabilities != null);
+        // Wraps a packet for use in a map.
+        private class Packet
+        {
+            public IPEndPoint EndPoint;
+            public byte[] Contents;
+
+            public Packet(IPEndPoint endPoint, ArraySegment<byte> contents)
+            {
+                EndPoint = endPoint;
+                Contents = new byte[contents.Count];
+                for (int i = 0; i < contents.Count; ++i)
+                {
+                    Contents[i] = contents[i];
+                }
+            }
+
+            public override bool Equals(object other)
+            {
+                if (other is Packet rhs)
+                {
+                    return EndPoint.Equals(rhs.EndPoint) && Contents.SequenceEqual(rhs.Contents);
+                }
+                return false;
+            }
+
+            public override int GetHashCode()
+            {
+                // Not a great hash but it shouldn't matter in this case.
+                var result = 0;
+                foreach (byte b in Contents)
+                {
+                    result = (result * 31) ^ b;
+                }
+                return EndPoint.GetHashCode() ^ result;
+            }
+        }
+
+        // Keeps track of each packet that goes through the relay and counts its repetitions.
+        // See receive loop for usage.
+        private readonly Dictionary<Packet, int> packetCounters;
+
+        protected override bool SimulatesPacketLoss => (packetCounters != null);
 
         private IDiscoveryAgent MakeDiscoveryAgent(int userIndex)
         {
@@ -286,11 +326,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
             lock (recipients_)
             {
                 var endpoint = new IPEndPoint(address, port_);
+                
+                // Remove first so the same agent can be re-created multiple times
+                recipients_.Remove(endpoint);
                 recipients_.Add(endpoint);
-                if (deliveryProbabilities != null)
-                {
-                    deliveryProbabilities.Add(endpoint, 0);
-                }
             }
             return new PeerDiscoveryAgent(net, new PeerDiscoveryAgent.Options { ResourceExpirySec = int.MaxValue });
         }
@@ -316,7 +355,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
 
             if (packetLoss)
             {
-                deliveryProbabilities = new Dictionary<EndPoint, int>();
+                packetCounters = new Dictionary<Packet, int>();
             }
 
             Task.Run(async () =>
@@ -328,15 +367,30 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
                         byte[] buf_ = new byte[1024];
                         var result = await relay_.ReceiveFromAsync(new ArraySegment<byte>(buf_), SocketFlags.None, new IPEndPoint(IPAddress.Any, 0));
 
-                        if (deliveryProbabilities != null)
+                        if (packetCounters != null)
                         {
-                            // Increase the probability of delivery from an endpoint with retries, up to 100% on the last retry.
+                            // Increase the probability of delivery of a packet with retries, up to 100% on the last retry.
                             // This simulates heavy packet loss while still guaranteeing that everything works.
-                            int counter = deliveryProbabilities[result.RemoteEndPoint];
-                            deliveryProbabilities[result.RemoteEndPoint] = (counter + 1) % MaxRetries;
-                            if (random_.Next(0, MaxRetries) > counter)
+                            // Note that this logic is very naive, but should be fine for small tests.
+                            var packet = new Packet((IPEndPoint)result.RemoteEndPoint, new ArraySegment<byte>(buf_, 0, result.ReceivedBytes));
+                            if (!packetCounters.TryGetValue(packet, out int counter))
                             {
-                                continue;
+                                counter = 0;
+                            }
+
+                            if (counter == MaxRetries - 1)
+                            {
+                                // Last retry, always send and forget the packet.
+                                packetCounters.Remove(packet);
+                            }
+                            else
+                            {
+                                packetCounters[packet] = counter + 1;
+                                // Drop with decreasing probability.
+                                if (random_.Next(0, MaxRetries) > counter)
+                                {
+                                    continue;
+                                }
                             }
                         }
 
