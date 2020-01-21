@@ -273,23 +273,23 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
         private readonly ushort port_;
         private readonly List<IPEndPoint> recipients_ = new List<IPEndPoint>();
         // See receive loop for usage.
-        private readonly Dictionary<EndPoint, int> dropCounters_;
+        private readonly Dictionary<EndPoint, int> deliveryProbabilities;
 
-        protected override bool SimulatesPacketLoss => (dropCounters_ != null);
+        protected override bool SimulatesPacketLoss => (deliveryProbabilities != null);
 
         private IDiscoveryAgent MakeDiscoveryAgent(int userIndex)
         {
             // Peers all send packets to the relay.
             var address = new IPAddress(0x0000007f + (userIndex << 24));
             var net = new UdpPeerDiscoveryTransport(new IPAddress(0xfeffff7f), port_, address,
-                new UdpPeerDiscoveryTransport.Options { MaxRetries = MaxRetries, MaxRetryDelay = 100 });
+                new UdpPeerDiscoveryTransport.Options { MaxRetries = MaxRetries, MaxRetryDelayMs = 100 });
             lock (recipients_)
             {
                 var endpoint = new IPEndPoint(address, port_);
                 recipients_.Add(endpoint);
-                if (dropCounters_ != null)
+                if (deliveryProbabilities != null)
                 {
-                    dropCounters_.Add(endpoint, random_.Next(0, MaxRetries));
+                    deliveryProbabilities.Add(endpoint, 0);
                 }
             }
             return new PeerDiscoveryAgent(net, new PeerDiscoveryAgent.Options { ResourceExpirySec = int.MaxValue });
@@ -316,7 +316,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
 
             if (packetLoss)
             {
-                dropCounters_ = new Dictionary<EndPoint, int>();
+                deliveryProbabilities = new Dictionary<EndPoint, int>();
             }
 
             Task.Run(async () =>
@@ -328,13 +328,13 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
                         byte[] buf_ = new byte[1024];
                         var result = await relay_.ReceiveFromAsync(new ArraySegment<byte>(buf_), SocketFlags.None, new IPEndPoint(IPAddress.Any, 0));
 
-                        if (dropCounters_ != null)
+                        if (deliveryProbabilities != null)
                         {
-                            // Keep a counter for every endpoint. Forward on packet every `MaxRetries` from any endpoint and drop the rest.
+                            // Increase the probability of delivery from an endpoint with retries, up to 100% on the last retry.
                             // This simulates heavy packet loss while still guaranteeing that everything works.
-                            int shouldDrop = dropCounters_[result.RemoteEndPoint];
-                            dropCounters_[result.RemoteEndPoint] = (shouldDrop + 1) % MaxRetries;
-                            if (shouldDrop == 0)
+                            int counter = deliveryProbabilities[result.RemoteEndPoint];
+                            deliveryProbabilities[result.RemoteEndPoint] = (counter + 1) % MaxRetries;
+                            if (random_.Next(0, MaxRetries) > counter)
                             {
                                 continue;
                             }
