@@ -7,6 +7,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -221,6 +222,86 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
                         Utils.AssertSameDictionary(res1.First().Attributes, newAttrs);
                     }
                 }
+            }
+        }
+
+        private void WaitWithCancellation(WaitHandle waitHandle, CancellationToken token)
+        {
+            WaitHandle.WaitAny(new WaitHandle[] { waitHandle, token.WaitHandle });
+            token.ThrowIfCancellationRequested();
+        }
+
+        [Fact]
+        public void CanDisposeSubscriptions()
+        {
+            const string category1 = "CanDisposeSubscriptions1";
+            const string category2 = "CanDisposeSubscriptions2";
+            IDiscoverySubscription surviving;
+            IDiscoverySubscription survivingInHandler;
+
+            var handlerEntered = new ManualResetEvent(false);
+            var agentDisposed = new ManualResetEvent(false);
+
+            using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
+            using (var publishingAgent = discoveryAgentFactory_(1))
+            {
+                publishingAgent.PublishAsync(category1, "", null, cts.Token).Wait();
+                publishingAgent.PublishAsync(category2, "", null, cts.Token).Wait();
+                var agent = discoveryAgentFactory_(2);
+
+                {
+                    bool subIsDisposed = false;
+                    var subDisposedEvent = new ManualResetEvent(false);
+                    agent.Subscribe(category1).Updated +=
+                        sub =>
+                        {
+                            // Tests for https://github.com/microsoft/MixedReality-Sharing/issues/83.
+                            if (sub.Resources.Any())
+                            {
+                                // Dispose the task from its handler.
+                                sub.Dispose();
+                                // The handler is not called after disposal.
+                                Assert.False(subIsDisposed);
+                                subIsDisposed = true;
+                                subDisposedEvent.Set();
+                            }
+                        };
+                    // Wait until the subscription is disposed before going on.
+                    WaitWithCancellation(subDisposedEvent, cts.Token);
+                }
+
+
+                surviving = agent.Subscribe(category1);
+
+                {
+                    bool subIsDisposed = false;
+                    survivingInHandler = agent.Subscribe(category2);
+                    survivingInHandler.Updated += sub =>
+                    {
+                        handlerEntered.Set();
+
+                        // Wait until the agent is disposed by the main thread.
+                        WaitWithCancellation(agentDisposed, cts.Token);
+
+                        // Dispose the task from its handler.
+                        sub.Dispose();
+                        // The handler is not called after disposal.
+                        Assert.False(subIsDisposed);
+                        subIsDisposed = true;
+                    };
+                }
+
+                // Wait until the handler is entered.
+                WaitWithCancellation(handlerEntered, cts.Token);
+
+                // Dispose the agent while in the handler.
+                agent.Dispose();
+
+                // Signal the handler to go ahead and dispose the subscription.
+                agentDisposed.Set();
+
+                // Dispose the other surviving task.
+                surviving.Dispose();
             }
         }
     }
