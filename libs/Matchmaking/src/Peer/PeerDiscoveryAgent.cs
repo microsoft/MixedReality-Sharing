@@ -919,6 +919,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     {
         /// The transport for this agent.
         private readonly IPeerDiscoveryTransport transport_;
+        private readonly object transportStartStopLock_ = new object();
+
         private Server server_;
         private Client client_;
         private Options options_;
@@ -944,12 +946,13 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         public IDiscoverySubscription Subscribe(string category)
         {
-            lock (this)
+            if (isDisposed_)
             {
-                if (client_ == null)
-                {
-                    client_ = new Client(transport_);
-                }
+                throw new ObjectDisposedException("PeerDiscoveryAgent");
+            }
+            if (client_ == null)
+            {
+                client_ = new Client(transport_);
             }
             AddRefToTransport();
             var task = client_.StartDiscovery(category);
@@ -963,12 +966,13 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             IReadOnlyDictionary<string, string> attributes = null,
             CancellationToken token = default)
         {
-            lock (this)
+            if (isDisposed_)
             {
-                if (server_ == null)
-                {
-                    server_ = new Server(transport_);
-                }
+                throw new ObjectDisposedException("PeerDiscoveryAgent");
+            }
+            if (server_ == null)
+            {
+                server_ = new Server(transport_);
             }
             AddRefToTransport();
             return server_.PublishAsync(category, connection, options_.ResourceExpirySec, attributes, token);
@@ -976,39 +980,54 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         private void AddRefToTransport()
         {
-            int newRefCount = Interlocked.Increment(ref transportRefCount_);
-            if (newRefCount == 1)
+            lock (transportStartStopLock_)
             {
-                transport_.Start();
+                if (transportRefCount_ == 0)
+                {
+                    transport_.Start();
+                }
+                ++transportRefCount_;
             }
         }
 
         private void RemoveRefFromTransport(IDiscoverySubscription _)
         {
-            int newRefCount = Interlocked.Decrement(ref transportRefCount_);
-            if (newRefCount == 0)
+            lock (transportStartStopLock_)
             {
-                transport_.Stop();
+                --transportRefCount_;
+                if (transportRefCount_ == 0)
+                {
+                    transport_.Stop();
+                }
             }
         }
 
         public void Dispose()
         {
-            if (!isDisposed_)
+            if (isDisposed_)
             {
-                isDisposed_ = true;
-                server_?.Stop();
-                client_?.Stop();
+                return;
+            }
+            isDisposed_ = true;
 
-                // Give some time for the ByeBye message to be sent before shutting down the sockets.
-                // todo is there a smarter way to do this?
-                Task.Delay(1).Wait();
+            server_?.Stop();
+            client_?.Stop();
 
-                // Stop the network and prevent later disposals from trying to stop it again.
-                if (Interlocked.Exchange(ref transportRefCount_, 0) > 0)
+            // Give some time for the ByeBye message to be sent before shutting down the sockets.
+            // todo is there a smarter way to do this?
+            Task.Delay(1).Wait();
+
+            // Stop the network.
+            lock(transportStartStopLock_)
+            {
+                if (transportRefCount_ > 0)
                 {
                     transport_.Stop();
                 }
+
+                // Prevent later disposals from trying to stop the transport again (will see negative refcount).
+                // Since the object is disposed refcount cannot return to be positive.
+                transportRefCount_ = 0;
             }
         }
     }

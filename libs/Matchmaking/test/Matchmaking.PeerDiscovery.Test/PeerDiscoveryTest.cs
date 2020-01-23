@@ -18,10 +18,17 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
     public abstract class PeerDiscoveryTest
     {
         protected Func<int, IDiscoveryAgent> discoveryAgentFactory_;
+        private readonly ITestOutputHelper output_;
+        protected readonly Random random_;
 
-        protected PeerDiscoveryTest(Func<int, IDiscoveryAgent> factory)
+        protected PeerDiscoveryTest(Func<int, IDiscoveryAgent> factory, ITestOutputHelper output)
         {
             discoveryAgentFactory_ = factory;
+            output_ = output;
+
+            var seed = new Random().Next();
+            output_.WriteLine($"Seed for lossy network: {seed}");
+            random_ = new Random(seed);
         }
 
         protected abstract bool SimulatesPacketLoss { get; }
@@ -304,6 +311,43 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
                 surviving.Dispose();
             }
         }
+
+        [Fact]
+        public void MultiThreadIsSafe()
+        {
+            using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
+            {
+                using (var svc1 = discoveryAgentFactory_(1))
+                using (var svc2 = discoveryAgentFactory_(2))
+                {
+                    for (int i = 0; i < 1000; ++i)
+                    {
+                        {
+                            var category = "DisposeInHandler" + i;
+                            svc1.PublishAsync(category, "");
+                            svc2.PublishAsync(category, "");
+                            IDiscoverySubscription sub = svc2.Subscribe(category);
+                            sub.Updated += subscription =>
+                            {
+                                Assert.True(subscription.Resources.Count() >= 0);
+                                subscription.Dispose();
+                            };
+                        }
+                        {
+                            var category = "DisposeInOtherThread" + i;
+                            svc1.PublishAsync(category, "");
+                            svc2.PublishAsync(category, "");
+                            IDiscoverySubscription sub = svc2.Subscribe(category);
+                            Task.Delay(random_.Next(0, 200)).ContinueWith(_ =>
+                            {
+                                Assert.True(sub.Resources.Count() >= 0);
+                                sub.Dispose();
+                            });
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public class PeerDiscoveryTestUdp : PeerDiscoveryTest
@@ -314,7 +358,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
             return new PeerDiscoveryAgent(net, new PeerDiscoveryAgent.Options { ResourceExpirySec = int.MaxValue });
         }
 
-        public PeerDiscoveryTestUdp() : base(MakeDiscoveryAgent) { }
+        public PeerDiscoveryTestUdp(ITestOutputHelper output) : base(MakeDiscoveryAgent, output) { }
 
         protected override bool SimulatesPacketLoss => false;
     }
@@ -327,7 +371,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
             return new PeerDiscoveryAgent(net, new PeerDiscoveryAgent.Options { ResourceExpirySec = int.MaxValue });
         }
 
-        public PeerDiscoveryTestUdpMulticast() : base(MakeDiscoveryAgent) { }
+        public PeerDiscoveryTestUdpMulticast(ITestOutputHelper output) : base(MakeDiscoveryAgent, output) { }
         protected override bool SimulatesPacketLoss => false;
     }
 
@@ -339,7 +383,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
             return new PeerDiscoveryAgent(net, new PeerDiscoveryAgent.Options { ResourceExpirySec = int.MaxValue });
         }
 
-        public PeerDiscoveryTestMemory() : base(MakeDiscoveryAgent) { }
+        public PeerDiscoveryTestMemory(ITestOutputHelper output) : base(MakeDiscoveryAgent, output) { }
         protected override bool SimulatesPacketLoss => false;
     }
 
@@ -350,8 +394,6 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
         private const int MaxRetries = 3;
 
         private readonly Socket relay_;
-        private readonly Random random_;
-        private readonly ITestOutputHelper output_;
         private readonly ushort port_;
         private readonly List<IPEndPoint> recipients_ = new List<IPEndPoint>();
 
@@ -415,18 +457,13 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
             return new PeerDiscoveryAgent(net, new PeerDiscoveryAgent.Options { ResourceExpirySec = int.MaxValue });
         }
 
-        public PeerDiscoveryTestReordered(ITestOutputHelper output, bool packetLoss, ushort port) : base(null)
+        public PeerDiscoveryTestReordered(ITestOutputHelper output, bool packetLoss, ushort port) : base(null, output)
         {
             discoveryAgentFactory_ = MakeDiscoveryAgent;
-            output_ = output;
             port_ = port;
 
             relay_ = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             relay_.Bind(new IPEndPoint(new IPAddress(0xfeffff7f), port_));
-
-            var seed = new Random().Next();
-            output_.WriteLine($"Seed for lossy network: {seed}");
-            random_ = new Random(seed);
 
             // Disable exception on UDP connection reset (don't care).
             uint IOC_IN = 0x80000000;

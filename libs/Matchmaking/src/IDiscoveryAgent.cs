@@ -11,6 +11,13 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     /// <summary>
     /// Handle to an ongoing discovery subscription.
     /// </summary>
+    /// <remarks>
+    /// A subscription is bound to the originating <see cref="IDiscoveryAgent"/>, but its methods/properties
+    /// (including `Dispose()`) must be safe to use independently from the state of the agent - even from a
+    /// different thread from the one where the agent is used.
+    ///
+    /// After the agent is disposed, the might stop returning meaningful resources and/or raising <see cref="Updated"/>.
+    /// </remarks>
     public interface IDiscoverySubscription : IDisposable
     {
         /// <summary>
