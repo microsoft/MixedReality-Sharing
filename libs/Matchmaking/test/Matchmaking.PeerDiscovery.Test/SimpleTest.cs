@@ -62,9 +62,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
         [Fact]
         public void ResourceExpiresOnTime()
         {
+            var random = new Random();
             const int timeoutSec = 1;
-            var network1 = new MemoryPeerDiscoveryTransport(1);
-            var network2 = new MemoryPeerDiscoveryTransport(2);
+            var network1 = new MemoryPeerDiscoveryTransport(random.Next());
+            var network2 = new MemoryPeerDiscoveryTransport(random.Next());
             using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
             using (var svc1 = new PeerDiscoveryAgent(network1))
             {
