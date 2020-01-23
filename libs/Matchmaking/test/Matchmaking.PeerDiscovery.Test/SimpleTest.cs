@@ -88,10 +88,25 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
 
                     // Stop the network.
                     network1.Stop();
-
-                    // Wait a bit after the timeout.
-                    Task.Delay(timeoutSec * 1200).Wait();
                     {
+                        // The resource eventually expires.
+                        var res1 = Utils.QueryAndWaitForResourcesPredicate(svc1, category, rl => rl.Count() == 0, cts.Token);
+                        Assert.Empty(res1);
+                    }
+
+                    // Restart the network.
+                    network1.Start();
+                    {
+                        // The resource appears again.
+                        var res1 = Utils.QueryAndWaitForResourcesPredicate(svc1, category, rl => rl.Any(), cts.Token);
+                        Assert.Single(res1);
+                        Assert.Equal(resource1.UniqueId, res1.First().UniqueId);
+                    }
+
+                    // Stop the network.
+                    network1.Stop();
+                    {
+                        // The resource expires again.
                         var res1 = Utils.QueryAndWaitForResourcesPredicate(svc1, category, rl => rl.Count() == 0, cts.Token);
                         Assert.Empty(res1);
                     }
