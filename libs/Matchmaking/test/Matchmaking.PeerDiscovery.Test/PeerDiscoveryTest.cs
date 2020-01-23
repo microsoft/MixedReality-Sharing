@@ -63,25 +63,42 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
                 // Create some resources in the first one
                 const string category = "FindResourcesLocalAndRemote";
                 var resource1 = svc1.PublishAsync(category, "Conn1", null, cts.Token).Result;
-                var resource2 = svc1.PublishAsync(category, "Conn2", null, cts.Token).Result;
-                var resource3 = svc1.PublishAsync(category, "Conn3", null, cts.Token).Result;
+                var resource2 = svc2.PublishAsync(category, "Conn2", null, cts.Token).Result;
 
                 // Discover them from the first service
                 {
-                    var resources = Utils.QueryAndWaitForResourcesPredicate(svc1, category, rl => rl.Count() >= 3, cts.Token);
-                    Assert.Equal(3, resources.Count());
+                    var resources = Utils.QueryAndWaitForResourcesPredicate(svc1, category, rl => rl.Count() == 2, cts.Token);
                     Assert.Contains(resources, r => r.UniqueId.Equals(resource1.UniqueId));
                     Assert.Contains(resources, r => r.UniqueId.Equals(resource2.UniqueId));
-                    Assert.Contains(resources, r => r.UniqueId.Equals(resource3.UniqueId));
                 }
 
                 // And also from the second
                 {
-                    var resources = Utils.QueryAndWaitForResourcesPredicate(svc2, category, rl => rl.Count() >= 3, cts.Token);
-                    Assert.Equal(3, resources.Count());
+                    var resources = Utils.QueryAndWaitForResourcesPredicate(svc2, category, rl => rl.Count() == 2, cts.Token);
+                    Assert.Contains(resources, r => r.UniqueId.Equals(resource1.UniqueId));
+                    Assert.Contains(resources, r => r.UniqueId.Equals(resource2.UniqueId));
+                }
+
+                // Add more resources
+                var resource3 = svc1.PublishAsync(category, "Conn3", null, cts.Token).Result;
+                var resource4 = svc2.PublishAsync(category, "Conn4", null, cts.Token).Result;
+
+                // Discover them from the first service
+                {
+                    var resources = Utils.QueryAndWaitForResourcesPredicate(svc1, category, rl => rl.Count() == 4, cts.Token);
                     Assert.Contains(resources, r => r.UniqueId.Equals(resource1.UniqueId));
                     Assert.Contains(resources, r => r.UniqueId.Equals(resource2.UniqueId));
                     Assert.Contains(resources, r => r.UniqueId.Equals(resource3.UniqueId));
+                    Assert.Contains(resources, r => r.UniqueId.Equals(resource4.UniqueId));
+                }
+
+                // And also from the second
+                {
+                    var resources = Utils.QueryAndWaitForResourcesPredicate(svc2, category, rl => rl.Count() == 4, cts.Token);
+                    Assert.Contains(resources, r => r.UniqueId.Equals(resource1.UniqueId));
+                    Assert.Contains(resources, r => r.UniqueId.Equals(resource2.UniqueId));
+                    Assert.Contains(resources, r => r.UniqueId.Equals(resource3.UniqueId));
+                    Assert.Contains(resources, r => r.UniqueId.Equals(resource4.UniqueId));
                 }
             }
         }

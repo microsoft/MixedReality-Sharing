@@ -799,6 +799,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             lock (this)
             {
                 info.subscriptions_.Remove(subscription);
+                if (!info.subscriptions_.Any())
+                {
+                    infoFromCategory_.Remove(info.category_);
+                }
             }
         }
 
