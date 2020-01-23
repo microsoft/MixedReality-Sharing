@@ -781,19 +781,25 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
         }
 
+        // Note: must be called under lock.
         private void SetExpirationTimer(DateTime expiryTime)
         {
-            lock (this)
+            // Use int since UWP does not implement long ctor.
+            int deltaMsInt;
+            if (expiryTime == DateTime.MaxValue)
             {
-                var deltaMs = (long)DateTime.UtcNow.Subtract(expiryTime).TotalMilliseconds;
+                deltaMsInt = Timeout.Infinite;
+            }
+            else
+            {
+                var deltaMs = (long)expiryTime.Subtract(DateTime.UtcNow).TotalMilliseconds;
                 // Round up to the next ms to ensure the (finer grained) fileTime has passed.
                 // Also ensure we have a positive delta or the timer will not work.
                 deltaMs = Math.Max(deltaMs + 1, 0);
-                // Cast to int since UWP does not implement long ctor.
-                var deltaMsInt = (int)Math.Min(deltaMs, int.MaxValue);
-                timer_.Change(deltaMsInt, Timeout.Infinite);
-                timerExpiryTime_ = expiryTime;
+                deltaMsInt = (int)Math.Min(deltaMs, int.MaxValue);
             }
+            timer_.Change(deltaMsInt, Timeout.Infinite);
+            timerExpiryTime_ = expiryTime;
         }
 
         private void OnClientTimerExpired(object state)
@@ -830,16 +836,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                         updated = true;
                     }
                 }
+                SetExpirationTimer(nextExpiryFileTime);
             }
 
             if (updated)
             {
                 updateAvailable_.Set();
-            }
-
-            if (nextExpiryFileTime != DateTime.MaxValue)
-            {
-                SetExpirationTimer(nextExpiryFileTime);
             }
         }
 
