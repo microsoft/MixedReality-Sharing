@@ -48,6 +48,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// <summary>
         /// Send a message to all others in this transport.
         /// </summary>
+        /// <remarks>
+        /// Must be thread-safe with respect to other calls to the same method and <see cref="Reply(IPeerDiscoveryMessage, Guid, ArraySegment{byte})"/>.
+        /// </remarks>
         /// <param name="streamId">
         /// Associates the message to a stream. Messages from the same stream will be delivered in order.
         /// No guarantees are made on messages from different stream. <see cref="System.Guid.Empty"/> can be used
@@ -57,8 +60,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         void Broadcast(Guid streamId, ArraySegment<byte> message);
 
         /// <summary>
-        /// Reply to a message. (Typically a broadcast message)
+        /// Reply to a message (typically a broadcast message). Must be thread-safe.
         /// </summary>
+        /// <remarks>
+        /// Must be thread-safe with respect to other calls to the same method and <see cref="Broadcast(Guid, ArraySegment{byte})"/>.
+        /// </remarks>
         /// <param name="streamId">
         /// Associates the message to a stream. Messages from the same stream will be delivered in order.
         /// No guarantees are made on messages from different stream. <see cref="System.Guid.Empty"/> can be used
