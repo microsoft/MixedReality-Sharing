@@ -587,7 +587,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             updateTask_ = Task.Run(() =>
             {
                 var handles = new WaitHandle[] { token.WaitHandle, updateAvailable_ };
-                var tasksUpdated = new List<DiscoveryTask>();
+                var updatedSubscriptions = new List<DiscoverySubscription>();
                 while (true)
                 {
                     // Wait for either update or cancellation.
@@ -601,7 +601,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                         {
                             if (info.IsDirty)
                             {
-                                tasksUpdated.AddRange(info.tasks_);
+                                updatedSubscriptions.AddRange(info.subscriptions_);
                             }
                         }
                     }
@@ -609,7 +609,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     // Outside the lock.
                     try
                     {
-                        foreach (var t in tasksUpdated)
+                        foreach (var t in updatedSubscriptions)
                         {
                             t.FireUpdated();
                         }
@@ -618,7 +618,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     {
                         Log.Error(e, "Error while firing update");
                     }
-                    tasksUpdated.Clear();
+                    updatedSubscriptions.Clear();
                 }
             }, token).ContinueWith(_ =>
             {
@@ -640,7 +640,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             });
         }
 
-        internal IDisposedEventDiscoveryTask StartDiscovery(string category)
+        internal IDisposedEventDiscoverySubscription StartDiscovery(string category)
         {
             lock (this)
             {
@@ -653,9 +653,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
                     proto_.SendClientQuery(category);
                 }
-                // start a new task in the category
-                var res = new DiscoveryTask(this, info);
-                info.tasks_.Add(res);
+                // start a new subscription in the category
+                var res = new DiscoverySubscription(this, info);
+                info.subscriptions_.Add(res);
                 return res;
             }
         }
@@ -700,8 +700,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         {
             internal string category_;
 
-            // Tasks from this category (ephemeral).
-            internal IList<DiscoveryTask> tasks_ = new List<DiscoveryTask>();
+            // Subscriptions from this category (ephemeral).
+            internal IList<DiscoverySubscription> subscriptions_ = new List<DiscoverySubscription>();
 
             // Currently known remote resources. Each time it is updated, we update resourceSerial_ also so that tasks can cache efficiently.
             internal SortedDictionary<Guid, RemoteResource> resourcesRemote_ = new SortedDictionary<Guid, RemoteResource>();
@@ -728,13 +728,13 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
         }
 
-        internal interface IDisposedEventDiscoveryTask : IDiscoverySubscription
+        internal interface IDisposedEventDiscoverySubscription : IDiscoverySubscription
         {
             event Action<IDiscoverySubscription> Disposed;
         }
 
         // User facing interface for an in-progress discovery operation
-        private class DiscoveryTask : IDisposedEventDiscoveryTask
+        private class DiscoverySubscription : IDisposedEventDiscoverySubscription
         {
             Client client_;
             CategoryInfo info_;
@@ -745,7 +745,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             {
                 get
                 {
-                    var updated = client_.TaskFetchResources(info_, cachedResourcesSerial_);
+                    var updated = client_.FetchResources(info_, cachedResourcesSerial_);
                     if (updated != null)
                     {
                         cachedResourcesSerial_ = updated.Item1;
@@ -765,22 +765,22 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
             public void Dispose()
             {
-                client_.TaskDispose(this, info_);
+                client_.DisposeSubscription(this, info_);
                 Disposed?.Invoke(this);
                 Disposed = null;
             }
 
-            public DiscoveryTask(Client client, CategoryInfo info)
+            public DiscoverySubscription(Client client, CategoryInfo info)
             {
                 client_ = client;
                 info_ = info;
             }
         }
 
-        // Task helpers
+        // Subscription helpers
 
         // return the new list of resources or null if the serial hasn't changed.
-        private Tuple<int, IDiscoveryResource[]> TaskFetchResources(CategoryInfo info, int serial)
+        private Tuple<int, IDiscoveryResource[]> FetchResources(CategoryInfo info, int serial)
         {
             lock (this) // Update the cached copy if it has changed
             {
@@ -794,11 +794,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
         }
 
-        private void TaskDispose(DiscoveryTask task, CategoryInfo info)
+        private void DisposeSubscription(DiscoverySubscription subscription, CategoryInfo info)
         {
             lock (this)
             {
-                info.tasks_.Remove(task);
+                info.subscriptions_.Remove(subscription);
             }
         }
 
@@ -952,7 +952,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         private Options options_;
         private bool isDisposed_ = false;
 
-        // Counts how many things (local resources or discovery tasks) are using the transport.
+        // Counts how many things (local resources or discovery subscriptions) are using the transport.
         private int transportRefCount_ = 0;
 
         /// Options for this agent
@@ -981,9 +981,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 client_ = new Client(transport_);
             }
             AddRefToTransport();
-            var task = client_.StartDiscovery(category);
-            task.Disposed += RemoveRefFromTransport;
-            return task;
+            var subscription = client_.StartDiscovery(category);
+            subscription.Disposed += RemoveRefFromTransport;
+            return subscription;
         }
 
         public Task<IDiscoveryResource> PublishAsync(
