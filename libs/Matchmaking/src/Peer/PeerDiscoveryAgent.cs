@@ -585,41 +585,36 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
             updateTask_ = Task.Run(() =>
             {
-                const int MinIntervalMs = 200;
-                var timerExpired = new AutoResetEvent(true);
-                var handles = new WaitHandle[] { timerExpired, updateAvailable_ };
-                var tasksUpdated = new List<DiscoveryTask>();
                 var token = updateCts_.Token;
-                using (var updateTimer = new Timer(_ => { timerExpired.Set(); }))
+                var handles = new WaitHandle[] { token.WaitHandle, updateAvailable_ };
+                var tasksUpdated = new List<DiscoveryTask>();
+                while (true)
                 {
-                    // Stop the wait if cancellation is requested.
-                    token.Register(() => updateAvailable_.Set());
-                    while (true)
+                    // Wait for either update or cancellation.
+                    WaitHandle.WaitAny(handles);
+                    if (token.IsCancellationRequested)
                     {
-                        WaitHandle.WaitAll(handles);
-                        if (token.IsCancellationRequested)
+                        return;
+                    }
+
+                    // There has been an update, collect the dirty tasks.
+                    lock (this)
+                    {
+                        foreach (var info in infoFromCategory_.Values)
                         {
-                            return;
-                        }
-                        updateTimer.Change(MinIntervalMs, Timeout.Infinite);
-                        lock (this)
-                        {
-                            foreach (var info in infoFromCategory_.Values)
+                            if (info.IsDirty)
                             {
-                                if (info.IsDirty)
-                                {
-                                    tasksUpdated.AddRange(info.tasks_);
-                                }
+                                tasksUpdated.AddRange(info.tasks_);
                             }
                         }
-
-                        // Outside the lock.
-                        foreach (var t in tasksUpdated)
-                        {
-                            t.FireUpdated();
-                        }
-                        tasksUpdated.Clear();
                     }
+
+                    // Outside the lock.
+                    foreach (var t in tasksUpdated)
+                    {
+                        t.FireUpdated();
+                    }
+                    tasksUpdated.Clear();
                 }
             }, updateCts_.Token);
         }
