@@ -4,10 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Net;
 using System.Net.Sockets;
-using System.Reflection.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -17,13 +15,13 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
 {
     public abstract class PeerDiscoveryTest
     {
-        protected Func<int, IDiscoveryAgent> discoveryAgentFactory_;
-        private readonly ITestOutputHelper output_;
+        internal ITransportBuilder transportBuilder_;
+        protected readonly ITestOutputHelper output_;
         protected readonly Random random_;
 
-        protected PeerDiscoveryTest(Func<int, IDiscoveryAgent> factory, ITestOutputHelper output)
+        internal PeerDiscoveryTest(ITransportBuilder transportBuilder, ITestOutputHelper output)
         {
-            discoveryAgentFactory_ = factory;
+            transportBuilder_ = transportBuilder;
             output_ = output;
 
             var seed = new Random().Next();
@@ -31,13 +29,17 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
             random_ = new Random(seed);
         }
 
-        protected abstract bool SimulatesPacketLoss { get; }
+        protected virtual IDiscoveryAgent MakeAgent(int userIndex)
+        {
+            var transport = transportBuilder_.MakeTransport(userIndex);
+            return new PeerDiscoveryAgent(transport, new PeerDiscoveryAgent.Options { ResourceExpirySec = int.MaxValue });
+        }
 
         [Fact]
         public void CreateResource()
         {
             using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
-            using (var svc1 = discoveryAgentFactory_(1))
+            using (var svc1 = MakeAgent(1))
             {
                 var resource1 = svc1.PublishAsync("CreateResource", "http://resource1", null, cts.Token).Result;
 
@@ -57,8 +59,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
         public void FindResourcesLocalAndRemote()
         {
             using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
-            using (var svc1 = discoveryAgentFactory_(1))
-            using (var svc2 = discoveryAgentFactory_(2))
+            using (var svc1 = MakeAgent(1))
+            using (var svc2 = MakeAgent(2))
             {
                 // Create some resources in the first one
                 const string category = "FindResourcesLocalAndRemote";
@@ -109,8 +111,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
             // start discovery, then start services afterwards
 
             using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
-            using (var svc1 = discoveryAgentFactory_(1))
-            using (var svc2 = discoveryAgentFactory_(2))
+            using (var svc1 = MakeAgent(1))
+            using (var svc2 = MakeAgent(2))
             {
                 const string category = "FindResourcesFromAnnouncement";
 
@@ -137,7 +139,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
         [Fact]
         public void AgentShutdownRemovesResources()
         {
-            if (SimulatesPacketLoss)
+            if (transportBuilder_.SimulatesPacketLoss)
             {
                 // Shutdown message might not be retried and its loss will make this test fail. Skip it.
                 return;
@@ -148,7 +150,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
 
             // start discovery, then start agents afterwards
             using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
-            using (var svc1 = discoveryAgentFactory_(1))
+            using (var svc1 = MakeAgent(1))
             using (var resources1 = svc1.Subscribe(category1))
             using (var resources2 = svc1.Subscribe(category2))
             {
@@ -156,8 +158,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
 
                 // These are disposed manually, but keep in a using block so that they are disposed even
                 // if the test throws.
-                using (var svc2 = discoveryAgentFactory_(2))
-                using (var svc3 = discoveryAgentFactory_(3))
+                using (var svc2 = MakeAgent(2))
+                using (var svc3 = MakeAgent(3))
                 {
                     // Create resources from svc2 and svc3
                     var resource2_1 = svc2.PublishAsync(category1, "conn1", null, cts.Token).Result;
@@ -199,13 +201,13 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
         public void CanEditResourceAttributes()
         {
             using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
-            using (var svc1 = discoveryAgentFactory_(1))
+            using (var svc1 = MakeAgent(1))
             {
                 const string category = "CanEditResourceAttributes";
                 var resources1 = svc1.Subscribe(category);
                 Assert.Empty(resources1.Resources);
 
-                using (var svc2 = discoveryAgentFactory_(2))
+                using (var svc2 = MakeAgent(2))
                 {
                     // Create resources from svc2
                     var origAttrs = new Dictionary<string, string> { { "keyA", "valA" }, { "keyB", "valB" } };
@@ -269,11 +271,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
             var delayedException = new Utils.DelayedException();
 
             using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
-            using (var publishingAgent = discoveryAgentFactory_(1))
+            using (var publishingAgent = MakeAgent(1))
             {
                 publishingAgent.PublishAsync(category1, "", null, cts.Token).Wait();
                 publishingAgent.PublishAsync(category2, "", null, cts.Token).Wait();
-                var agent = discoveryAgentFactory_(2);
+                var agent = MakeAgent(2);
 
                 {
                     bool subIsDisposed = false;
@@ -351,8 +353,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
             using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
             {
                 var delayedException = new Utils.DelayedException();
-                using (var svc1 = discoveryAgentFactory_(1))
-                using (var svc2 = discoveryAgentFactory_(2))
+                using (var svc1 = MakeAgent(1))
+                using (var svc2 = MakeAgent(2))
                 {
                     for (int i = 0; i < 1000; ++i)
                     {
@@ -392,195 +394,26 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
 
     public class PeerDiscoveryTestUdp : PeerDiscoveryTest
     {
-        static private IDiscoveryAgent MakeDiscoveryAgent(int userIndex)
-        {
-            var net = new UdpPeerDiscoveryTransport(new IPAddress(0xffffff7f), 45277, new IPAddress(0x0000007f + (userIndex << 24)));
-            return new PeerDiscoveryAgent(net, new PeerDiscoveryAgent.Options { ResourceExpirySec = int.MaxValue });
-        }
-
-        public PeerDiscoveryTestUdp(ITestOutputHelper output) : base(MakeDiscoveryAgent, output) { }
-
-        protected override bool SimulatesPacketLoss => false;
-    }
-
-    public class PeerDiscoveryTestUdpMulticast : PeerDiscoveryTest
-    {
-        static private IDiscoveryAgent MakeDiscoveryAgent(int userIndex)
-        {
-            var net = new UdpPeerDiscoveryTransport(new IPAddress(0x000000e0), 45278, new IPAddress(0x0000007f + (userIndex << 24)));
-            return new PeerDiscoveryAgent(net, new PeerDiscoveryAgent.Options { ResourceExpirySec = int.MaxValue });
-        }
-
-        public PeerDiscoveryTestUdpMulticast(ITestOutputHelper output) : base(MakeDiscoveryAgent, output) { }
-        protected override bool SimulatesPacketLoss => false;
+        public PeerDiscoveryTestUdp(ITestOutputHelper output) : base(new UdpTransportBuilder(), output) { }
     }
 
     public class PeerDiscoveryTestMemory : PeerDiscoveryTest
     {
-        static private IDiscoveryAgent MakeDiscoveryAgent(int userIndex)
-        {
-            var net = new MemoryPeerDiscoveryTransport(userIndex);
-            return new PeerDiscoveryAgent(net, new PeerDiscoveryAgent.Options { ResourceExpirySec = int.MaxValue });
-        }
-
-        public PeerDiscoveryTestMemory(ITestOutputHelper output) : base(MakeDiscoveryAgent, output) { }
-        protected override bool SimulatesPacketLoss => false;
+        public PeerDiscoveryTestMemory(ITestOutputHelper output) : base(new MemoryTransportBuilder(), output) { }
     }
 
     // Uses relay socket to reorder packets delivery.
-    public abstract class PeerDiscoveryTestReordered : PeerDiscoveryTest, IDisposable
+    public class PeerDiscoveryTestUdpUnreliable : PeerDiscoveryTest, IDisposable
     {
-        private const int MaxDelayMs = 25;
-        private const int MaxRetries = 3;
-
-        private readonly Socket relay_;
-        private readonly ushort port_;
-        private readonly List<IPEndPoint> recipients_ = new List<IPEndPoint>();
-
-        // Wraps a packet for use in a map.
-        private class Packet
+        public PeerDiscoveryTestUdpUnreliable(ITestOutputHelper output)
+            : base(null, output)
         {
-            public IPEndPoint EndPoint;
-            public byte[] Contents;
-
-            public Packet(IPEndPoint endPoint, ArraySegment<byte> contents)
-            {
-                EndPoint = endPoint;
-                Contents = new byte[contents.Count];
-                for (int i = 0; i < contents.Count; ++i)
-                {
-                    Contents[i] = contents[i];
-                }
-            }
-
-            public override bool Equals(object other)
-            {
-                if (other is Packet rhs)
-                {
-                    return EndPoint.Equals(rhs.EndPoint) && Contents.SequenceEqual(rhs.Contents);
-                }
-                return false;
-            }
-
-            public override int GetHashCode()
-            {
-                // Not a great hash but it shouldn't matter in this case.
-                var result = 0;
-                foreach (byte b in Contents)
-                {
-                    result = (result * 31) ^ b;
-                }
-                return EndPoint.GetHashCode() ^ result;
-            }
-        }
-
-        // Keeps track of each packet that goes through the relay and counts its repetitions.
-        // See receive loop for usage.
-        private readonly Dictionary<Packet, int> packetCounters;
-
-        protected override bool SimulatesPacketLoss => (packetCounters != null);
-
-        private IDiscoveryAgent MakeDiscoveryAgent(int userIndex)
-        {
-            // Peers all send packets to the relay.
-            var address = new IPAddress(0x0000007f + (userIndex << 24));
-            var net = new UdpPeerDiscoveryTransport(new IPAddress(0xfeffff7f), port_, address,
-                new UdpPeerDiscoveryTransport.Options { MaxRetries = MaxRetries, MaxRetryDelayMs = 100 });
-            lock (recipients_)
-            {
-                var endpoint = new IPEndPoint(address, port_);
-
-                // Remove first so the same agent can be re-created multiple times
-                recipients_.Remove(endpoint);
-                recipients_.Add(endpoint);
-            }
-            return new PeerDiscoveryAgent(net, new PeerDiscoveryAgent.Options { ResourceExpirySec = int.MaxValue });
-        }
-
-        public PeerDiscoveryTestReordered(ITestOutputHelper output, bool packetLoss, ushort port) : base(null, output)
-        {
-            discoveryAgentFactory_ = MakeDiscoveryAgent;
-            port_ = port;
-
-            relay_ = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            relay_.Bind(new IPEndPoint(new IPAddress(0xfeffff7f), port_));
-
-            // Disable exception on UDP connection reset (don't care).
-            uint IOC_IN = 0x80000000;
-            uint IOC_VENDOR = 0x18000000;
-            uint SIO_UDP_CONNRESET = IOC_IN | IOC_VENDOR | 12;
-            relay_.IOControl((int)SIO_UDP_CONNRESET, new byte[] { Convert.ToByte(false) }, null);
-
-            if (packetLoss)
-            {
-                packetCounters = new Dictionary<Packet, int>();
-            }
-
-            Task.Run(async () =>
-            {
-                try
-                {
-                    while (true)
-                    {
-                        byte[] buf_ = new byte[1024];
-                        var result = await relay_.ReceiveFromAsync(new ArraySegment<byte>(buf_), SocketFlags.None, new IPEndPoint(IPAddress.Any, 0));
-
-                        if (packetCounters != null)
-                        {
-                            // Increase the probability of delivery of a packet with retries, up to 100% on the last retry.
-                            // This simulates heavy packet loss while still guaranteeing that everything works.
-                            // Note that this logic is very naive, but should be fine for small tests.
-                            var packet = new Packet((IPEndPoint)result.RemoteEndPoint, new ArraySegment<byte>(buf_, 0, result.ReceivedBytes));
-                            if (!packetCounters.TryGetValue(packet, out int counter))
-                            {
-                                counter = 0;
-                            }
-
-                            if (counter == MaxRetries - 1)
-                            {
-                                // Last retry, always send and forget the packet.
-                                packetCounters.Remove(packet);
-                            }
-                            else
-                            {
-                                packetCounters[packet] = counter + 1;
-                                // Drop with decreasing probability.
-                                if (random_.Next(0, MaxRetries) > counter)
-                                {
-                                    continue;
-                                }
-                            }
-                        }
-
-                        // The relay sends the packets to all peers with a random delay.
-                        IPEndPoint[] curRecipients;
-                        lock (recipients_)
-                        {
-                            curRecipients = recipients_.ToArray();
-                        }
-                        foreach (var rec in curRecipients)
-                        {
-                            var delay = random_.Next(MaxDelayMs);
-                            _ = Task.Delay(delay).ContinueWith(t =>
-                            {
-                                try
-                                {
-                                    relay_.SendToAsync(new ArraySegment<byte>(buf_, 0, result.ReceivedBytes), SocketFlags.None, rec);
-                                }
-                                catch (ObjectDisposedException) { }
-                                catch (SocketException e) when (e.SocketErrorCode == SocketError.NotSocket) { }
-                            });
-                        }
-                    }
-                }
-                catch (ObjectDisposedException) { }
-                catch (SocketException e) when (e.SocketErrorCode == SocketError.NotSocket) { }
-            });
+            transportBuilder_ = new UdpReorderedTransportBuilder(random_, packetLoss: true);
         }
 
         public void Dispose()
         {
-            relay_.Dispose();
+            ((IDisposable)transportBuilder_).Dispose();
         }
 
         [Fact]
@@ -588,9 +421,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
         {
             const string category = "AttributeEditsAreInOrder";
             using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
-            using (var svc1 = discoveryAgentFactory_(1))
+            using (var svc1 = MakeAgent(1))
             using (var discovery = svc1.Subscribe(category))
-            using (var svc2 = discoveryAgentFactory_(2))
+            using (var svc2 = MakeAgent(2))
             {
                 // Create resource from svc2
                 var origAttrs = new Dictionary<string, string> { { "value", "0" } };
@@ -615,7 +448,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
                     }
 
                     // Give some time to the messages to reach the peers.
-                    Task.Delay(MaxDelayMs).Wait();
+                    Task.Delay(UdpReorderedTransportBuilder.MaxDelayMs).Wait();
 
                     // Edits should show up in svc1 in order
                     {
@@ -650,19 +483,34 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
         }
     }
 
-    public class PeerDiscoveryTestReorderedReliable : PeerDiscoveryTestReordered
+    // This test needs reordering but does not work with packet loss, so we use a separate class.
+    public class PeerDiscoveryTestReorderedReliable
     {
-        public PeerDiscoveryTestReorderedReliable(ITestOutputHelper output) : base(output, packetLoss: false, 45279) { }
+        private readonly ITransportBuilder transportBuilder_;
+
+        public PeerDiscoveryTestReorderedReliable(ITestOutputHelper output)
+        {
+            var seed = new Random().Next();
+            output.WriteLine($"Seed for lossy network: {seed}");
+            var random = new Random(seed);
+            transportBuilder_ = new UdpReorderedTransportBuilder(random, packetLoss: false);
+        }
+
+        protected virtual IDiscoveryAgent MakeAgent(int userIndex)
+        {
+            var transport = transportBuilder_.MakeTransport(userIndex);
+            return new PeerDiscoveryAgent(transport, new PeerDiscoveryAgent.Options { ResourceExpirySec = int.MaxValue });
+        }
 
         [Fact]
         public void NoAnnouncementsAfterDispose()
         {
             const string category = "NoAnnouncementsAfterDispose";
             using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
-            using (var svc1 = discoveryAgentFactory_(1))
+            using (var svc1 = MakeAgent(1))
             using (var discovery = svc1.Subscribe(category))
             {
-                using (var svc2 = discoveryAgentFactory_(2))
+                using (var svc2 = MakeAgent(2))
                 {
                     // Create a lot of resources.
                     var tasks = new Task<IDiscoveryResource>[100];
@@ -684,9 +532,5 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
                 }
             }
         }
-    }
-    public class PeerDiscoveryTestReorderedUnreliable : PeerDiscoveryTestReordered
-    {
-        public PeerDiscoveryTestReorderedUnreliable(ITestOutputHelper output) : base(output, packetLoss: true, 45280) { }
     }
 }

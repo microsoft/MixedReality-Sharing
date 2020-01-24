@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-using Microsoft.MixedReality.Sharing.Matchmaking;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -43,6 +42,13 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
             {
                 if (Quit != null) Quit();
             }
+        }
+
+        public static class NewPortNumber
+        {
+            private static volatile ushort current_ = 40000;
+
+            public static ushort Calculate() { return ++current_; }
         }
 
         // Run a query and wait for the predicate to be satisfied.
