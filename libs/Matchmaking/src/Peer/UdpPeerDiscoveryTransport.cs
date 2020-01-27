@@ -41,12 +41,24 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         private const int StreamCleanupPeriodMs = StreamLifetimeMs;
         private const int MaxRememberedStreams = 10000;
 
+        /// <summary>
+        /// Options for a transport.
+        /// </summary>
+        public class Options
+        {
+            public int MaxRetries = 3;
+            public int MaxRetryDelayMs = 10000;
+        }
+
+        private Options options_;
+
         private Socket socket_;
         private readonly IPEndPoint broadcastEndpoint_;
         private readonly IPAddress localAddress_;
         private readonly EndPoint anywhere_ = new IPEndPoint(IPAddress.Any, 0);
         private readonly byte[] readBuffer_ = new byte[LargeMessageLimit];
         private readonly ArraySegment<byte> readSegment_;
+        private readonly Random random_ = new Random();
 
         // Map the ID of each stream for which we are sending messages to the last used sequence number.
         private readonly ConcurrentDictionary<Guid, int> sendStreams_ = new ConcurrentDictionary<Guid, int>();
@@ -85,11 +97,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// <param name="broadcast">Broadcast or multicast address used to send packets to other hosts.</param>
         /// <param name="local">Local address.</param>
         /// <param name="port">Port used to send and receive broadcast packets.</param>
-        public UdpPeerDiscoveryTransport(IPAddress broadcast, ushort port, IPAddress local = null)
+        public UdpPeerDiscoveryTransport(IPAddress broadcast, ushort port, IPAddress local = null, Options options = null)
         {
             broadcastEndpoint_ = new IPEndPoint(broadcast, port);
             localAddress_ = local ?? AnyAddress(broadcast.AddressFamily);
             readSegment_ = new ArraySegment<byte>(readBuffer_);
+            options_ = options ?? new Options();
         }
 
         private IPAddress AnyAddress(AddressFamily family)
@@ -343,7 +356,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 Log.Warning("UdpPeerNetwork.cs: Large UDP messages will be discarded ({0} bytes)", buffer.Length);
                 return;
             }
-            socket_.SendTo(buffer, SocketFlags.None, broadcastEndpoint_);
+            SendWithRetries(buffer, broadcastEndpoint_);
         }
 
         public void Reply(IPeerDiscoveryMessage req, Guid guid, ArraySegment<byte> message)
@@ -354,8 +367,40 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             {
                 Log.Warning("UdpPeerNetwork.cs: Large UDP messages will be discarded ({0} bytes)", buffer.Length);
                 return;
+			}
+            SendWithRetries(buffer, umsg.sender_);
+        }
+
+        private void SendWithRetries(byte[] buffer, EndPoint destination)
+        {
+            Send(buffer, destination);
+            Task.Run(async () =>
+            {
+                for (int i = 0; i < options_.MaxRetries - 1; ++i)
+                {
+                    await Task.Delay(random_.Next(options_.MaxRetryDelayMs / 4, options_.MaxRetryDelayMs));
+                    Send(buffer, destination);
+                }
+            });
+        }
+
+        private void Send(byte[] buffer, EndPoint destination)
+        {
+            try
+            {
+                socket_.SendTo(buffer, SocketFlags.None, destination);
             }
-            socket_.SendTo(buffer, SocketFlags.None, umsg.sender_);
+            // Socket has been disposed, terminate.
+            catch (NullReferenceException) { return; }
+            catch (ObjectDisposedException) { return; }
+            catch (SocketException e) when (e.SocketErrorCode == SocketError.Interrupted || e.SocketErrorCode == SocketError.NotSocket)
+            {
+                return;
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, "Exception raised while sending message");
+            }
         }
     }
 }

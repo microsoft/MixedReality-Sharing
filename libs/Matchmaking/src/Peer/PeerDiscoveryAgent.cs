@@ -571,6 +571,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         /// Protocol handler.
         Proto proto_;
 
+        Task updateTask_;
+        CancellationTokenSource updateCts_ = new CancellationTokenSource();
+        AutoResetEvent updateAvailable_ = new AutoResetEvent(false);
+
         internal Client(IPeerDiscoveryTransport net)
         {
             proto_ = new Proto(net);
@@ -578,6 +582,41 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             proto_.OnServerByeBye = OnServerByeBye;
             proto_.OnServerReply = OnServerAnnounce;
             timer_ = new Timer(OnClientTimerExpired, null, Timeout.Infinite, Timeout.Infinite);
+
+            updateTask_ = Task.Run(() =>
+            {
+                var token = updateCts_.Token;
+                var handles = new WaitHandle[] { token.WaitHandle, updateAvailable_ };
+                var tasksUpdated = new List<DiscoveryTask>();
+                while (true)
+                {
+                    // Wait for either update or cancellation.
+                    WaitHandle.WaitAny(handles);
+                    if (token.IsCancellationRequested)
+                    {
+                        return;
+                    }
+
+                    // There has been an update, collect the dirty tasks.
+                    lock (this)
+                    {
+                        foreach (var info in infoFromCategory_.Values)
+                        {
+                            if (info.IsDirty)
+                            {
+                                tasksUpdated.AddRange(info.tasks_);
+                            }
+                        }
+                    }
+
+                    // Outside the lock.
+                    foreach (var t in tasksUpdated)
+                    {
+                        t.FireUpdated();
+                    }
+                    tasksUpdated.Clear();
+                }
+            }, updateCts_.Token);
         }
 
         internal IDisposedEventDiscoveryTask StartDiscovery(string category)
@@ -642,11 +681,24 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             internal SortedDictionary<Guid, RemoteResource> resourcesRemote_ = new SortedDictionary<Guid, RemoteResource>();
 
             // This is incremented on each change to the category
-            internal int resourceSerial_ = 0;
+            internal int ResourceSerial { get; private set; } = 0;
+
+            internal bool IsDirty { get; private set; } = false;
 
             internal CategoryInfo(string category)
             {
                 category_ = category;
+            }
+
+            internal void IncrementSerial()
+            {
+                ++ResourceSerial;
+                IsDirty = true;
+            }
+
+            internal void SetClean()
+            {
+                IsDirty = false;
             }
         }
 
@@ -706,13 +758,13 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         {
             lock (this) // Update the cached copy if it has changed
             {
-                if (info.resourceSerial_ == serial)
+                if (info.ResourceSerial == serial)
                 {
                     return null;
                 }
                 // need a copy since .Values is a reference
                 var resources = info.resourcesRemote_.Values.ToArray<IDiscoveryResource>();
-                return new Tuple<int, IDiscoveryResource[]>(info.resourceSerial_, resources);
+                return new Tuple<int, IDiscoveryResource[]>(info.ResourceSerial, resources);
             }
         }
 
@@ -724,25 +776,31 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
         }
 
+        // Note: must be called under lock.
         private void SetExpirationTimer(DateTime expiryTime)
         {
-            lock (this)
+            // Use int since UWP does not implement long ctor.
+            int deltaMsInt;
+            if (expiryTime == DateTime.MaxValue)
             {
-                var deltaMs = (long)DateTime.UtcNow.Subtract(expiryTime).TotalMilliseconds;
+                deltaMsInt = Timeout.Infinite;
+            }
+            else
+            {
+                var deltaMs = (long)expiryTime.Subtract(DateTime.UtcNow).TotalMilliseconds;
                 // Round up to the next ms to ensure the (finer grained) fileTime has passed.
                 // Also ensure we have a positive delta or the timer will not work.
                 deltaMs = Math.Max(deltaMs + 1, 0);
-                // Cast to int since UWP does not implement long ctor.
-                var deltaMsInt = (int)Math.Min(deltaMs, int.MaxValue);
-                timer_.Change(deltaMsInt, Timeout.Infinite);
-                timerExpiryTime_ = expiryTime;
+                deltaMsInt = (int)Math.Min(deltaMs, int.MaxValue);
             }
+            timer_.Change(deltaMsInt, Timeout.Infinite);
+            timerExpiryTime_ = expiryTime;
         }
 
         private void OnClientTimerExpired(object state)
         {
-            var updatedTasks = new List<DiscoveryTask>();
             DateTime nextExpiryFileTime = DateTime.MaxValue;
+            bool updated = false;
             lock (this)
             {
                 // Search and delete any expired resources.
@@ -764,32 +822,27 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     }
                     if (expired.Any())
                     {
-                        info.resourceSerial_ += 1;
                         foreach (var exp in expired)
                         {
                             info.resourcesRemote_.Remove(exp);
                             categoryFromResourceId_.Remove(exp);
                         }
-                        updatedTasks.AddRange(info.tasks_);
+                        info.IncrementSerial();
+                        updated = true;
                     }
                 }
-            }
-            // Notify any tasks if we've removed resources
-            foreach (var up in updatedTasks)
-            {
-                up.FireUpdated();
+                SetExpirationTimer(nextExpiryFileTime);
             }
 
-            if (nextExpiryFileTime != DateTime.MaxValue)
+            if (updated)
             {
-                SetExpirationTimer(nextExpiryFileTime);
+                updateAvailable_.Set();
             }
         }
 
         // The body of ServerHello and ServerReply is identical so we reuse the code.
         private void OnServerAnnounce(IPeerDiscoveryMessage msg, string category, string connection, DateTime expiresTime, Dictionary<string, string> attributes)
         {
-            DiscoveryTask[] tasksUpdated = null;
             var guid = msg.StreamId;
             lock (this)
             {
@@ -836,15 +889,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 }
                 if (updated)
                 {
-                    info.resourceSerial_ += 1;
-                    tasksUpdated = info.tasks_.ToArray();
-                }
-            }
-            if (tasksUpdated != null) // outside the lock
-            {
-                foreach (var t in tasksUpdated)
-                {
-                    t.FireUpdated();
+                    info.IncrementSerial();
+                    updateAvailable_.Set();
                 }
             }
         }
@@ -852,7 +898,6 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         private void OnServerByeBye(IPeerDiscoveryMessage msg)
         {
             var guid = msg.StreamId;
-            DiscoveryTask[] tasksUpdated = Array.Empty<DiscoveryTask>();
             lock (this)
             {
                 if (categoryFromResourceId_.TryGetValue(guid, out string category))
@@ -860,14 +905,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     categoryFromResourceId_.Remove(guid);
                     var info = infoFromCategory_[category];
                     info.resourcesRemote_.Remove(guid);
-                    info.resourceSerial_ += 1;
-                    tasksUpdated = info.tasks_.ToArray();
+                    info.IncrementSerial();
+                    updateAvailable_.Set();
                 }
-            }
-
-            foreach (var t in tasksUpdated)
-            {
-                t.FireUpdated();
             }
         }
     }
