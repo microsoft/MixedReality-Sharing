@@ -249,6 +249,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
             var handlerEntered = new ManualResetEvent(false);
             var agentDisposed = new ManualResetEvent(false);
 
+            var delayedException = new Utils.DelayedException();
+
             using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
             using (var publishingAgent = discoveryAgentFactory_(1))
             {
@@ -260,6 +262,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
                     bool subIsDisposed = false;
                     var subDisposedEvent = new ManualResetEvent(false);
                     agent.Subscribe(category1).Updated +=
+                        delayedException.Wrap<IDiscoverySubscription>(
                         sub =>
                         {
                             // Tests for https://github.com/microsoft/MixedReality-Sharing/issues/83.
@@ -272,30 +275,33 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
                                 subIsDisposed = true;
                                 subDisposedEvent.Set();
                             }
-                        };
+                        });
                     // Wait until the subscription is disposed before going on.
                     WaitWithCancellation(subDisposedEvent, cts.Token);
                 }
 
-
+                var survivingDisposedEvent = new ManualResetEvent(false);
                 surviving = agent.Subscribe(category1);
 
                 {
                     bool subIsDisposed = false;
                     survivingInHandler = agent.Subscribe(category2);
-                    survivingInHandler.Updated += sub =>
-                    {
-                        handlerEntered.Set();
+                    survivingInHandler.Updated +=
+                        delayedException.Wrap<IDiscoverySubscription>(
+                        sub =>
+                        {
+                            handlerEntered.Set();
 
-                        // Wait until the agent is disposed by the main thread.
-                        WaitWithCancellation(agentDisposed, cts.Token);
+                            // Wait until the agent is disposed by the main thread.
+                            WaitWithCancellation(agentDisposed, cts.Token);
 
-                        // Dispose the task from its handler.
-                        sub.Dispose();
-                        // The handler is not called after disposal.
-                        Assert.False(subIsDisposed);
-                        subIsDisposed = true;
-                    };
+                            // Dispose the task from its handler.
+                            sub.Dispose();
+                            // The handler is not called after disposal.
+                            Assert.False(subIsDisposed);
+                            subIsDisposed = true;
+                            survivingDisposedEvent.Set();
+                        });
                 }
 
                 // Wait until the handler is entered.
@@ -309,6 +315,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
 
                 // Dispose the other surviving task.
                 surviving.Dispose();
+
+                WaitWithCancellation(survivingDisposedEvent, cts.Token);
+
+                delayedException.Rethrow();
             }
         }
 
@@ -317,6 +327,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
         {
             using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
             {
+                var delayedException = new Utils.DelayedException();
                 using (var svc1 = discoveryAgentFactory_(1))
                 using (var svc2 = discoveryAgentFactory_(2))
                 {
@@ -327,25 +338,31 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
                             svc1.PublishAsync(category, "");
                             svc2.PublishAsync(category, "");
                             IDiscoverySubscription sub = svc2.Subscribe(category);
-                            sub.Updated += subscription =>
-                            {
-                                Assert.True(subscription.Resources.Count() >= 0);
-                                subscription.Dispose();
-                            };
+                            sub.Updated +=
+                            delayedException.Wrap<IDiscoverySubscription>(
+                                subscription =>
+                                {
+                                    Assert.True(subscription.Resources.Count() >= 0);
+                                    subscription.Dispose();
+                                });
                         }
                         {
                             var category = "DisposeInOtherThread" + i;
                             svc1.PublishAsync(category, "");
                             svc2.PublishAsync(category, "");
                             IDiscoverySubscription sub = svc2.Subscribe(category);
-                            Task.Delay(random_.Next(0, 200)).ContinueWith(_ =>
-                            {
-                                Assert.True(sub.Resources.Count() >= 0);
-                                sub.Dispose();
-                            });
+                            Task.Delay(random_.Next(0, 200)).ContinueWith(
+                            delayedException.Wrap<Task>(
+                                _ =>
+                                {
+                                    Assert.True(sub.Resources.Count() >= 0);
+                                    sub.Dispose();
+                                }));
                         }
                     }
                 }
+                Thread.Sleep(200);
+                delayedException.Rethrow();
             }
         }
     }
@@ -449,7 +466,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
             lock (recipients_)
             {
                 var endpoint = new IPEndPoint(address, port_);
-                
+
                 // Remove first so the same agent can be re-created multiple times
                 recipients_.Remove(endpoint);
                 recipients_.Add(endpoint);

@@ -5,6 +5,8 @@ using Microsoft.MixedReality.Sharing.Matchmaking;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
+using System.Text.RegularExpressions;
 using System.Threading;
 using Xunit;
 
@@ -16,7 +18,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
         {
             get
             {
-                return Debugger.IsAttached ? Timeout.Infinite : 10000;
+                return /*Debugger.IsAttached ? Timeout.Infinite :*/ 10000;
             }
         }
 
@@ -91,6 +93,48 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
                             return null;
                         }
                     }
+                }
+            }
+        }
+
+        // Utility that captures any exception thrown by a block of code to throw it later.
+        public class DelayedException
+        {
+            private Exception exception_;
+            public void Run(Action action)
+            {
+                try
+                {
+                    action();
+                }
+                catch(Exception e)
+                {
+                    exception_ = e;
+                }
+            }
+
+            public Action Wrap(Action action)
+            {
+                return () => { action(); };
+            }
+
+            public Action<T1> Wrap<T1>(Action<T1> action)
+            {
+                return (t1) => { action(t1); };
+            }
+
+            public Action<T1, T2> Wrap<T1, T2>(Action<T1, T2> action)
+            {
+                return (t1, t2) => { action(t1, t2); };
+            }
+
+            // Add more if necessary
+
+            public void Rethrow()
+            {
+                if (exception_ != null)
+                {
+                    ExceptionDispatchInfo.Capture(exception_).Throw();
                 }
             }
         }
