@@ -607,9 +607,16 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     }
 
                     // Outside the lock.
-                    foreach (var t in tasksUpdated)
+                    try
                     {
-                        t.FireUpdated();
+                        foreach (var t in tasksUpdated)
+                        {
+                            t.FireUpdated();
+                        }
+                    }
+                    catch(Exception e)
+                    {
+                        Log.Error(e, "Error while firing update");
                     }
                     tasksUpdated.Clear();
                 }
