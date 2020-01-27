@@ -592,10 +592,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 {
                     // Wait for either update or cancellation.
                     WaitHandle.WaitAny(handles);
-                    if (token.IsCancellationRequested)
-                    {
-                        return;
-                    }
+                    token.ThrowIfCancellationRequested();
 
                     // There has been an update, collect the dirty tasks.
                     lock (this)
@@ -641,6 +638,17 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         internal void Stop()
         {
+            updateCts_.Cancel();
+            try
+            {
+                updateTask_.Wait();
+            }
+            catch (AggregateException agg)
+            {
+                agg.Handle(e => { return e is OperationCanceledException; });
+            }
+            updateCts_.Dispose();
+
             lock (this)
             {
                 timer_.Change(Timeout.Infinite, Timeout.Infinite);
