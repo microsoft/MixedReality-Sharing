@@ -791,9 +791,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }
         }
 
-        // Note: must be called under lock.
         private void SetExpirationTimer(DateTime expiryTime)
         {
+            Debug.Assert(Monitor.IsEntered(this)); // Caller should have lock(this)
             // Use int since UWP does not implement long ctor.
             int deltaMsInt;
             if (expiryTime == DateTime.MaxValue)
