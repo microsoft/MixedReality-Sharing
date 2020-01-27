@@ -4,8 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -21,6 +23,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
         {
             discoveryAgentFactory_ = factory;
         }
+
+        protected abstract bool SimulatesPacketLoss { get; }
 
         [Fact]
         public void CreateResource()
@@ -109,6 +113,12 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
         [Fact]
         public void AgentShutdownRemovesResources()
         {
+            if (SimulatesPacketLoss)
+            {
+                // Shutdown message might not be retried and its loss will make this test fail. Skip it.
+                return;
+            }
+
             const string category1 = "AgentShutdownRemovesResources1";
             const string category2 = "AgentShutdownRemovesResources2";
 
@@ -214,6 +224,86 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
                 }
             }
         }
+
+        private void WaitWithCancellation(WaitHandle waitHandle, CancellationToken token)
+        {
+            WaitHandle.WaitAny(new WaitHandle[] { waitHandle, token.WaitHandle });
+            token.ThrowIfCancellationRequested();
+        }
+
+        [Fact]
+        public void CanDisposeSubscriptions()
+        {
+            const string category1 = "CanDisposeSubscriptions1";
+            const string category2 = "CanDisposeSubscriptions2";
+            IDiscoverySubscription surviving;
+            IDiscoverySubscription survivingInHandler;
+
+            var handlerEntered = new ManualResetEvent(false);
+            var agentDisposed = new ManualResetEvent(false);
+
+            using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
+            using (var publishingAgent = discoveryAgentFactory_(1))
+            {
+                publishingAgent.PublishAsync(category1, "", null, cts.Token).Wait();
+                publishingAgent.PublishAsync(category2, "", null, cts.Token).Wait();
+                var agent = discoveryAgentFactory_(2);
+
+                {
+                    bool subIsDisposed = false;
+                    var subDisposedEvent = new ManualResetEvent(false);
+                    agent.Subscribe(category1).Updated +=
+                        sub =>
+                        {
+                            // Tests for https://github.com/microsoft/MixedReality-Sharing/issues/83.
+                            if (sub.Resources.Any())
+                            {
+                                // Dispose the task from its handler.
+                                sub.Dispose();
+                                // The handler is not called after disposal.
+                                Assert.False(subIsDisposed);
+                                subIsDisposed = true;
+                                subDisposedEvent.Set();
+                            }
+                        };
+                    // Wait until the subscription is disposed before going on.
+                    WaitWithCancellation(subDisposedEvent, cts.Token);
+                }
+
+
+                surviving = agent.Subscribe(category1);
+
+                {
+                    bool subIsDisposed = false;
+                    survivingInHandler = agent.Subscribe(category2);
+                    survivingInHandler.Updated += sub =>
+                    {
+                        handlerEntered.Set();
+
+                        // Wait until the agent is disposed by the main thread.
+                        WaitWithCancellation(agentDisposed, cts.Token);
+
+                        // Dispose the task from its handler.
+                        sub.Dispose();
+                        // The handler is not called after disposal.
+                        Assert.False(subIsDisposed);
+                        subIsDisposed = true;
+                    };
+                }
+
+                // Wait until the handler is entered.
+                WaitWithCancellation(handlerEntered, cts.Token);
+
+                // Dispose the agent while in the handler.
+                agent.Dispose();
+
+                // Signal the handler to go ahead and dispose the subscription.
+                agentDisposed.Set();
+
+                // Dispose the other surviving task.
+                surviving.Dispose();
+            }
+        }
     }
 
     public class PeerDiscoveryTestUdp : PeerDiscoveryTest
@@ -225,6 +315,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
         }
 
         public PeerDiscoveryTestUdp() : base(MakeDiscoveryAgent) { }
+
+        protected override bool SimulatesPacketLoss => false;
     }
 
     public class PeerDiscoveryTestUdpMulticast : PeerDiscoveryTest
@@ -236,6 +328,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
         }
 
         public PeerDiscoveryTestUdpMulticast() : base(MakeDiscoveryAgent) { }
+        protected override bool SimulatesPacketLoss => false;
     }
 
     public class PeerDiscoveryTestMemory : PeerDiscoveryTest
@@ -247,38 +340,89 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
         }
 
         public PeerDiscoveryTestMemory() : base(MakeDiscoveryAgent) { }
+        protected override bool SimulatesPacketLoss => false;
     }
 
     // Uses relay socket to reorder packets delivery.
-    public class PeerDiscoveryTestReordered : PeerDiscoveryTest, IDisposable
+    public abstract class PeerDiscoveryTestReordered : PeerDiscoveryTest, IDisposable
     {
         private const int MaxDelayMs = 25;
-        private const ushort Port = 45279;
+        private const int MaxRetries = 3;
 
         private readonly Socket relay_;
         private readonly Random random_;
         private readonly ITestOutputHelper output_;
+        private readonly ushort port_;
         private readonly List<IPEndPoint> recipients_ = new List<IPEndPoint>();
+
+        // Wraps a packet for use in a map.
+        private class Packet
+        {
+            public IPEndPoint EndPoint;
+            public byte[] Contents;
+
+            public Packet(IPEndPoint endPoint, ArraySegment<byte> contents)
+            {
+                EndPoint = endPoint;
+                Contents = new byte[contents.Count];
+                for (int i = 0; i < contents.Count; ++i)
+                {
+                    Contents[i] = contents[i];
+                }
+            }
+
+            public override bool Equals(object other)
+            {
+                if (other is Packet rhs)
+                {
+                    return EndPoint.Equals(rhs.EndPoint) && Contents.SequenceEqual(rhs.Contents);
+                }
+                return false;
+            }
+
+            public override int GetHashCode()
+            {
+                // Not a great hash but it shouldn't matter in this case.
+                var result = 0;
+                foreach (byte b in Contents)
+                {
+                    result = (result * 31) ^ b;
+                }
+                return EndPoint.GetHashCode() ^ result;
+            }
+        }
+
+        // Keeps track of each packet that goes through the relay and counts its repetitions.
+        // See receive loop for usage.
+        private readonly Dictionary<Packet, int> packetCounters;
+
+        protected override bool SimulatesPacketLoss => (packetCounters != null);
 
         private IDiscoveryAgent MakeDiscoveryAgent(int userIndex)
         {
             // Peers all send packets to the relay.
             var address = new IPAddress(0x0000007f + (userIndex << 24));
-            var net = new UdpPeerDiscoveryTransport(new IPAddress(0xfeffff7f), Port, address);
-            lock(recipients_)
+            var net = new UdpPeerDiscoveryTransport(new IPAddress(0xfeffff7f), port_, address,
+                new UdpPeerDiscoveryTransport.Options { MaxRetries = MaxRetries, MaxRetryDelayMs = 100 });
+            lock (recipients_)
             {
-                recipients_.Add(new IPEndPoint(address, Port));
+                var endpoint = new IPEndPoint(address, port_);
+                
+                // Remove first so the same agent can be re-created multiple times
+                recipients_.Remove(endpoint);
+                recipients_.Add(endpoint);
             }
             return new PeerDiscoveryAgent(net, new PeerDiscoveryAgent.Options { ResourceExpirySec = int.MaxValue });
         }
 
-        public PeerDiscoveryTestReordered(ITestOutputHelper output) : base(null)
+        public PeerDiscoveryTestReordered(ITestOutputHelper output, bool packetLoss, ushort port) : base(null)
         {
             discoveryAgentFactory_ = MakeDiscoveryAgent;
             output_ = output;
+            port_ = port;
 
             relay_ = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            relay_.Bind(new IPEndPoint(new IPAddress(0xfeffff7f), Port));
+            relay_.Bind(new IPEndPoint(new IPAddress(0xfeffff7f), port_));
 
             var seed = new Random().Next();
             output_.WriteLine($"Seed for lossy network: {seed}");
@@ -290,6 +434,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
             uint SIO_UDP_CONNRESET = IOC_IN | IOC_VENDOR | 12;
             relay_.IOControl((int)SIO_UDP_CONNRESET, new byte[] { Convert.ToByte(false) }, null);
 
+            if (packetLoss)
+            {
+                packetCounters = new Dictionary<Packet, int>();
+            }
+
             Task.Run(async () =>
             {
                 try
@@ -297,11 +446,38 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
                     while (true)
                     {
                         byte[] buf_ = new byte[1024];
-                        var result = await relay_.ReceiveAsync(new ArraySegment<byte>(buf_), SocketFlags.None);
+                        var result = await relay_.ReceiveFromAsync(new ArraySegment<byte>(buf_), SocketFlags.None, new IPEndPoint(IPAddress.Any, 0));
+
+                        if (packetCounters != null)
+                        {
+                            // Increase the probability of delivery of a packet with retries, up to 100% on the last retry.
+                            // This simulates heavy packet loss while still guaranteeing that everything works.
+                            // Note that this logic is very naive, but should be fine for small tests.
+                            var packet = new Packet((IPEndPoint)result.RemoteEndPoint, new ArraySegment<byte>(buf_, 0, result.ReceivedBytes));
+                            if (!packetCounters.TryGetValue(packet, out int counter))
+                            {
+                                counter = 0;
+                            }
+
+                            if (counter == MaxRetries - 1)
+                            {
+                                // Last retry, always send and forget the packet.
+                                packetCounters.Remove(packet);
+                            }
+                            else
+                            {
+                                packetCounters[packet] = counter + 1;
+                                // Drop with decreasing probability.
+                                if (random_.Next(0, MaxRetries) > counter)
+                                {
+                                    continue;
+                                }
+                            }
+                        }
 
                         // The relay sends the packets to all peers with a random delay.
                         IPEndPoint[] curRecipients;
-                        lock(recipients_)
+                        lock (recipients_)
                         {
                             curRecipients = recipients_.ToArray();
                         }
@@ -312,7 +488,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
                             {
                                 try
                                 {
-                                    relay_.SendToAsync(new ArraySegment<byte>(buf_, 0, result), SocketFlags.None, rec);
+                                    relay_.SendToAsync(new ArraySegment<byte>(buf_, 0, result.ReceivedBytes), SocketFlags.None, rec);
                                 }
                                 catch (ObjectDisposedException) { }
                                 catch (SocketException e) when (e.SocketErrorCode == SocketError.NotSocket) { }
@@ -395,6 +571,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
                 }
             }
         }
+    }
+
+    public class PeerDiscoveryTestReorderedReliable : PeerDiscoveryTestReordered
+    {
+        public PeerDiscoveryTestReorderedReliable(ITestOutputHelper output) : base(output, packetLoss: false, 45279) { }
 
         [Fact]
         public void NoAnnouncementsAfterDispose()
@@ -426,5 +607,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
                 }
             }
         }
+    }
+    public class PeerDiscoveryTestReorderedUnreliable : PeerDiscoveryTestReordered
+    {
+        public PeerDiscoveryTestReorderedUnreliable(ITestOutputHelper output) : base(output, packetLoss: true, 45280) { }
     }
 }
