@@ -16,7 +16,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
     /// (including `Dispose()`) must be safe to use independently from the state of the agent - even from a
     /// different thread from the one where the agent is used.
     ///
-    /// After the agent is disposed, the might stop returning meaningful resources and/or raising <see cref="Updated"/>.
+    /// After the agent is disposed, the result of <see cref="Resources"/> becomes undefined, and
+    /// <see cref="Updated"/> might stop being raised.
     /// </remarks>
     public interface IDiscoverySubscription : IDisposable
     {
