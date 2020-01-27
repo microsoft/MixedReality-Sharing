@@ -4,13 +4,14 @@
 #pragma once
 #include <Microsoft/MixedReality/Sharing/StateSync/CommandId.h>
 
+#include <Microsoft/MixedReality/Sharing/Common/VirtualRefCountedBase.h>
+
 #include <string_view>
 
 namespace Microsoft::MixedReality::Sharing::StateSync {
 
-class RSMListener {
+class RSMListener : public VirtualRefCountedBase {
  public:
-  virtual ~RSMListener() noexcept {}
   // Invoked when a new log entry is committed into the replicated log.
   // sequentialEntryId is exactly 1 greater than the sequentialEntryId of the
   // previous log entry.
@@ -25,10 +26,6 @@ class RSMListener {
   // There should be a handshake mechanism that allows the listener to catch up
   // without re-sending the entire state.
   virtual void OnLogFastForward(std::string_view state_blob) noexcept = 0;
-
- private:
-  RSMListener(const RSMListener&) = delete;
-  RSMListener& operator=(const RSMListener&) = delete;
 };
 
 }  // namespace Microsoft::MixedReality::Sharing::StateSync

@@ -2,6 +2,8 @@
 // Licensed under the MIT License.
 
 #pragma once
+#include <Microsoft/MixedReality/Sharing/Common/VirtualRefCountedBase.h>
+
 #include <memory>
 #include <string_view>
 
@@ -9,10 +11,8 @@ namespace Microsoft::MixedReality::Sharing::StateSync {
 
 class NetworkConnection;
 
-class NetworkListener {
+class NetworkListener : public VirtualRefCountedBase {
  public:
-  virtual ~NetworkListener() noexcept {}
-
   virtual void OnMessage(const NetworkConnection& sender,
                          std::string_view data) = 0;
 };
