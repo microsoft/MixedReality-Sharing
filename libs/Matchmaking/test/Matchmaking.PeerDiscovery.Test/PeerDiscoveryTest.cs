@@ -137,6 +137,41 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
         }
 
         [Fact]
+        public void UpdateEventIsCalled()
+        {
+            using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
+            using (var svc1 = MakeAgent(1))
+            using (var svc2 = MakeAgent(2))
+            {
+                const string category = "FindResourcesFromAnnouncement";
+
+                using (var task1 = svc1.Subscribe(category))
+                using (var task2 = svc2.Subscribe(category))
+                {
+                    Assert.Empty(task1.Resources);
+                    Assert.Empty(task2.Resources);
+
+                    var updateCalled = new AutoResetEvent(false);
+
+                    var subscription = svc2.Subscribe(category);
+                    subscription.Updated +=
+                        s =>
+                        {
+                            updateCalled.Set();
+                        };
+
+                    // Updated is called even if there are no resources.
+                    WaitWithCancellation(updateCalled, cts.Token);
+
+                    var resource1 = svc1.PublishAsync(category, "foo1", null, cts.Token).Result;
+
+                    // Update is called at least once after resources change.
+                    WaitWithCancellation(updateCalled, cts.Token);
+                }
+            }
+        }
+
+        [Fact]
         public void AgentShutdownRemovesResources()
         {
             if (transportBuilder_.SimulatesPacketLoss)
