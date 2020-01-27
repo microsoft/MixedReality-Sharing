@@ -18,7 +18,7 @@ class NetworkManager;
 class RSMConnection : public VirtualRefCountedBase {
  public:
   // Attempts to persist the command in the log of the RSM.
-  virtual CommandId SendCommand() = 0;
+  virtual CommandId SendCommand(std::string_view command) = 0;
 
   // Processes a single incoming event of the RSM.
   // Returns true if there was an incoming event, false otherwise.
