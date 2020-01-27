@@ -29,5 +29,23 @@
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\StateSync\Value.h">
       <Filter>include/Microsoft/MixedReality/Sharing/StateSync</Filter>
     </ClInclude>
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\StateSync\NetworkManager.h">
+      <Filter>include/Microsoft/MixedReality/Sharing/StateSync</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\StateSync\CommandId.h">
+      <Filter>include/Microsoft/MixedReality/Sharing/StateSync</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\StateSync\RSMConnection.h">
+      <Filter>include/Microsoft/MixedReality/Sharing/StateSync</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\StateSync\RSMListener.h">
+      <Filter>include/Microsoft/MixedReality/Sharing/StateSync</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\StateSync\NetworkConnection.h">
+      <Filter>include/Microsoft/MixedReality/Sharing/StateSync</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\StateSync\NetworkListener.h">
+      <Filter>include/Microsoft/MixedReality/Sharing/StateSync</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
