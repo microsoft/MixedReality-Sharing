@@ -13,8 +13,7 @@ class NetworkConnection;
 
 class NetworkListener : public VirtualRefCountedBase {
  public:
-  virtual void OnMessage(const NetworkConnection& sender,
-                         std::string_view data) = 0;
+  virtual void OnMessage(NetworkConnection& sender, std::string_view data) = 0;
 };
 
 }  // namespace Microsoft::MixedReality::Sharing::StateSync
