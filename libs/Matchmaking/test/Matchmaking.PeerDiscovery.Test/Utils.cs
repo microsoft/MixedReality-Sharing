@@ -18,7 +18,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
         {
             get
             {
-                return /*Debugger.IsAttached ? Timeout.Infinite :*/ 10000;
+                return Debugger.IsAttached ? Timeout.Infinite : 10000;
             }
         }
 
