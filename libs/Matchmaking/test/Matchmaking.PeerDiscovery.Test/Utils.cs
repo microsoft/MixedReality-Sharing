@@ -115,17 +115,39 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
 
             public Action Wrap(Action action)
             {
-                return () => { action(); };
+                return () => { Run(action); };
+            }
+            public void Run<T1>(Action<T1> action, T1 t1)
+            {
+                try
+                {
+                    action(t1);
+                }
+                catch (Exception e)
+                {
+                    exception_ = e;
+                }
             }
 
             public Action<T1> Wrap<T1>(Action<T1> action)
             {
-                return (t1) => { action(t1); };
+                return (t1) => { Run(action, t1); };
+            }
+            public void Run<T1, T2>(Action<T1, T2> action, T1 t1, T2 t2)
+            {
+                try
+                {
+                    action(t1, t2);
+                }
+                catch (Exception e)
+                {
+                    exception_ = e;
+                }
             }
 
             public Action<T1, T2> Wrap<T1, T2>(Action<T1, T2> action)
             {
-                return (t1, t2) => { action(t1, t2); };
+                return (t1, t2) => { Run(action, t1, t2); };
             }
 
             // Add more if necessary
