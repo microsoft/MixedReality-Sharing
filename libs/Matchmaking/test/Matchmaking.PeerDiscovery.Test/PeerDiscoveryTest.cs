@@ -313,7 +313,13 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
                 // Signal the handler to go ahead and dispose the subscription.
                 agentDisposed.Set();
 
-                // Dispose the other surviving task.
+                // The resources in the other surviving subscription are cleared eventually.
+                while(surviving.Resources.Any())
+                {
+                    Task.Delay(1).Wait(cts.Token);
+                }
+
+                // Dispose the other surviving subscription.
                 surviving.Dispose();
 
                 WaitWithCancellation(survivingDisposedEvent, cts.Token);
