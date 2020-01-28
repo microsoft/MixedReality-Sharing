@@ -583,9 +583,9 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             proto_.OnServerReply = OnServerAnnounce;
             timer_ = new Timer(OnClientTimerExpired, null, Timeout.Infinite, Timeout.Infinite);
 
+            var token = updateCts_.Token;
             updateTask_ = Task.Run(() =>
             {
-                var token = updateCts_.Token;
                 var handles = new WaitHandle[] { token.WaitHandle, updateAvailable_ };
                 var tasksUpdated = new List<DiscoveryTask>();
                 while (true)
@@ -620,7 +620,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     }
                     tasksUpdated.Clear();
                 }
-            }, updateCts_.Token);
+            }, token);
         }
 
         internal IDisposedEventDiscoveryTask StartDiscovery(string category)
@@ -645,23 +645,20 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
         internal void Stop()
         {
+            // Do not wait for the end of the update thread since it runs external handlers,
+            // and we might be stuck for a long time/deadlock.
             updateCts_.Cancel();
-            try
-            {
-                updateTask_.Wait();
-            }
-            catch (AggregateException agg)
-            {
-                agg.Handle(e => { return e is OperationCanceledException; });
-            }
             updateCts_.Dispose();
+
+            proto_.Stop();
 
             lock (this)
             {
+                infoFromCategory_.Clear();
+                categoryFromResourceId_.Clear();
                 timer_.Change(Timeout.Infinite, Timeout.Infinite);
                 timerExpiryTime_ = DateTime.MaxValue;
             }
-            proto_.Stop();
         }
 
         // Resource which we've heard about from a remote
