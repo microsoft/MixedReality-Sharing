@@ -620,7 +620,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     }
                     tasksUpdated.Clear();
                 }
-            }, token);
+            }, token).ContinueWith(_ =>
+            {
+                updateCts_.Dispose();
+            });
         }
 
         internal IDisposedEventDiscoveryTask StartDiscovery(string category)
@@ -648,7 +651,6 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             // Do not wait for the end of the update thread since it runs external handlers,
             // and we might be stuck for a long time/deadlock.
             updateCts_.Cancel();
-            updateCts_.Dispose();
 
             proto_.Stop();
 
