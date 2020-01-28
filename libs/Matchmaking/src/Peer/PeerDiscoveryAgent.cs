@@ -614,7 +614,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                             t.FireUpdated();
                         }
                     }
-                    catch(Exception e)
+                    catch (Exception e)
                     {
                         Log.Error(e, "Error while firing update");
                     }
@@ -623,6 +623,20 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             }, token).ContinueWith(_ =>
             {
                 updateCts_.Dispose();
+
+                lock (this)
+                {
+                    // Clear the resources.
+                    // Do it after the end of the update loop so that Update is not raised with cleared resources.
+                    foreach (var info in infoFromCategory_.Values)
+                    {
+                        info.resourcesRemote_.Clear();
+                        // Increment the serial so that the subscriptions replace the cached values.
+                        info.IncrementSerial();
+                    }
+                    infoFromCategory_.Clear();
+                    categoryFromResourceId_.Clear();
+                }
             });
         }
 
@@ -656,8 +670,6 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
             lock (this)
             {
-                infoFromCategory_.Clear();
-                categoryFromResourceId_.Clear();
                 timer_.Change(Timeout.Infinite, Timeout.Infinite);
                 timerExpiryTime_ = DateTime.MaxValue;
             }
@@ -1032,7 +1044,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             Task.Delay(1).Wait();
 
             // Stop the network.
-            lock(transportStartStopLock_)
+            lock (transportStartStopLock_)
             {
                 if (transportRefCount_ > 0)
                 {
