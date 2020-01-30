@@ -613,16 +613,14 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     lock (this)
                     {
                         // Invoke any newly added handler, even if resources haven't changed.
-                        if (currNewHandlersNum > 0)
+                        // Run under lock because it reads some CategoryInfos.
+                        for (int i = 0; i < currNewHandlersNum; ++i)
                         {
-                            for (int i = 0; i < currNewHandlersNum; ++i)
+                            newHandlers_.TryDequeue(out NewHandler categoryAndHandler);
+                            // Prevent duplicate invocations by skipping the handler if its category is already dirty.
+                            if (!categoryAndHandler.Category.IsDirty)
                             {
-                                newHandlers_.TryDequeue(out NewHandler categoryAndHandler);
-                                // Prevent duplicate invocations by skipping the handler if its category is already dirty.
-                                if (!categoryAndHandler.Category.IsDirty)
-                                {
-                                    currNewHandlers.Add(categoryAndHandler);
-                                }
+                                currNewHandlers.Add(categoryAndHandler);
                             }
                         }
 
