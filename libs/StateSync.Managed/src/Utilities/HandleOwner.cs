@@ -13,7 +13,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync.Utilities
     /// </summary>
     public abstract class HandleOwner : CriticalHandle
     {
-        protected HandleOwner() : base(IntPtr.Zero) {}
+        protected HandleOwner() : base(IntPtr.Zero) { }
 
         public override bool IsInvalid => handle != IntPtr.Zero;
     }
@@ -29,7 +29,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync.Utilities
             return true;
         }
 
-        [DllImport(PInvokeAPI.LibraryName, EntryPoint =
+        [DllImport(PInvokeAPI.StateSyncLibraryName, EntryPoint =
             "Microsoft_MixedReality_Sharing_StateSync_VirtualRefCountedBase_RemoveRef")]
         private static extern void VirtualRefCountedBase_RemoveRef(IntPtr handle);
     }

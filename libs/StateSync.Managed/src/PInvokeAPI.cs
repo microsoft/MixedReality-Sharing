@@ -8,7 +8,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync
 {
     public class PInvokeAPI
     {
-        public const string LibraryName =
+        public const string StateSyncLibraryName =
             "../x64/Microsoft.MixedReality.Sharing.StateSync-pinvoke-cpp.dll";
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
@@ -36,12 +36,20 @@ namespace Microsoft.MixedReality.Sharing.StateSync
             public int IntSize { get { checked { return (int)size; } } }
         }
 
-        [DllImport(LibraryName, EntryPoint =
+        public unsafe delegate void ReleaseGCHandleDelegate(
+            IntPtr gcHandle);
+
+        public static void ReleaseGCHandle(IntPtr gcHandle)
+        {
+            GCHandle.FromIntPtr(gcHandle).Free();
+        }
+
+        [DllImport(StateSyncLibraryName, EntryPoint =
             "Microsoft_MixedReality_Sharing_StateSync_SubkeyIteratorState_Init")]
         public static extern unsafe void SubkeyIteratorState_Init(
             void* key_handle_wrapper, IntPtr snapshot_handle, ref SubkeyIteratorState subkey_iterator_state, ref RawSubkeyView subkey_view);
 
-        [DllImport(LibraryName, EntryPoint =
+        [DllImport(StateSyncLibraryName, EntryPoint =
             "Microsoft_MixedReality_Sharing_StateSync_SubkeyIteratorState_Advance")]
         public static extern unsafe void SubkeyIteratorState_Advance(
             ref SubkeyIteratorState subkey_iterator_state, ref RawSubkeyView subkey_view);

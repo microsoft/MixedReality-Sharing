@@ -75,7 +75,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync.Test
         protected ReplicatedState _replicatedState = new ReplicatedState(StateGuid);
         protected Dictionary<Guid, SomeObject> _objects = new Dictionary<Guid, SomeObject>();
 
-        public static Key MakeObjectKey(Guid guid)
+        public static InternedBlob MakeObjectKey(Guid guid)
         {
             using (var stream = new MemoryStream())
             {
@@ -86,11 +86,11 @@ namespace Microsoft.MixedReality.Sharing.StateSync.Test
                 }
                 // Note: this is a very inefficient way to obtain a 17-bytes-long span,
                 // but it should be good enough for the illustration purposes.
-                return new Key(stream.ToArray());
+                return new InternedBlob(stream.ToArray());
             }
         }
 
-        Guid? ParseObjectKey(KeyRef key)
+        Guid? ParseObjectKey(InternedBlobRef key)
         {
             ReadOnlySpan<byte> keySpan = key.ToSpan();
             if (keySpan.Length == ObjectKeySize || keySpan[0] == ObjectKeyPrefix)
@@ -113,7 +113,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync.Test
 
         bool TryUpdateObject(StateSnapshot snapshot, UpdatedKey updatedKey)
         {
-            KeyRef key = updatedKey.Key;
+            InternedBlobRef key = updatedKey.Key;
             Guid? guid = ParseObjectKey(key);
             if (guid == null)
                 return false;
@@ -133,7 +133,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync.Test
             return true;
         }
 
-        bool TryRemoveObject(KeyRef key)
+        bool TryRemoveObject(InternedBlobRef key)
         {
             Guid? guid = ParseObjectKey(key);
             return guid.HasValue && _objects.Remove(guid.Value);
@@ -199,7 +199,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync.Test
                         TransactionBuilder transactionBuilder = new TransactionBuilder();
                         foreach (KeyValuePair<Guid, SomeObject> value in _objects)
                         {
-                            Key key = MakeObjectKey(value.Key);
+                            InternedBlob key = MakeObjectKey(value.Key);
                             transactionBuilder.Put(key, 0, new byte[] { 0, 0, 0 });
                         }
                         Transaction transaction = transactionBuilder.CreateTransaction();
@@ -209,7 +209,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync.Test
                     }
                     break;
 
-                // TODO: make the exchange more exciting by adding more states
+                    // TODO: make the exchange more exciting by adding more states
             }
             return UpdateResult.NothingHappened;
         }
@@ -230,7 +230,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync.Test
         public TestStage testStage;
 
         Guid createdObjectGuid;
-        Key createdObjectKey;
+        InternedBlob createdObjectKey;
 
         public override UpdateResult Update()
         {
@@ -258,7 +258,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync.Test
                     _replicatedState.Commit(transaction);
                     testStage = TestStage.WaitingForModificationByOtherClient;
                     return UpdateResult.SentTransaction;
-                // TODO: make the exchange more exciting by adding more states
+                    // TODO: make the exchange more exciting by adding more states
             }
             return UpdateResult.NothingHappened;
         }

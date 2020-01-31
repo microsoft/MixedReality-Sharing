@@ -20,7 +20,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\bit_cast.h" />
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Guid.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\hash.h" />
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\InternedBlob.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Platform.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\RefPtr.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Serialization\BitstreamReader.h" />
@@ -37,6 +39,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\hash.cpp" />
+    <ClCompile Include="src\InternedBlob.cpp" />
     <ClCompile Include="src\pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>

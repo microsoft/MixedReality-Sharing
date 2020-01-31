@@ -8,7 +8,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync.Snapshots
     //WIP code
     public ref struct UpdatedKey
     {
-        public KeyRef Key { get { throw new NotImplementedException(); } }
+        public InternedBlobRef Key { get { throw new NotImplementedException(); } }
 
         public ReadOnlySpan<ulong> InsertedSubkeys { get { throw new NotImplementedException(); } }
         public ReadOnlySpan<ulong> UpdatedSubkeys { get { throw new NotImplementedException(); } }
