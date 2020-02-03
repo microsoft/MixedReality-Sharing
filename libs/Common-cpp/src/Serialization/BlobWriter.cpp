@@ -51,7 +51,7 @@ void BlobWriter::Grow(size_t min_free_bytes_after_grow) noexcept {
   buffer_end_ = buffer_ + new_elements_count;
 }
 
-void BlobWriter::WriteExponentialGolombCode(uint64_t value) noexcept {
+void BlobWriter::WriteGolomb(uint64_t value) noexcept {
   // The encoding increments the value by 1 and counts the number of bits in the
   // result. Then it writes the number of zeros equal to the number of bits
   // minus one, and then all the significant bits of the incremented number.
@@ -90,6 +90,30 @@ void BlobWriter::WriteExponentialGolombCode(uint64_t value) noexcept {
   }
   WriteBits(0, index);
   WriteBits(value, index + 1);
+}
+
+void BlobWriter::WriteBytesWithSize(const std::byte* data,
+                                    size_t size) noexcept {
+  // Not reusing WriteBytes() to avoid the possibility of double reallocation
+  // (growing with 16 extra bytes ensures that we'll always be able to write
+  // the size as exponential-Golomb code).
+  if (free_bytes_count_ < size)
+    Grow(size + 16);
+  memcpy(bytes_scection_end_, data, size);
+  bytes_scection_end_ += size;
+  free_bytes_count_ -= size;
+  WriteGolomb(size);
+}
+
+void BlobWriter::WritePresentOptionalGolomb(uint64_t present_value) noexcept {
+  if (present_value >= ~1ull) {
+    // Special-casing these two values, so that they are always encoded with
+    // 65 bits.
+    WriteBits(0, 64);
+    WriteBits(~present_value, 1);
+  } else {
+    WriteGolomb(present_value + 1);
+  }
 }
 
 std::string_view BlobWriter::Finalize() noexcept {
