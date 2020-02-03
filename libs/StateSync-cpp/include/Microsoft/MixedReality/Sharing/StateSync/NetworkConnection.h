@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 #pragma once
-#include <Microsoft/MixedReality/Sharing/Common/VirtualRefCountedBase.h>
+#include <Microsoft/MixedReality/Sharing/Common/InternedBlob.h>
 
 #include <memory>
 #include <string>
@@ -10,14 +10,16 @@
 
 namespace Microsoft::MixedReality::Sharing::StateSync {
 
-class NetworkConnection : public VirtualRefCountedBase {
+class NetworkConnection {
  public:
-  virtual void SendMessage(std::string_view data) noexcept = 0;
+  virtual ~NetworkConnection() noexcept {}
 
-  const std::string connection_string;
+  virtual void SendMessage(std::string_view message) = 0;
+
+  const RefPtr<const InternedBlob> connection_string;
 
  protected:
-  NetworkConnection(std::string connection_string)
+  NetworkConnection(RefPtr<const InternedBlob> connection_string)
       : connection_string{std::move(connection_string)} {}
 };
 

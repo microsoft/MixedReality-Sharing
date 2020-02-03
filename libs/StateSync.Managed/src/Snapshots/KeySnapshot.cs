@@ -23,9 +23,9 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// <summary>
         /// Observed key.
         /// </summary>
-        public unsafe KeyRef Key
+        public unsafe InternedBlobRef Key
         {
-            get { return new KeyRef((IntPtr)_keyHandleWrapper->key_handle); }
+            get { return new InternedBlobRef((IntPtr)_keyHandleWrapper->key_handle); }
         }
 
         private readonly unsafe PInvokeAPI.KeyHandleWrapper* _keyHandleWrapper;

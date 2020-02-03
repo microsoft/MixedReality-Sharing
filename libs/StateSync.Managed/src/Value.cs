@@ -62,20 +62,20 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         }
 
         // Returns a value handle.
-        [DllImport(PInvokeAPI.LibraryName, EntryPoint =
+        [DllImport(PInvokeAPI.StateSyncLibraryName, EntryPoint =
             "Microsoft_MixedReality_Sharing_StateSync_Value_Create")]
         private static extern unsafe IntPtr PInvoke_Create(byte* data_ptr, int size);
 
-        [DllImport(PInvokeAPI.LibraryName, EntryPoint =
+        [DllImport(PInvokeAPI.StateSyncLibraryName, EntryPoint =
             "Microsoft_MixedReality_Sharing_StateSync_Value_AddRef")]
         internal static extern void PInvoke_AddRef(IntPtr handle);
 
-        [DllImport(PInvokeAPI.LibraryName, EntryPoint =
+        [DllImport(PInvokeAPI.StateSyncLibraryName, EntryPoint =
             "Microsoft_MixedReality_Sharing_StateSync_Value_RemoveRef")]
         private static extern void PInvoke_RemoveRef(IntPtr handle);
 
         // Returns the pointer to the beginning of the view
-        [DllImport(PInvokeAPI.LibraryName, EntryPoint =
+        [DllImport(PInvokeAPI.StateSyncLibraryName, EntryPoint =
             "Microsoft_MixedReality_Sharing_StateSync_Value_view")]
         private static extern unsafe byte* PInvoke_view(IntPtr handle, ref int out_size);
     }
