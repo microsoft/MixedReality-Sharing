@@ -28,7 +28,7 @@ MS_MR_SHARING_FORCEINLINE
 // obtained by calling pointer_to_enum64().
 template <class To, class From>
 MS_MR_SHARING_FORCEINLINE
-    typename std::enable_if_t<(sizeof(From) == 64) &&
+    typename std::enable_if_t<(sizeof(From) == 8) &&
                                   (sizeof(To) <= sizeof(From)) &&
                                   std::is_enum_v<From> && std::is_pointer_v<To>,
                               To>
@@ -43,7 +43,7 @@ MS_MR_SHARING_FORCEINLINE
 // is smaller. Stored pointers can be retrieved with enum64_to_pointer().
 template <class To, class From>
 MS_MR_SHARING_FORCEINLINE
-    typename std::enable_if_t<(sizeof(To) == 64) &&
+    typename std::enable_if_t<(sizeof(To) == 8) &&
                                   (sizeof(To) >= sizeof(From)) &&
                                   std::is_enum_v<To> && std::is_pointer_v<From>,
                               To>

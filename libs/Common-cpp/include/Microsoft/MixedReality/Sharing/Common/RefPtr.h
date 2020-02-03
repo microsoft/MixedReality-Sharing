@@ -82,7 +82,7 @@ class RefPtr {
 
   // Returns a pointer to the managed object and releases the ownership
   // (ref count won't decrease after this operation).
-  constexpr T* release() {
+  [[nodiscard]] T* release() noexcept {
     T* result = ptr_;
     ptr_ = nullptr;
     return result;
