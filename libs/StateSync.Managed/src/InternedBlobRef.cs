@@ -6,7 +6,7 @@ using System;
 namespace Microsoft.MixedReality.Sharing.StateSync
 {
     /// <summary>
-    /// A lightweight unallocated reference to an interned blob.
+    /// A lightweight stack-allocated reference to an interned blob.
     /// Can be converted to an allocated <see cref="InternedBlob"/>, <see cref="AsInternedBlob"/>.
     /// </summary>
     public readonly ref struct InternedBlobRef
@@ -24,7 +24,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// <returns><see cref="InternedBlob"/> that references the same internal representation.</returns>
         public InternedBlob AsInternedBlob()
         {
-            InternedBlob.PInvoke_AddRef(handle);
+            InternedBlob.PInvoke.AddRef(handle);
             return new InternedBlob(handle);
         }
 
@@ -95,11 +95,11 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// <remarks>
         /// The hash returned by GetHashCode() is obtained from this one by casting it to int.
         /// </remarks>
-        public ulong Hash => InternedBlob.PInvoke_hash(handle);
+        public ulong Hash => InternedBlob.PInvoke.hash(handle);
 
         public override int GetHashCode()
         {
-            return (int)InternedBlob.PInvoke_hash(handle);
+            return (int)InternedBlob.PInvoke.hash(handle);
         }
 
         internal InternedBlobRef(IntPtr handle)

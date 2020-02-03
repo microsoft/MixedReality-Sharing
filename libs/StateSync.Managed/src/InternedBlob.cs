@@ -30,7 +30,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync
             fixed (byte* bytes = span)
             {
                 System.Text.Encoding.UTF8.GetBytes(chars, length, bytes, bytesCount);
-                handle = PInvoke_Create(bytes, bytesCount);
+                handle = PInvoke.Create(bytes, bytesCount);
             }
         }
 
@@ -43,7 +43,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         {
             fixed (byte* bytes = content)
             {
-                handle = PInvoke_Create(bytes, content.Length);
+                handle = PInvoke.Create(bytes, content.Length);
             }
         }
 
@@ -119,11 +119,11 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// <remarks>
         /// The hash returned by GetHashCode() is obtained from this one by casting it to int.
         /// </remarks>
-        public ulong Hash => PInvoke_hash(handle);
+        public ulong Hash => PInvoke.hash(handle);
 
         public override int GetHashCode()
         {
-            return (int)PInvoke_hash(handle);
+            return (int)PInvoke.hash(handle);
         }
 
         internal InternedBlob(IntPtr handle)
@@ -133,43 +133,46 @@ namespace Microsoft.MixedReality.Sharing.StateSync
 
         protected override bool ReleaseHandle()
         {
-            PInvoke_RemoveRef(handle);
+            PInvoke.RemoveRef(handle);
             return true;
         }
 
         internal static unsafe string ToString(IntPtr handle)
         {
             int size = 0;
-            byte* bytes = PInvoke_view(handle, ref size);
+            byte* bytes = PInvoke.view(handle, ref size);
             return System.Text.Encoding.UTF8.GetString(bytes, size);
         }
 
         internal static unsafe ReadOnlySpan<byte> ToSpan(IntPtr handle)
         {
             int size = 0;
-            byte* bytes = PInvoke_view(handle, ref size);
+            byte* bytes = PInvoke.view(handle, ref size);
             return new ReadOnlySpan<byte>(bytes, size);
         }
 
-        [DllImport(PInvokeAPI.StateSyncLibraryName, EntryPoint =
-            "Microsoft_MixedReality_Sharing_InternedBlob_Create")]
-        private static extern unsafe IntPtr PInvoke_Create(byte* data_ptr, int size);
+        internal static class PInvoke
+        {
+            [DllImport(PInvokeAPI.StateSyncLibraryName, EntryPoint =
+                "Microsoft_MixedReality_Sharing_InternedBlob_Create")]
+            internal static extern unsafe IntPtr Create(byte* data_ptr, int size);
 
-        [DllImport(PInvokeAPI.StateSyncLibraryName, EntryPoint =
-            "Microsoft_MixedReality_Sharing_InternedBlob_AddRef")]
-        internal static extern void PInvoke_AddRef(IntPtr handle);
+            [DllImport(PInvokeAPI.StateSyncLibraryName, EntryPoint =
+                "Microsoft_MixedReality_Sharing_InternedBlob_AddRef")]
+            internal static extern void AddRef(IntPtr handle);
 
-        [DllImport(PInvokeAPI.StateSyncLibraryName, EntryPoint =
-            "Microsoft_MixedReality_Sharing_InternedBlob_RemoveRef")]
-        private static extern void PInvoke_RemoveRef(IntPtr handle);
+            [DllImport(PInvokeAPI.StateSyncLibraryName, EntryPoint =
+                "Microsoft_MixedReality_Sharing_InternedBlob_RemoveRef")]
+            internal static extern void RemoveRef(IntPtr handle);
 
-        [DllImport(PInvokeAPI.StateSyncLibraryName, EntryPoint =
-            "Microsoft_MixedReality_Sharing_InternedBlob_hash")]
-        internal static extern ulong PInvoke_hash(IntPtr handle);
+            [DllImport(PInvokeAPI.StateSyncLibraryName, EntryPoint =
+                "Microsoft_MixedReality_Sharing_InternedBlob_hash")]
+            internal static extern ulong hash(IntPtr handle);
 
-        // Returns the pointer to the beginning of the view
-        [DllImport(PInvokeAPI.StateSyncLibraryName, EntryPoint =
-            "Microsoft_MixedReality_Sharing_InternedBlob_view")]
-        private static extern unsafe byte* PInvoke_view(IntPtr handle, ref int out_size);
+            // Returns the pointer to the beginning of the view
+            [DllImport(PInvokeAPI.StateSyncLibraryName, EntryPoint =
+                "Microsoft_MixedReality_Sharing_InternedBlob_view")]
+            internal static extern unsafe byte* view(IntPtr handle, ref int out_size);
+        }
     }
 }
