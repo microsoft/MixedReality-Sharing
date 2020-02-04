@@ -11,6 +11,7 @@
 #include <cstring>
 #include <limits>
 #include <memory>
+#include <random>
 #include <stdexcept>
 #include <string_view>
 #include <type_traits>
