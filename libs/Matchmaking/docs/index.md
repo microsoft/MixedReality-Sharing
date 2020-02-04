@@ -37,20 +37,21 @@ A resource has:
     string category = "myapp/session";
     IDiscoverySubscription sessionSubscription = agent.Subscribe(category);
     IDiscoveryResource foundSession = null;
-    while (foundSession == null)
-    {
-        foreach (IDiscoveryResource res in sessionSubscription.Resources)
+    sessionSubscription.Updated +=
+        subscription =>
         {
-            if (res.Attributes["environment"] == "house")
+            foreach (IDiscoveryResource res in sessionSubscription.Resources)
             {
-                Console.WriteLine("Discovered session at " + res.Connection);
-                foundSession = res;
-                break;
+                if (res.Attributes["environment"] == "house")
+                {
+                    Console.WriteLine("Discovered session at " + res.Connection);
+                    foundSession = res;
+
+                    // Unsubscribe from further updates.
+                    sessionSubscription.Dispose();
+                }
             }
-        }
-    }
-    // Unsubscribe from further updates.
-    sessionSubscription.Dispose();
+        };
     ```
 
 The [IDiscoveryResource](xref:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource) interface gives read access to resources published and discovered. In general, the publisher of a resource can edit its attribute after publishing by calling [IDiscoveryResource.RequestEdit](xref:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.RequestEdit) and using the obtained [IDiscoveryResourceEditor](xref:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResourceEditor).
