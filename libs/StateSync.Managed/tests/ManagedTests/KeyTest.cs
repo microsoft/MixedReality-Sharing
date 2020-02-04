@@ -16,58 +16,58 @@ namespace Microsoft.MixedReality.Sharing.StateSync.Test
         public void Create()
         {
             // At least for the cases when UTF-8 conversion round trips.
-            Key keyFoo = new Key("foo");
+            InternedBlob keyFoo = new InternedBlob("foo");
             Assert.Equal("foo", keyFoo.ToString());
             Assert.True(keyFoo.ToSpan().SequenceEqual(bytesFoo));
 
-            Key keyNihao = new Key("你好");
+            InternedBlob keyNihao = new InternedBlob("你好");
             Assert.Equal("你好", keyNihao.ToString());
             Assert.True(keyNihao.ToSpan().SequenceEqual(bytesNihao));
 
-            Key keyWithZeros = new Key(bytesWithZeros);
+            InternedBlob keyWithZeros = new InternedBlob(bytesWithZeros);
             Assert.True(keyWithZeros.ToSpan().SequenceEqual(bytesWithZeros));
         }
 
         [Fact]
         public void InterningWorks()
         {
-            Key keyFoo = new Key("foo");
-            Key keyBar = new Key("bar");
+            InternedBlob keyFoo = new InternedBlob("foo");
+            InternedBlob keyBar = new InternedBlob("bar");
 
-            Key keyFoo2 = new Key(bytesFoo);
+            InternedBlob keyFoo2 = new InternedBlob(bytesFoo);
             Assert.Equal("foo", keyFoo2.ToString());
 
             // Self
             Assert.True(keyFoo.Equals(keyFoo));
-            Assert.True(keyFoo.Equals((KeyRef)keyFoo));
+            Assert.True(keyFoo.Equals((InternedBlobRef)keyFoo));
             Assert.True(keyFoo.Equals((object)keyFoo));
-            Assert.True(keyFoo.Equals(keyFoo.AsKeyRef()));
+            Assert.True(keyFoo.Equals(keyFoo.AsBlobRef()));
 
             // Similar
             Assert.True(keyFoo.Equals(keyFoo2));
             Assert.True(keyFoo.Equals((object)keyFoo2));
-            Assert.True(keyFoo.Equals((KeyRef)keyFoo2));
-            Assert.True(keyFoo.Equals(keyFoo2.AsKeyRef()));
+            Assert.True(keyFoo.Equals((InternedBlobRef)keyFoo2));
+            Assert.True(keyFoo.Equals(keyFoo2.AsBlobRef()));
 
             // Different
             Assert.False(keyFoo.Equals(keyBar));
             Assert.False(keyFoo.Equals((object)keyBar));
-            Assert.False(keyFoo.Equals((KeyRef)keyBar));
-            Assert.False(keyFoo.Equals(keyBar.AsKeyRef()));
+            Assert.False(keyFoo.Equals((InternedBlobRef)keyBar));
+            Assert.False(keyFoo.Equals(keyBar.AsBlobRef()));
         }
 
         [Fact]
         public void HashesAreExpected()
         {
-            Key keyFoo = new Key("foo");
+            InternedBlob keyFoo = new InternedBlob("foo");
             Assert.Equal(0xCA796135, (uint)keyFoo.GetHashCode());
             Assert.Equal(0x836E8217CA796135ul, keyFoo.Hash);
 
-            Key keyBar = new Key("bar");
+            InternedBlob keyBar = new InternedBlob("bar");
             Assert.Equal(0x562585D9, keyBar.GetHashCode());
             Assert.Equal(0x6E84777F562585D9ul, keyBar.Hash);
 
-            Key keyWithZeros = new Key(bytesWithZeros);
+            InternedBlob keyWithZeros = new InternedBlob(bytesWithZeros);
             Assert.Equal(0x6B4EE12F, keyWithZeros.GetHashCode());
             Assert.Equal(0x8F5FBB1D6B4EE12Ful, keyWithZeros.Hash);
         }

@@ -63,7 +63,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// </summary>
         /// <remarks>The returned snapshot can be empty if the key doesn't exist in this snapshot.
         /// Use <see cref="KeySnapshot.SubkeysCount"/> to check if the key was found.</remarks>
-        public KeySnapshot GetKey(KeyRef key)
+        public KeySnapshot GetKey(InternedBlobRef key)
         {
             throw new NotImplementedException();
         }
@@ -71,7 +71,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// <summary>
         /// Returns the number of subkeys associated with the key in this snapshot, or 0 if the key is missing.
         /// </summary>
-        public ulong GetSubkeysCount(KeyRef key)
+        public ulong GetSubkeysCount(InternedBlobRef key)
         {
             return PInvoke_GetSubkeysCount(handle, key.handle);
         }
@@ -79,7 +79,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// <summary>
         /// Returns true if the {key:subkey} pair exists in this snapshot.
         /// </summary>
-        public bool Contains(KeyRef key, ulong subkey)
+        public bool Contains(InternedBlobRef key, ulong subkey)
         {
             return PInvoke_Contains(handle, key.handle, subkey);
         }
@@ -90,7 +90,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// <returns><see cref="SubkeySnapshot"/> object representing the state of the subkey.
         /// If the subkey doesn't exist in this snapshot, the returned <see cref="SubkeySnapshot"/> will be without a value.
         /// Use <see cref="SubkeySnapshot.HasValue"/> to check whether the subkey was found.</returns>
-        public SubkeySnapshot TryGetValue(KeyRef key, ulong subkey)
+        public SubkeySnapshot TryGetValue(InternedBlobRef key, ulong subkey)
         {
             throw new NotImplementedException();
         }
@@ -103,7 +103,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// <remarks>Note that the method can return true while assigning an empty <paramref name="readOnlySpan"/>,
         /// in case if the subkey exists, but its value is empty. Do not use the emptiness of the span
         /// as an indication of a successful search.</remarks>
-        public bool TryGetValue(KeyRef key, ulong subkey, out ReadOnlySpan<byte> readOnlySpan)
+        public bool TryGetValue(InternedBlobRef key, ulong subkey, out ReadOnlySpan<byte> readOnlySpan)
         {
             throw new NotImplementedException();
         }
@@ -137,15 +137,15 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         }
 
         // Returns a handle to the obtained Snapshot.
-        [DllImport(PInvokeAPI.LibraryName, EntryPoint =
+        [DllImport(PInvokeAPI.StateSyncLibraryName, EntryPoint =
             "Microsoft_MixedReality_Sharing_StateSync_Snapshot_Create")]
         private static extern IntPtr PInvoke_GetSnapshot(IntPtr storage_handle, ref SnapshotInfo snapshot_info);
 
-        [DllImport(PInvokeAPI.LibraryName, EntryPoint =
+        [DllImport(PInvokeAPI.StateSyncLibraryName, EntryPoint =
         "Microsoft_MixedReality_Sharing_StateSync_Snapshot_Contains")]
         private static extern bool PInvoke_Contains(IntPtr snapshot_handle, IntPtr key_handle, ulong subkey);
 
-        [DllImport(PInvokeAPI.LibraryName, EntryPoint =
+        [DllImport(PInvokeAPI.StateSyncLibraryName, EntryPoint =
         "Microsoft_MixedReality_Sharing_StateSync_Snapshot_GetSubkeysCount")]
         private static extern ulong PInvoke_GetSubkeysCount(IntPtr snapshot_handle, IntPtr key_handle);
     }

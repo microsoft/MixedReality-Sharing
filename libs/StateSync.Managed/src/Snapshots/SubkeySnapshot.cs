@@ -99,7 +99,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync
             _valueSpan = new ReadOnlySpan<byte>(spanBegin, spanSize);
         }
 
-        [DllImport(PInvokeAPI.LibraryName, EntryPoint =
+        [DllImport(PInvokeAPI.StateSyncLibraryName, EntryPoint =
             "Microsoft_MixedReality_Sharing_StateSync_SubkeyView_GetValue")]
         private static extern unsafe IntPtr PInvoke_GetValue(void* data);
     }

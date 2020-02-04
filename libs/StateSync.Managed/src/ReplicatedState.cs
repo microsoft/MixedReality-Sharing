@@ -3,7 +3,6 @@
 
 using System;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 
 namespace Microsoft.MixedReality.Sharing.StateSync
 {
@@ -37,7 +36,8 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// <remarks>After a new ReplicatedState is created, the initial version is 0,
         /// and the state is empty.</remarks>
         /// TODO: the transport layer should also be provided as an argument.
-        public ReplicatedState(Guid stateGuid) {
+        public ReplicatedState(Guid stateGuid)
+        {
             StateGuid = stateGuid;
             // TODO: use the guids (this is a placeholder code)
             handle = PInvoke_Create();
@@ -104,7 +104,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         //}
 
         // Returns a handle to the freshly created ReplicatedState.
-        [DllImport(PInvokeAPI.LibraryName, EntryPoint =
+        [DllImport(PInvokeAPI.StateSyncLibraryName, EntryPoint =
             "Microsoft_MixedReality_Sharing_StateSync_ReplicatedState_Create")]
         private static extern IntPtr PInvoke_Create();
     }

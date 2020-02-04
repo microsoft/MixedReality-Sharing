@@ -184,7 +184,7 @@ uint64_t BlobReader::ReadBits64(bit_shift_t bits_count) {
   return ReadBits<uint64_t>(bits_count);
 }
 
-uint64_t BlobReader::ReadExponentialGolombCode() {
+uint64_t BlobReader::ReadGolomb() {
   // Counting the number of zero bits to determine the length of the code.
   // 64 zeros is a special case for ~0ull (see BlobWriter for details).
   bit_shift_t zeroes_count = 0;
@@ -220,6 +220,25 @@ uint64_t BlobReader::ReadExponentialGolombCode() {
   bit_buf_bits_count_ -= new_zeros_count;
   bit_buf_ <<= new_zeros_count;
   return ReadBits<uint64_t>(zeroes_count + 1) - 1;
+}
+
+std::optional<uint64_t> BlobReader::ReadOptionalGolomb() {
+  uint64_t code = ReadGolomb();
+  if (code == 0)
+    return {};
+  if (code == ~0ull)
+    return ~ReadBits64(1);  // Special encoding for ~0ull and ~1ull.
+  return code - 1;
+}
+
+std::string_view BlobReader::ReadBytesWithSize() {
+  uint64_t size = ReadGolomb();
+  if constexpr (sizeof(size_t) < sizeof(uint64_t)) {
+    if (size > std::numeric_limits<size_t>::max()) {
+      throw std::out_of_range("Not enough bytes in the blob");
+    }
+  }
+  return ReadBytes(static_cast<size_t>(size));
 }
 
 }  // namespace Microsoft::MixedReality::Sharing::Serialization

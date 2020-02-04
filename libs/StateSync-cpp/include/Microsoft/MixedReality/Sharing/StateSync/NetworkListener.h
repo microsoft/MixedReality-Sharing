@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 #pragma once
+#include <Microsoft/MixedReality/Sharing/Common/InternedBlob.h>
 #include <Microsoft/MixedReality/Sharing/Common/VirtualRefCountedBase.h>
 
 #include <memory>
@@ -13,7 +14,8 @@ class NetworkConnection;
 
 class NetworkListener : public VirtualRefCountedBase {
  public:
-  virtual void OnMessage(NetworkConnection& sender, std::string_view data) = 0;
+  virtual void OnMessage(const InternedBlob& sender_connection_string,
+                         std::string_view data) = 0;
 };
 
 }  // namespace Microsoft::MixedReality::Sharing::StateSync

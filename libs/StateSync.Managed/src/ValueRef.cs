@@ -6,7 +6,7 @@ using System;
 namespace Microsoft.MixedReality.Sharing.StateSync
 {
     /// <summary>
-    /// A lightweight unallocated ref struct that can be used to lookup values in the storage. 
+    /// A lightweight stack-allocated ref struct that references a value blobs in the storage.
     /// Can be converted to an allocated <see cref="Value"/>, <see cref="AsValue"/>.
     /// </summary>
     public readonly ref struct ValueRef

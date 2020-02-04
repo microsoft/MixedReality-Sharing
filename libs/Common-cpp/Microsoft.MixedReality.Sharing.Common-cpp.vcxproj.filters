@@ -46,6 +46,12 @@
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Testing\Testing.h">
       <Filter>include/Microsoft/MixedReality/Sharing/Common\Testing</Filter>
     </ClInclude>
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Guid.h">
+      <Filter>include/Microsoft/MixedReality/Sharing/Common</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\InternedBlob.h">
+      <Filter>include/Microsoft/MixedReality/Sharing/Common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\pch.cpp">
@@ -71,6 +77,9 @@
     </ClCompile>
     <ClCompile Include="src\Serialization\BlobReader.cpp">
       <Filter>src\Serialization</Filter>
+    </ClCompile>
+    <ClCompile Include="src\InternedBlob.cpp">
+      <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
