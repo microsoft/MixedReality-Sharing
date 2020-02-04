@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -575,6 +576,17 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         CancellationTokenSource updateCts_ = new CancellationTokenSource();
         AutoResetEvent updateAvailable_ = new AutoResetEvent(false);
 
+        // Handler for IDiscoverySubscription.Updated
+        private class NewHandler
+        {
+            public CategoryInfo Category;
+            public IDiscoverySubscription Subscription;
+            public Action<IDiscoverySubscription> Handler;
+        }
+
+        // Handlers added since the last update.
+        private ConcurrentQueue<NewHandler> newHandlers_ = new ConcurrentQueue<NewHandler>();
+
         internal Client(IPeerDiscoveryTransport net)
         {
             proto_ = new Proto(net);
@@ -588,15 +600,31 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
             {
                 var handles = new WaitHandle[] { token.WaitHandle, updateAvailable_ };
                 var updatedSubscriptions = new List<DiscoverySubscription>();
+                var currNewHandlers = new List<NewHandler>();
                 while (true)
                 {
                     // Wait for either update or cancellation.
                     WaitHandle.WaitAny(handles);
                     token.ThrowIfCancellationRequested();
 
-                    // There has been an update, collect the dirty tasks.
+                    int currNewHandlersNum = newHandlers_.Count;
+                    currNewHandlers.Capacity = Math.Max(currNewHandlers.Capacity, currNewHandlersNum);
+
                     lock (this)
                     {
+                        // Invoke any newly added handler, even if resources haven't changed.
+                        // Run under lock because it reads some CategoryInfos.
+                        for (int i = 0; i < currNewHandlersNum; ++i)
+                        {
+                            newHandlers_.TryDequeue(out NewHandler categoryAndHandler);
+                            // Prevent duplicate invocations by skipping the handler if its category is already dirty.
+                            if (!categoryAndHandler.Category.IsDirty)
+                            {
+                                currNewHandlers.Add(categoryAndHandler);
+                            }
+                        }
+
+                        // Collect the subscriptions whose rooms have changed.
                         foreach (var info in infoFromCategory_.Values)
                         {
                             if (info.IsDirty)
@@ -609,6 +637,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     // Outside the lock.
                     try
                     {
+                        foreach (var handler in currNewHandlers)
+                        {
+                            handler.Handler(handler.Subscription);
+                        }
                         foreach (var t in updatedSubscriptions)
                         {
                             t.FireUpdated();
@@ -618,6 +650,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                     {
                         Log.Error(e, "Error while firing update");
                     }
+
+                    currNewHandlers.Clear();
                     updatedSubscriptions.Clear();
                 }
             }, token).ContinueWith(_ =>
@@ -755,12 +789,29 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 }
             }
 
-            public event Action<IDiscoverySubscription> Updated;
+            public event Action<IDiscoverySubscription> Updated
+            {
+                add
+                {
+                    updated_ += value;
+
+                    // Add the new handler to the pending queue.
+                    client_.newHandlers_.Enqueue(new NewHandler { Category = info_, Subscription = this, Handler = value });
+                    // Raise the event so that the handler is called.
+                    client_.updateAvailable_.Set();
+                }
+                remove
+                {
+                    updated_ -= value;
+                }
+            }
+            private Action<IDiscoverySubscription> updated_;
+
             public event Action<IDiscoverySubscription> Disposed;
 
             public void FireUpdated()
             {
-                Updated?.Invoke(this);
+                updated_?.Invoke(this);
             }
 
             public void Dispose()

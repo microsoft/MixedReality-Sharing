@@ -4,6 +4,7 @@
 #pragma once
 #include <Microsoft/MixedReality/Sharing/Common/Serialization/Serialization.h>
 
+#include <optional>
 #include <string_view>
 
 namespace Microsoft::MixedReality::Sharing::Serialization {
@@ -15,10 +16,19 @@ class BlobReader {
   explicit BlobReader(std::string_view input) noexcept;
 
   // Reads next bytes_count bytes (as encoded by BlobWriter).
+  // The returned string_view references the bytes of the input.
   // Throws std::out_of_range if there is not enough input left.
   // The behavior is undefined if the reader is reused after it
   // had thrown an exception.
   std::string_view ReadBytes(size_t bytes_count);
+
+  // Reads a blob of bytes with the number of bytes encoded
+  // as exponential-Golomb code; see BlobWriter::WriteBytesWithSize().
+  // The returned string_view references the bytes of the input.
+  // Throws std::out_of_range if there is not enough input left.
+  // The behavior is undefined if the reader is reused after it
+  // had thrown an exception.
+  std::string_view ReadBytesWithSize();
 
   // Reads up to 32 bits from the bit stream.
   // Throws std::out_of_range if there is not enough input left.
@@ -32,11 +42,20 @@ class BlobReader {
   // had thrown an exception, or if bits_count is not in [1, 64].
   uint64_t ReadBits64(bit_shift_t bits_count);
 
+  // Reads a single bit and returns it as a bool.
+  bool ReadBool();
+
   // Reads an exponential-Golomb code (as encoded by BlobWriter).
   // Throws std::out_of_range if there is not enough input left.
   // The behavior is undefined if the reader is reused after it
   // had thrown an exception.
-  uint64_t ReadExponentialGolombCode();
+  uint64_t ReadGolomb();
+
+  // Reads an optional exponential-Golomb code (as encoded by BlobWriter).
+  // Throws std::out_of_range if there is not enough input left.
+  // The behavior is undefined if the reader is reused after it
+  // had thrown an exception.
+  std::optional<uint64_t> ReadOptionalGolomb();
 
   // Returns true if there are no more than 7 unread bits,
   // and all of them are 0.
@@ -72,6 +91,11 @@ BlobReader::BlobReader(std::string_view input) noexcept
 MS_MR_SHARING_FORCEINLINE
 bool BlobReader::ProbablyNoMoreData() const noexcept {
   return unread_bytes_count_ == 0 && bit_buf_bits_count_ < 8 && bit_buf_ == 0;
+}
+
+MS_MR_SHARING_FORCEINLINE
+bool BlobReader::ReadBool() {
+  return ReadBits32(1) == 1;
 }
 
 }  // namespace Microsoft::MixedReality::Sharing::Serialization
