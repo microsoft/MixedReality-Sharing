@@ -68,38 +68,35 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Example
 
             // Subscribe to other participant resources.
             _discoverySubscription = _discoveryAgent.Subscribe(ParticipantCategory);
-            Action<IDiscoverySubscription> onUpdateCallback = (IDiscoverySubscription subscription) =>
-            {
-                // Parse discovered resources.
-                var activePeers = new Dictionary<IPAddress, string>();
-                foreach (var res in subscription.Resources)
+            _discoverySubscription.Updated +=
+                (IDiscoverySubscription subscription) =>
                 {
-                    if (res.Connection == _localAddrString)
+                    // Parse discovered resources.
+                    var activePeers = new Dictionary<IPAddress, string>();
+                    foreach (var res in subscription.Resources)
                     {
-                        // Exclude the local resource.
-                        continue;
+                        if (res.Connection == _localAddrString)
+                        {
+                            // Exclude the local resource.
+                            continue;
+                        }
+                        try
+                        {
+                            var address = IPAddress.Parse(res.Connection);
+                            var name = res.Attributes[NameKey];
+                            activePeers.Add(address, name);
+                        }
+                        catch (Exception e)
+                        {
+                            // Invalid resource format, or multiple resources per host.
+                            Debug.WriteLine($"Invalid resource: {e}");
+                            continue;
+                        }
                     }
-                    try
-                    {
-                        var address = IPAddress.Parse(res.Connection);
-                        var name = res.Attributes[NameKey];
-                        activePeers.Add(address, name);
-                    }
-                    catch (Exception e)
-                    {
-                        // Invalid resource format, or multiple resources per host.
-                        Debug.WriteLine($"Invalid resource: {e}");
-                        continue;
-                    }
-                }
 
-                // Create reader connections to the active peers.
-                RefreshReaderConnections(activePeers);
-            };
-            _discoverySubscription.Updated += onUpdateCallback;
-
-            // Initialize the readers list.
-            onUpdateCallback(_discoverySubscription);
+                    // Create reader connections to the active peers.
+                    RefreshReaderConnections(activePeers);
+                };
 
             // Loop waiting for input.
             Console.CursorTop = Console.WindowHeight;
