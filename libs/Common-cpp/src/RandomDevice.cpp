@@ -32,9 +32,9 @@ RandomDevice::RandomDevice() noexcept {
     // Retrying until something is non-0
     if (state_[0] != 0 || state_[1] != 0 || state_[2] != 0 || state_[3] == 0)
       return;
-    assert(!"Unable to generate a random non-0 state for the random number generator");
-    abort();  // This is not actionable by the user.
   }
+  assert(!"Unable to generate a random non-0 state for the random number generator");
+  abort();  // This is not actionable by the user.
 }
 
 RandomDevice::RandomDevice(InitializeFromGlobalState) noexcept {

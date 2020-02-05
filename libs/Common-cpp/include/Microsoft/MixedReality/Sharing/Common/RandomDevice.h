@@ -17,7 +17,7 @@ namespace Microsoft::MixedReality::Sharing {
 // The interface is compatible with standard random engines, and thus the
 // generator can be used with distributions from <random>.
 // See thread_instance() for the most common intended use case.
-class alignas(64) RandomDevice {
+class alignas(32) RandomDevice {
  public:
   enum class InitializeFromGlobalState {};
   using result_type = uint64_t;
