@@ -35,7 +35,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// within this transaction will be overwritten by this call.
         /// When the transaction is applied, the new value will overwrite any previous
         /// value that this subkey had (or insert it if it was missing).</remarks>
-        public void Put(InternedBlobRef key, ulong subkey, ValueRef value)
+        public void Put(InternedBlobRef key, ulong subkey, BlobRef value)
         {
             PInvoke_Put(handle, key.handle, subkey, value.handle);
         }
@@ -113,7 +113,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// </summary>
         /// <remarks>The effect of any previous Require* call on the same subkey
         /// within this transaction will be overwritten by this call.</remarks>
-        public void RequireValue(InternedBlobRef key, ulong subkey, ValueRef requiredValue)
+        public void RequireValue(InternedBlobRef key, ulong subkey, BlobRef requiredValue)
         {
             PInvoke_RequireValue(handle, key.handle, subkey, requiredValue.handle);
         }

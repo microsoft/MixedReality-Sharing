@@ -49,6 +49,7 @@
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Blob-test.cpp" />
     <ClCompile Include="InternedBlob-test.cpp" />
     <ClCompile Include="RandomDevice-test.cpp" />
     <ClCompile Include="Serialization-test.cpp" />

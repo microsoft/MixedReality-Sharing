@@ -7,13 +7,13 @@
     <ClCompile Include="src\pch.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\Value-pinvoke.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="src\ReplicatedState-pinvoke.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\InternedBlob-pinvoke.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blob-pinvoke.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

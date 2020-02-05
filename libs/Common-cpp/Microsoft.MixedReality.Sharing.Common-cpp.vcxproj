@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\bit_cast.h" />
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Blob.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Guid.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\hash.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\InternedBlob.h" />
@@ -39,6 +40,7 @@
     <ClInclude Include="src\pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Blob.cpp" />
     <ClCompile Include="src\hash.cpp" />
     <ClCompile Include="src\InternedBlob.cpp" />
     <ClCompile Include="src\pch.cpp">
