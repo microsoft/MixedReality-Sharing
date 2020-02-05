@@ -26,13 +26,11 @@
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\StateSync\ReplicatedState.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\StateSync\RSMConnection.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\StateSync\RSMListener.h" />
-    <ClInclude Include="include\Microsoft\MixedReality\Sharing\StateSync\Value.h" />
     <ClInclude Include="src\pch.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\CommandId.cpp" />
     <ClCompile Include="src\ReplicatedState.cpp" />
-    <ClCompile Include="src\Value.cpp" />
     <ClCompile Include="src\pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>

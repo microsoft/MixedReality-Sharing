@@ -7,7 +7,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync
 {
     /// <summary>
     /// A lightweight stack-allocated reference to an interned blob.
-    /// Can be converted to an allocated <see cref="InternedBlob"/>, <see cref="AsInternedBlob"/>.
+    /// Can be converted to a heap-allocated <see cref="InternedBlob"/>, <see cref="AsInternedBlob"/>.
     /// </summary>
     public readonly ref struct InternedBlobRef
     {

@@ -14,10 +14,10 @@ namespace Microsoft.MixedReality.Sharing.StateSync.Test
         [Fact]
         public void Create()
         {
-            Value valueFoo = new Value(bytesFoo);
+            Blob valueFoo = new Blob(bytesFoo);
             Assert.True(valueFoo.ToSpan().SequenceEqual(bytesFoo));
 
-            Value valueWithZeros = new Value(bytesWithZeros);
+            Blob valueWithZeros = new Blob(bytesWithZeros);
             Assert.True(valueWithZeros.ToSpan().SequenceEqual(bytesWithZeros));
         }
     }

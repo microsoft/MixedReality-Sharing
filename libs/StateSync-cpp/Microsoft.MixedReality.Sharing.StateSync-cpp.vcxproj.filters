@@ -12,9 +12,6 @@
     <ClCompile Include="src\pch.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\Value.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="src\ReplicatedState.cpp">
       <Filter>src</Filter>
     </ClCompile>
@@ -25,9 +22,6 @@
   <ItemGroup>
     <ClInclude Include="src\pch.h">
       <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="include\Microsoft\MixedReality\Sharing\StateSync\Value.h">
-      <Filter>include/Microsoft/MixedReality/Sharing/StateSync</Filter>
     </ClInclude>
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\StateSync\NetworkManager.h">
       <Filter>include/Microsoft/MixedReality/Sharing/StateSync</Filter>
