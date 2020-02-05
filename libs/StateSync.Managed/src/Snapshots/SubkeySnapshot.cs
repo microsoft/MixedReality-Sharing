@@ -58,7 +58,7 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// independently from any snapshots (it's faster than creating a Value object).
         /// 
         /// The observed memory is guaranteed to stay valid for as long as it is referenced by
-        /// either a <see cref="Snapshot"/> or a <see cref="Value"/> object extracted from this
+        /// either a <see cref="Snapshot"/> or a <see cref="Blob"/> object extracted from this
         /// snapshot, so if the code just works with a <see cref="SubkeySnapshot"/> on the stack,
         /// it's always better to use <see cref="ValueSpan"/>.</remarks>
         public ReadOnlySpan<byte> ValueSpan {
@@ -73,19 +73,19 @@ namespace Microsoft.MixedReality.Sharing.StateSync
         /// <summary>
         /// Returns the observed value or null if it doesn't exist.
         /// </summary>
-        /// <remarks>Unlike <see cref="ValueSpan"/>, the returned <see cref="Value"/> doesn't require
+        /// <remarks>Unlike <see cref="ValueSpan"/>, the returned <see cref="Blob"/> doesn't require
         /// the snapshot to be alive. An extra reference will be added to the internally allocated
         /// object with the actual payload, and thus it's faster than saving the content of ValueSpan
         /// somewhere manually.
         /// If the ownership of the value is not required (for example, the code just wants to read the value
         /// once), it's faster to use <see cref="ValueSpan"/>.</remarks>
-        public unsafe Value GetValue()
+        public unsafe Blob GetValue()
         {
             if (Constants.IsVersionValid(Version))
             {
                 fixed (byte* bytes = _valueSpan)
                 {
-                    return new Value(PInvoke_GetValue(bytes));
+                    return new Blob(PInvoke_GetValue(bytes));
                 }
             }
             return null;

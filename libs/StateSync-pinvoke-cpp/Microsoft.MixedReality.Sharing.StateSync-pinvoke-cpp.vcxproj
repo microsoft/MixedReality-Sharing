@@ -32,7 +32,7 @@
     </ClCompile>
     <ClCompile Include="src\PInvokeAPI.cpp" />
     <ClCompile Include="src\ReplicatedState-pinvoke.cpp" />
-    <ClCompile Include="src\Value-pinvoke.cpp" />
+    <ClCompile Include="src\Blob-pinvoke.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Common-cpp\Microsoft.MixedReality.Sharing.Common-cpp.vcxproj">
