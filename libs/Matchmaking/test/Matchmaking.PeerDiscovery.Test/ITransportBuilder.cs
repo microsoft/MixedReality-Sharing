@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -19,9 +20,11 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
 
     internal class MemoryTransportBuilder : ITransportBuilder
     {
+        private readonly ushort port_ = Utils.NewPortNumber.Calculate();
+
         public IPeerDiscoveryTransport MakeTransport(int userIndex)
         {
-            return new MemoryPeerDiscoveryTransport(userIndex);
+            return new MemoryPeerDiscoveryTransport(port_);
         }
 
         public bool SimulatesPacketLoss => false;

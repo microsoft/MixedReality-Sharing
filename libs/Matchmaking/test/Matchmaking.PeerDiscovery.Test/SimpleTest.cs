@@ -62,10 +62,10 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
         [Fact]
         public void ResourceExpiresOnTime()
         {
-            var random = new Random();
             const int timeoutSec = 1;
-            var network1 = new MemoryPeerDiscoveryTransport(random.Next());
-            var network2 = new MemoryPeerDiscoveryTransport(random.Next());
+            int port = Utils.NewPortNumber.Calculate();
+            var network1 = new MemoryPeerDiscoveryTransport(port);
+            var network2 = new MemoryPeerDiscoveryTransport(port);
             using (var cts = new CancellationTokenSource(Utils.TestTimeoutMs))
             using (var svc1 = new PeerDiscoveryAgent(network1))
             {
@@ -86,7 +86,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
                         Assert.Equal(resource1.UniqueId, res1.First().UniqueId);
                     }
 
-                    // Stop the network.
+                    // Stop the transport.
                     network1.Stop();
                     {
                         // The resource eventually expires.
@@ -94,7 +94,7 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
                         Assert.Empty(res1);
                     }
 
-                    // Restart the network.
+                    // Restart the transport.
                     network1.Start();
                     {
                         // The resource appears again.
@@ -103,13 +103,16 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking.Test
                         Assert.Equal(resource1.UniqueId, res1.First().UniqueId);
                     }
 
-                    // Stop the network.
+                    // Stop the transport.
                     network1.Stop();
                     {
                         // The resource expires again.
                         var res1 = Utils.QueryAndWaitForResourcesPredicate(svc1, category, rl => rl.Count() == 0, cts.Token);
                         Assert.Empty(res1);
                     }
+
+                    // Restart the transport so that the agent disposal can stop it without exceptions.
+                    network1.Start();
                 }
             }
         }

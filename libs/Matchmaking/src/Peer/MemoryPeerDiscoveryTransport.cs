@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 
 namespace Microsoft.MixedReality.Sharing.Matchmaking
@@ -25,46 +26,54 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
 
     public class MemoryPeerDiscoveryTransport : IPeerDiscoveryTransport
     {
-        int ident_;
-        ConcurrentQueue<MemoryPeerDiscoveryMessage> incoming_ = new ConcurrentQueue<MemoryPeerDiscoveryMessage>();
+        private readonly int port_;
+        private readonly ConcurrentQueue<MemoryPeerDiscoveryMessage> incoming_ = new ConcurrentQueue<MemoryPeerDiscoveryMessage>();
 
-        //TODO extract into a factory so we can have independent transports
-        static volatile List<MemoryPeerDiscoveryTransport> instances_ = new List<MemoryPeerDiscoveryTransport>();
+        private static readonly ConcurrentDictionary<int, List<MemoryPeerDiscoveryTransport>> instances_ =
+            new ConcurrentDictionary<int, List<MemoryPeerDiscoveryTransport>>();
 
-        const int MessagePumpInProgress = 1;
-        const int MessageQueuedSome = 2;
-        static int transportStatus_ = 0;
+        private const int MessagePumpInProgress = 1;
+        private const int MessageQueuedSome = 2;
+        private static int transportStatus_ = 0;
 
-        public MemoryPeerDiscoveryTransport(int ident)
+        /// <summary>
+        /// Creates a transport on the specific "port" (broadcast group).
+        /// </summary>
+        public MemoryPeerDiscoveryTransport(int port)
         {
-            ident_ = ident;
+            port_ = port;
         }
 
         public void Start()
         {
             // In Start() and Stop() we replace the entire list so that we don't invalidate
             // any existing iterators.
-            lock (instances_)
-            {
-                if (!instances_.Contains(this))
+            instances_.AddOrUpdate(port_, new List<MemoryPeerDiscoveryTransport> { this },
+                (port, existing) =>
                 {
-                    var i = new List<MemoryPeerDiscoveryTransport>(instances_);
-                    i.Add(this);
-                    instances_ = i;
-                }
-            }
+                    if (existing.Contains(this))
+                    {
+                        throw new InvalidOperationException("Transport is already started");
+                    }
+                    var res = new List<MemoryPeerDiscoveryTransport>(existing);
+                    res.Add(this);
+                    return res;
+                });
         }
 
         public void Stop()
         {
-            lock (instances_)
+            bool succeeded = false;
+            while (!succeeded)
             {
-                if (instances_.Contains(this))
+                bool started = instances_.TryGetValue(port_, out List<MemoryPeerDiscoveryTransport> oldTransports) &&
+                    oldTransports.Contains(this);
+                if (!started)
                 {
-                    var i = new List<MemoryPeerDiscoveryTransport>(instances_);
-                    i.Remove(this);
-                    instances_ = i;
+                    throw new InvalidOperationException("Transport is already stopped");
                 }
+                var newTransports = oldTransports.Where(t => t != this).ToList();
+                succeeded = instances_.TryUpdate(port_, newTransports, oldTransports);
             }
         }
 
@@ -73,7 +82,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         public void Broadcast(Guid streamId, ArraySegment<byte> message)
         {
             var m = new MemoryPeerDiscoveryMessage(this, streamId, message);
-            foreach (var c in instances_)
+            var transports = instances_[port_];
+            foreach (var c in transports)
             {
                 c.incoming_.Enqueue(m);
             }
@@ -98,18 +108,21 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
                 Interlocked.CompareExchange(ref transportStatus_, MessagePumpInProgress, MessagePumpInProgress | MessageQueuedSome);
 
                 // Raise the message events
-                foreach (var c in instances_)
+                foreach (var domain in instances_)
                 {
-                    MemoryPeerDiscoveryMessage msg;
-                    while (c.incoming_.TryDequeue(out msg))
+                    foreach (var c in domain.Value)
                     {
-                        try
+                        MemoryPeerDiscoveryMessage msg;
+                        while (c.incoming_.TryDequeue(out msg))
                         {
-                            c.Message?.Invoke(c, msg);
-                        }
-                        catch(Exception e)
-                        {
-                            Log.Error(e, "Exception raised while handling message");
+                            try
+                            {
+                                c.Message?.Invoke(c, msg);
+                            }
+                            catch (Exception e)
+                            {
+                                Log.Error(e, "Exception raised while handling message");
+                            }
                         }
                     }
                 }
