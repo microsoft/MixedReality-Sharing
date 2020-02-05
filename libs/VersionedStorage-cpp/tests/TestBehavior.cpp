@@ -147,14 +147,6 @@ void TestBehavior::FreePages(void* address) noexcept {
   Platform::FreePages(address);
 }
 
-void TestBehavior::LockWriterMutex() noexcept {
-  writer_mutex_.lock();
-}
-
-void TestBehavior::UnlockWriterMutex() noexcept {
-  writer_mutex_.unlock();
-}
-
 size_t TestBehavior::Serialize(KeyHandle handle,
                                std::vector<std::byte>& byte_stream) {
   size_t size = byte_stream.size();
