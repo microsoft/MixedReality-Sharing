@@ -24,6 +24,7 @@
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\hash.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\InternedBlob.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Platform.h" />
+    <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\RandomDevice.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\RefPtr.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Serialization\BitstreamReader.h" />
     <ClInclude Include="include\Microsoft\MixedReality\Sharing\Common\Serialization\BitstreamWriter.h" />
@@ -47,6 +48,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="src\Platform.cpp" />
+    <ClCompile Include="src\RandomDevice.cpp" />
     <ClCompile Include="src\Serialization\BitstreamWriter.cpp" />
     <ClCompile Include="src\Serialization\BlobReader.cpp" />
     <ClCompile Include="src\Serialization\BlobWriter.cpp" />

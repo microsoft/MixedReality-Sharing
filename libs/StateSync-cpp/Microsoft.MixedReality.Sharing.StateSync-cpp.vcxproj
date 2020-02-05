@@ -30,6 +30,7 @@
     <ClInclude Include="src\pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\CommandId.cpp" />
     <ClCompile Include="src\ReplicatedState.cpp" />
     <ClCompile Include="src\Value.cpp" />
     <ClCompile Include="src\pch.cpp">
