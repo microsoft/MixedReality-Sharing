@@ -60,22 +60,18 @@ class Storage {
   // Applies the provided transaction and increments the version of the storage
   // (unless it failed to allocate memory for the transaction, see all possible
   // outcomes above).
-  // The operation may call LockWriterMutex()/UnlockWriterMutex() on the
-  // Behavior object, but the callers should not rely on this.
-  // Note that the transactions are generally not reusable, and the state of the
-  // provided object can be irreversibly changed regardless of the success of
-  // the operation.
-  [[nodiscard]] TransactionResult ApplyTransaction(
-      TransactionView& transaction) noexcept;
-
   [[nodiscard]] TransactionResult ApplyTransaction(
       std::string_view serialized_transaction) noexcept;
 
   const auto& behavior() const noexcept { return behavior_; }
 
  private:
+  [[nodiscard]] TransactionResult ApplyTransaction(
+      TransactionView& transaction) noexcept;
+
   std::shared_ptr<Behavior> behavior_;
   Snapshot latest_snapshot_;
+  std::mutex writer_mutex_;
   mutable std::mutex latest_snapshot_reader_mutex_;
 };
 

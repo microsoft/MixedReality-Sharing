@@ -49,9 +49,6 @@ class TestBehavior : public Behavior {
   void* AllocateZeroedPages(size_t pages_count) noexcept override;
   void FreePages(void* address) noexcept override;
 
-  void LockWriterMutex() noexcept override;
-  void UnlockWriterMutex() noexcept override;
-
   size_t Serialize(KeyHandle handle,
                    std::vector<std::byte>& byte_stream) override;
 

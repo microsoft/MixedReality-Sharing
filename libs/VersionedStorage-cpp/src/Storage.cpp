@@ -642,18 +642,6 @@ class TransactionApplicator {
   size_t extra_blocks_count_{0};
 };
 
-class WriterMutexGuard {
- public:
-  explicit WriterMutexGuard(Behavior& behavior) noexcept : behavior_{behavior} {
-    behavior.LockWriterMutex();
-  }
-
-  ~WriterMutexGuard() noexcept { behavior_.UnlockWriterMutex(); }
-
- private:
-  Behavior& behavior_;
-};
-
 }  // namespace
 }  // namespace Microsoft::MixedReality::Sharing::VersionedStorage::Detail
 
@@ -676,7 +664,7 @@ Snapshot Storage::GetSnapshot() const noexcept {
 
 Storage::TransactionResult Storage::ApplyTransaction(
     TransactionView& transaction) noexcept {
-  auto writer_mutex_guard = Detail::WriterMutexGuard(*behavior_);
+  auto writer_mutex_lock = std::lock_guard{writer_mutex_};
   // No need to lock latest_snapshot_reader_mutex_ here to perform the read
   // since only the writer thread can modify the latest_snapshot_ field, and
   // this method is called by the writer thread.
