@@ -101,11 +101,19 @@ Write-Host "Repo root $repo_root, build root $build_root"
 # Clear output dir
 if( $incremental -eq $false ) {
     Write-Host "Clear previous version from $build_root"
-    Remove-Item -Force -Recurse $build_root
+    Remove-Item -Force -Recurse $build_root -ErrorAction Ignore
 }
 
 mkdir -ErrorAction Ignore $build_root | out-null
 mkdir -ErrorAction Ignore $cache_root | out-null
+
+if ((Get-ChildItem $build_root | Measure-Object).Count -ne 0)
+{
+    $err = "Cannot clean $build_root folder"
+    Write-Error $err
+    Write-Host "##vso[task.complete result=Failed;]$err"
+    exit 1
+}
 
 # Fetch docfx
 Write-Host "Fetching $docfx_url"
