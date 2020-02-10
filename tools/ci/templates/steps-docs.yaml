@@ -1,0 +1,36 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
+# [TEMPLATE] Build the project documentation
+
+steps:
+  - task: Powershell@2
+    displayName: 'Generate docs'
+    inputs:
+      targetType: filePath
+      filePath: docs/generateDocs.ps1
+      workingDirectory: docs
+      failOnStderr: false
+
+  - task: PublishPipelineArtifact@0
+    displayName: 'Publish as artifact'
+    inputs:
+      artifactName: 'docs'
+      targetPath: 'build/docs/generated'
+
+    # Push docs if enabled, build step succeeded, and was not triggered by a PR
+  - task: PowerShell@2
+    displayName: 'Push docs to git if needed'
+    condition: |
+      and(
+        variables['publish'],
+        succeeded(),
+        not(eq(variables['Build.Reason'], 'PullRequest'))
+      )
+    inputs:
+      targetType: filePath
+      filePath: tools/ci/commitGeneratedDocs.ps1
+      arguments: '-SourceBranch $(Build.SourceBranch)'
+      failOnStderr: false
+    env:
+      GITHUB_PAT: $(GitHub.PAT)

@@ -1,0 +1,21 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
+# Build the user manual and API reference from the sources
+
+# Trigger CI on push changes
+trigger:
+  branches:
+    include:
+    - master
+
+# Do not trigger CI on PRs
+pr: none
+
+jobs:
+  - job: GenerateDocs
+    pool:
+      vmImage: 'windows-2019'
+    steps:
+    - template: templates/steps-docs.yaml
+
