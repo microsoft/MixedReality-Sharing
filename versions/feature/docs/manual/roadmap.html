@@ -1,0 +1,149 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Roadmap | MixedReality-Sharing Documentation </title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="title" content="Roadmap | MixedReality-Sharing Documentation ">
+    <meta name="generator" content="docfx 2.47.0.0">
+    
+    <link rel="shortcut icon" href="../mr-sharing_icon.png">
+    <link rel="stylesheet" href="../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../styles/docfx.css">
+    <link rel="stylesheet" href="../styles/main.css">
+    <meta property="docfx:navrel" content="../toc.html">
+    <meta property="docfx:tocrel" content="toc.html">
+    
+    <meta property="docfx:rel" content="../">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+        
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../mr-sharing_icon.png" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+        
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+        
+        <div id="search-results">
+          <div class="search-list"></div>
+          <div class="sr-items">
+            <p><i class="glyphicon glyphicon-refresh index-loading"></i></p>
+          </div>
+          <ul id="pagination"></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+        
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="roadmap">
+<h2 id="project-goal">Project Goal</h2>
+
+<p>The goal of MixedReality-Sharing is to provide a set cross-platform networking libraries which provide a solid foundation for rich multi-user experiences. Concretely, this covers everything from discovering peers, establishing connections and exchanging messages with them. We do this via the following independent packages</p>
+<ul>
+<li><a href="../libs/Matchmaking/docs/index.html">Discovery</a> - Decide who is included in the experience</li>
+<li><a href="https://microsoft.github.io/MixedReality-WebRTC/">Audio/Video/Data streams</a> - Exchange media and data</li>
+<li><a href="xref:Microsoft.MixedReality.Sharing.SpatialAlignment">Spatial Alignment</a> - Establish a shared frame of reference</li>
+<li>Synchronization - High level state synchronization</li>
+</ul>
+<h2 id="milestones">Milestones</h2>
+<p>Milestones are only roughly in expected chronological order.</p>
+<h3 id="audiovideodata-shipped-october-2019">Audio/Video/Data (Shipped October 2019)</h3>
+<p>Goal: Ship a networking solution which supports audio/video/data.</p>
+<p>Our solution is based on WebRTC. MixedReality-WebRTC 1.0.0 comes support for C#/C++, Desktop/UWP, ARM/x86/x64. <a href="https://github.com/microsoft/MixedReality-WebRTC/releases/tag/v1.0.0">https://github.com/microsoft/MixedReality-WebRTC/releases/tag/v1.0.0</a></p>
+<p>This adds support for WebRTC on windows platforms. Developers can be sure that our devices have good support. E.g. Hardware video encode/decode, integration with unusual devices such as mixed reality capture (mixed camera and rendered content) as as video source.
+Developers still need to supply their own signalling solution (before opening a WebRTC connection, some out-of-band messages must be exchanged configure media types and perform NAT punchthrough)</p>
+<h3 id="network-autoconfiguration">Network Autoconfiguration</h3>
+<p>Goal: Provide a mechanism for automatic configuration. Remove the need for explicit IP addresses.</p>
+<p>This milestone adds v0.0.1 of <a href="../libs/Matchmaking/docs/index.html">Matchmaking</a> discovery mechanism which allows simple network autoconfiguration. This initial implementation works via UDP broadcast. In other words, all devices must be on the same subnet. Future versions will lift this restriction.</p>
+<p>This release will be used as an integration test in a branch of <a href="https://microsoft.github.io/MixedReality-SpectatorView/">SpectatorView</a>. As well as the portable C# implementation, there will be some Unity specific UI components for things such as choosing a session if there are several available.</p>
+<h3 id="spatial-alignment">Spatial Alignment</h3>
+<p>Goal: Simplify establishing a shared reference frame.</p>
+<p>To create holograms which can be viewed from multiple devices, they must know their positions relative to one or more fixed points (spatial anchors). With this milestone, applications can easily create content which is firmly anchored to the real world.</p>
+<p>Several swappable backends are available. <a href="https://en.wikipedia.org/wiki/QR_code">QR code</a> can be used for an initial demo/disconnected operation. There is a natural migration path to richer services such as <a href="https://azure.microsoft.com/en-us/services/spatial-anchors/">Azure Spatial Anchors</a></p>
+<p>The implementation is extracted and refined from <a href="https://microsoft.github.io/MixedReality-SpectatorView/">SpectatorView</a>. Naturally, SpectatorView will be the first consumer of the new API.</p>
+<h3 id="webrtc-signalling">WebRTC Signalling</h3>
+<p>Goal: Provide an integrated WebRTC signalling service. Remove the need for an external solution.</p>
+<p>WebRTC provides a lot of value. But the need to implement signalling can be an obstacle. With this milestone, a developer can easily get multiple devices connected, without the requirement to run a server.</p>
+<h3 id="matchmaking-transport">Matchmaking Transport</h3>
+<p>Goal: Make Matchmaking work without requiring devices to be on the same subnet.</p>
+<p>Provide a service and client libraries to allow discovery based on something other than the (somewhat arbitrary) network connection.</p>
+</article>
+          </div>
+          
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/microsoft/MixedReality-Sharing/blob/docs/docs/manual/roadmap.md/#L1" class="contribution-link">Improve this Doc</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+              <!-- <p><a class="back-to-top" href="#top">Back to top</a><p> -->
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+            
+            <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+    
+    <script type="text/javascript" src="../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

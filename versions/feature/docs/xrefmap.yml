@@ -1,0 +1,597 @@
+### YamlMime:XRefMap
+sorted: true
+references:
+- uid: building
+  name: Building from Source
+  href: manual/building.html
+- uid: index
+  name: Index
+  href: index.html
+- uid: installation
+  name: Installation
+  href: manual/installation.html
+- uid: matchmaking
+  name: MixedReality-Sharing Matchmaking 0.0.1
+  href: libs/Matchmaking/docs/index.html
+- uid: Microsoft.MixedReality.Sharing.Matchmaking
+  name: Microsoft.MixedReality.Sharing.Matchmaking
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.html
+  commentId: N:Microsoft.MixedReality.Sharing.Matchmaking
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking
+  nameWithType: Microsoft.MixedReality.Sharing.Matchmaking
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent
+  name: IDiscoveryAgent
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.html
+  commentId: T:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent
+  nameWithType: IDiscoveryAgent
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.PublishAsync(System.String,System.String,IReadOnlyDictionary{System.String,System.String},CancellationToken)
+  name: PublishAsync(String, String, IReadOnlyDictionary<String, String>, CancellationToken)
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.html#Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryAgent_PublishAsync_System_String_System_String_IReadOnlyDictionary_System_String_System_String__CancellationToken_
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.PublishAsync(System.String,System.String,IReadOnlyDictionary{System.String,System.String},CancellationToken)
+  name.vb: PublishAsync(String, String, IReadOnlyDictionary(Of String, String), CancellationToken)
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.PublishAsync(System.String, System.String, IReadOnlyDictionary<System.String, System.String>, CancellationToken)
+  fullName.vb: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.PublishAsync(System.String, System.String, IReadOnlyDictionary(Of System.String, System.String), CancellationToken)
+  nameWithType: IDiscoveryAgent.PublishAsync(String, String, IReadOnlyDictionary<String, String>, CancellationToken)
+  nameWithType.vb: IDiscoveryAgent.PublishAsync(String, String, IReadOnlyDictionary(Of String, String), CancellationToken)
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.PublishAsync*
+  name: PublishAsync
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.html#Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryAgent_PublishAsync_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.PublishAsync
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.PublishAsync
+  nameWithType: IDiscoveryAgent.PublishAsync
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.Subscribe(System.String)
+  name: Subscribe(String)
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.html#Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryAgent_Subscribe_System_String_
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.Subscribe(System.String)
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.Subscribe(System.String)
+  nameWithType: IDiscoveryAgent.Subscribe(String)
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.Subscribe*
+  name: Subscribe
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.html#Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryAgent_Subscribe_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.Subscribe
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.Subscribe
+  nameWithType: IDiscoveryAgent.Subscribe
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource
+  name: IDiscoveryResource
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.html
+  commentId: T:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource
+  nameWithType: IDiscoveryResource
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.Attributes
+  name: Attributes
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.html#Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryResource_Attributes
+  commentId: P:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.Attributes
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.Attributes
+  nameWithType: IDiscoveryResource.Attributes
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.Attributes*
+  name: Attributes
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.html#Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryResource_Attributes_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.Attributes
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.Attributes
+  nameWithType: IDiscoveryResource.Attributes
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.Category
+  name: Category
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.html#Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryResource_Category
+  commentId: P:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.Category
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.Category
+  nameWithType: IDiscoveryResource.Category
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.Category*
+  name: Category
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.html#Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryResource_Category_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.Category
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.Category
+  nameWithType: IDiscoveryResource.Category
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.Connection
+  name: Connection
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.html#Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryResource_Connection
+  commentId: P:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.Connection
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.Connection
+  nameWithType: IDiscoveryResource.Connection
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.Connection*
+  name: Connection
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.html#Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryResource_Connection_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.Connection
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.Connection
+  nameWithType: IDiscoveryResource.Connection
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.RequestEdit
+  name: RequestEdit()
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.html#Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryResource_RequestEdit
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.RequestEdit
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.RequestEdit()
+  nameWithType: IDiscoveryResource.RequestEdit()
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.RequestEdit*
+  name: RequestEdit
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.html#Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryResource_RequestEdit_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.RequestEdit
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.RequestEdit
+  nameWithType: IDiscoveryResource.RequestEdit
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.UniqueId
+  name: UniqueId
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.html#Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryResource_UniqueId
+  commentId: P:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.UniqueId
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.UniqueId
+  nameWithType: IDiscoveryResource.UniqueId
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.UniqueId*
+  name: UniqueId
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.html#Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryResource_UniqueId_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.UniqueId
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.UniqueId
+  nameWithType: IDiscoveryResource.UniqueId
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResourceEditor
+  name: IDiscoveryResourceEditor
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResourceEditor.html
+  commentId: T:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResourceEditor
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResourceEditor
+  nameWithType: IDiscoveryResourceEditor
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResourceEditor.CommitAsync
+  name: CommitAsync()
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResourceEditor.html#Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryResourceEditor_CommitAsync
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResourceEditor.CommitAsync
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResourceEditor.CommitAsync()
+  nameWithType: IDiscoveryResourceEditor.CommitAsync()
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResourceEditor.CommitAsync*
+  name: CommitAsync
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResourceEditor.html#Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryResourceEditor_CommitAsync_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResourceEditor.CommitAsync
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResourceEditor.CommitAsync
+  nameWithType: IDiscoveryResourceEditor.CommitAsync
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResourceEditor.PutAttribute(System.String,System.String)
+  name: PutAttribute(String, String)
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResourceEditor.html#Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryResourceEditor_PutAttribute_System_String_System_String_
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResourceEditor.PutAttribute(System.String,System.String)
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResourceEditor.PutAttribute(System.String, System.String)
+  nameWithType: IDiscoveryResourceEditor.PutAttribute(String, String)
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResourceEditor.PutAttribute*
+  name: PutAttribute
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResourceEditor.html#Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryResourceEditor_PutAttribute_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResourceEditor.PutAttribute
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResourceEditor.PutAttribute
+  nameWithType: IDiscoveryResourceEditor.PutAttribute
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResourceEditor.RemoveAttribute(System.String)
+  name: RemoveAttribute(String)
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResourceEditor.html#Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryResourceEditor_RemoveAttribute_System_String_
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResourceEditor.RemoveAttribute(System.String)
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResourceEditor.RemoveAttribute(System.String)
+  nameWithType: IDiscoveryResourceEditor.RemoveAttribute(String)
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResourceEditor.RemoveAttribute*
+  name: RemoveAttribute
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResourceEditor.html#Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryResourceEditor_RemoveAttribute_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResourceEditor.RemoveAttribute
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResourceEditor.RemoveAttribute
+  nameWithType: IDiscoveryResourceEditor.RemoveAttribute
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoverySubscription
+  name: IDiscoverySubscription
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoverySubscription.html
+  commentId: T:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoverySubscription
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoverySubscription
+  nameWithType: IDiscoverySubscription
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoverySubscription.Resources
+  name: Resources
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoverySubscription.html#Microsoft_MixedReality_Sharing_Matchmaking_IDiscoverySubscription_Resources
+  commentId: P:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoverySubscription.Resources
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoverySubscription.Resources
+  nameWithType: IDiscoverySubscription.Resources
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoverySubscription.Resources*
+  name: Resources
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoverySubscription.html#Microsoft_MixedReality_Sharing_Matchmaking_IDiscoverySubscription_Resources_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoverySubscription.Resources
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoverySubscription.Resources
+  nameWithType: IDiscoverySubscription.Resources
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoverySubscription.Updated
+  name: Updated
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoverySubscription.html#Microsoft_MixedReality_Sharing_Matchmaking_IDiscoverySubscription_Updated
+  commentId: E:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoverySubscription.Updated
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoverySubscription.Updated
+  nameWithType: IDiscoverySubscription.Updated
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage
+  name: IPeerDiscoveryMessage
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage.html
+  commentId: T:Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage
+  nameWithType: IPeerDiscoveryMessage
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage.Contents
+  name: Contents
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage.html#Microsoft_MixedReality_Sharing_Matchmaking_IPeerDiscoveryMessage_Contents
+  commentId: P:Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage.Contents
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage.Contents
+  nameWithType: IPeerDiscoveryMessage.Contents
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage.Contents*
+  name: Contents
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage.html#Microsoft_MixedReality_Sharing_Matchmaking_IPeerDiscoveryMessage_Contents_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage.Contents
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage.Contents
+  nameWithType: IPeerDiscoveryMessage.Contents
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage.StreamId
+  name: StreamId
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage.html#Microsoft_MixedReality_Sharing_Matchmaking_IPeerDiscoveryMessage_StreamId
+  commentId: P:Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage.StreamId
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage.StreamId
+  nameWithType: IPeerDiscoveryMessage.StreamId
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage.StreamId*
+  name: StreamId
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage.html#Microsoft_MixedReality_Sharing_Matchmaking_IPeerDiscoveryMessage_StreamId_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage.StreamId
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage.StreamId
+  nameWithType: IPeerDiscoveryMessage.StreamId
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport
+  name: IPeerDiscoveryTransport
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.html
+  commentId: T:Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport
+  nameWithType: IPeerDiscoveryTransport
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Broadcast(Guid,ArraySegment{System.Byte})
+  name: Broadcast(Guid, ArraySegment<Byte>)
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_IPeerDiscoveryTransport_Broadcast_Guid_ArraySegment_System_Byte__
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Broadcast(Guid,ArraySegment{System.Byte})
+  name.vb: Broadcast(Guid, ArraySegment(Of Byte))
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Broadcast(Guid, ArraySegment<System.Byte>)
+  fullName.vb: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Broadcast(Guid, ArraySegment(Of System.Byte))
+  nameWithType: IPeerDiscoveryTransport.Broadcast(Guid, ArraySegment<Byte>)
+  nameWithType.vb: IPeerDiscoveryTransport.Broadcast(Guid, ArraySegment(Of Byte))
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Broadcast*
+  name: Broadcast
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_IPeerDiscoveryTransport_Broadcast_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Broadcast
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Broadcast
+  nameWithType: IPeerDiscoveryTransport.Broadcast
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Message
+  name: Message
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_IPeerDiscoveryTransport_Message
+  commentId: E:Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Message
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Message
+  nameWithType: IPeerDiscoveryTransport.Message
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage,Guid,ArraySegment{System.Byte})
+  name: Reply(IPeerDiscoveryMessage, Guid, ArraySegment<Byte>)
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_IPeerDiscoveryTransport_Reply_Microsoft_MixedReality_Sharing_Matchmaking_IPeerDiscoveryMessage_Guid_ArraySegment_System_Byte__
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage,Guid,ArraySegment{System.Byte})
+  name.vb: Reply(IPeerDiscoveryMessage, Guid, ArraySegment(Of Byte))
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage, Guid, ArraySegment<System.Byte>)
+  fullName.vb: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage, Guid, ArraySegment(Of System.Byte))
+  nameWithType: IPeerDiscoveryTransport.Reply(IPeerDiscoveryMessage, Guid, ArraySegment<Byte>)
+  nameWithType.vb: IPeerDiscoveryTransport.Reply(IPeerDiscoveryMessage, Guid, ArraySegment(Of Byte))
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Reply*
+  name: Reply
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_IPeerDiscoveryTransport_Reply_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Reply
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Reply
+  nameWithType: IPeerDiscoveryTransport.Reply
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Start
+  name: Start()
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_IPeerDiscoveryTransport_Start
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Start
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Start()
+  nameWithType: IPeerDiscoveryTransport.Start()
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Start*
+  name: Start
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_IPeerDiscoveryTransport_Start_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Start
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Start
+  nameWithType: IPeerDiscoveryTransport.Start
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Stop
+  name: Stop()
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_IPeerDiscoveryTransport_Stop
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Stop
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Stop()
+  nameWithType: IPeerDiscoveryTransport.Stop()
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Stop*
+  name: Stop
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_IPeerDiscoveryTransport_Stop_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Stop
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Stop
+  nameWithType: IPeerDiscoveryTransport.Stop
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport
+  name: MemoryPeerDiscoveryTransport
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.html
+  commentId: T:Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport
+  nameWithType: MemoryPeerDiscoveryTransport
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.#ctor(System.Int32)
+  name: MemoryPeerDiscoveryTransport(Int32)
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_MemoryPeerDiscoveryTransport__ctor_System_Int32_
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.#ctor(System.Int32)
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.MemoryPeerDiscoveryTransport(System.Int32)
+  nameWithType: MemoryPeerDiscoveryTransport.MemoryPeerDiscoveryTransport(Int32)
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.#ctor*
+  name: MemoryPeerDiscoveryTransport
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_MemoryPeerDiscoveryTransport__ctor_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.#ctor
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.MemoryPeerDiscoveryTransport
+  nameWithType: MemoryPeerDiscoveryTransport.MemoryPeerDiscoveryTransport
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Broadcast(Guid,ArraySegment{System.Byte})
+  name: Broadcast(Guid, ArraySegment<Byte>)
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_MemoryPeerDiscoveryTransport_Broadcast_Guid_ArraySegment_System_Byte__
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Broadcast(Guid,ArraySegment{System.Byte})
+  name.vb: Broadcast(Guid, ArraySegment(Of Byte))
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Broadcast(Guid, ArraySegment<System.Byte>)
+  fullName.vb: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Broadcast(Guid, ArraySegment(Of System.Byte))
+  nameWithType: MemoryPeerDiscoveryTransport.Broadcast(Guid, ArraySegment<Byte>)
+  nameWithType.vb: MemoryPeerDiscoveryTransport.Broadcast(Guid, ArraySegment(Of Byte))
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Broadcast*
+  name: Broadcast
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_MemoryPeerDiscoveryTransport_Broadcast_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Broadcast
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Broadcast
+  nameWithType: MemoryPeerDiscoveryTransport.Broadcast
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Message
+  name: Message
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_MemoryPeerDiscoveryTransport_Message
+  commentId: E:Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Message
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Message
+  nameWithType: MemoryPeerDiscoveryTransport.Message
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.PumpMessages
+  name: PumpMessages()
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_MemoryPeerDiscoveryTransport_PumpMessages
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.PumpMessages
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.PumpMessages()
+  nameWithType: MemoryPeerDiscoveryTransport.PumpMessages()
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.PumpMessages*
+  name: PumpMessages
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_MemoryPeerDiscoveryTransport_PumpMessages_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.PumpMessages
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.PumpMessages
+  nameWithType: MemoryPeerDiscoveryTransport.PumpMessages
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.PumpMessagesInternal
+  name: PumpMessagesInternal()
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_MemoryPeerDiscoveryTransport_PumpMessagesInternal
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.PumpMessagesInternal
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.PumpMessagesInternal()
+  nameWithType: MemoryPeerDiscoveryTransport.PumpMessagesInternal()
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.PumpMessagesInternal*
+  name: PumpMessagesInternal
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_MemoryPeerDiscoveryTransport_PumpMessagesInternal_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.PumpMessagesInternal
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.PumpMessagesInternal
+  nameWithType: MemoryPeerDiscoveryTransport.PumpMessagesInternal
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage,Guid,ArraySegment{System.Byte})
+  name: Reply(IPeerDiscoveryMessage, Guid, ArraySegment<Byte>)
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_MemoryPeerDiscoveryTransport_Reply_Microsoft_MixedReality_Sharing_Matchmaking_IPeerDiscoveryMessage_Guid_ArraySegment_System_Byte__
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage,Guid,ArraySegment{System.Byte})
+  name.vb: Reply(IPeerDiscoveryMessage, Guid, ArraySegment(Of Byte))
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage, Guid, ArraySegment<System.Byte>)
+  fullName.vb: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage, Guid, ArraySegment(Of System.Byte))
+  nameWithType: MemoryPeerDiscoveryTransport.Reply(IPeerDiscoveryMessage, Guid, ArraySegment<Byte>)
+  nameWithType.vb: MemoryPeerDiscoveryTransport.Reply(IPeerDiscoveryMessage, Guid, ArraySegment(Of Byte))
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Reply*
+  name: Reply
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_MemoryPeerDiscoveryTransport_Reply_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Reply
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Reply
+  nameWithType: MemoryPeerDiscoveryTransport.Reply
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Start
+  name: Start()
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_MemoryPeerDiscoveryTransport_Start
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Start
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Start()
+  nameWithType: MemoryPeerDiscoveryTransport.Start()
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Start*
+  name: Start
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_MemoryPeerDiscoveryTransport_Start_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Start
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Start
+  nameWithType: MemoryPeerDiscoveryTransport.Start
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Stop
+  name: Stop()
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_MemoryPeerDiscoveryTransport_Stop
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Stop
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Stop()
+  nameWithType: MemoryPeerDiscoveryTransport.Stop()
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Stop*
+  name: Stop
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_MemoryPeerDiscoveryTransport_Stop_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Stop
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Stop
+  nameWithType: MemoryPeerDiscoveryTransport.Stop
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent
+  name: PeerDiscoveryAgent
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.html
+  commentId: T:Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent
+  nameWithType: PeerDiscoveryAgent
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.#ctor(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport,Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.Options)
+  name: PeerDiscoveryAgent(IPeerDiscoveryTransport, PeerDiscoveryAgent.Options)
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.html#Microsoft_MixedReality_Sharing_Matchmaking_PeerDiscoveryAgent__ctor_Microsoft_MixedReality_Sharing_Matchmaking_IPeerDiscoveryTransport_Microsoft_MixedReality_Sharing_Matchmaking_PeerDiscoveryAgent_Options_
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.#ctor(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport,Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.Options)
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.PeerDiscoveryAgent(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport, Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.Options)
+  nameWithType: PeerDiscoveryAgent.PeerDiscoveryAgent(IPeerDiscoveryTransport, PeerDiscoveryAgent.Options)
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.#ctor*
+  name: PeerDiscoveryAgent
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.html#Microsoft_MixedReality_Sharing_Matchmaking_PeerDiscoveryAgent__ctor_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.#ctor
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.PeerDiscoveryAgent
+  nameWithType: PeerDiscoveryAgent.PeerDiscoveryAgent
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.Dispose
+  name: Dispose()
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.html#Microsoft_MixedReality_Sharing_Matchmaking_PeerDiscoveryAgent_Dispose
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.Dispose
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.Dispose()
+  nameWithType: PeerDiscoveryAgent.Dispose()
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.Dispose*
+  name: Dispose
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.html#Microsoft_MixedReality_Sharing_Matchmaking_PeerDiscoveryAgent_Dispose_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.Dispose
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.Dispose
+  nameWithType: PeerDiscoveryAgent.Dispose
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.Options
+  name: PeerDiscoveryAgent.Options
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.Options.html
+  commentId: T:Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.Options
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.Options
+  nameWithType: PeerDiscoveryAgent.Options
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.Options.ResourceExpirySec
+  name: ResourceExpirySec
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.Options.html#Microsoft_MixedReality_Sharing_Matchmaking_PeerDiscoveryAgent_Options_ResourceExpirySec
+  commentId: F:Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.Options.ResourceExpirySec
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.Options.ResourceExpirySec
+  nameWithType: PeerDiscoveryAgent.Options.ResourceExpirySec
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.PublishAsync(System.String,System.String,IReadOnlyDictionary{System.String,System.String},CancellationToken)
+  name: PublishAsync(String, String, IReadOnlyDictionary<String, String>, CancellationToken)
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.html#Microsoft_MixedReality_Sharing_Matchmaking_PeerDiscoveryAgent_PublishAsync_System_String_System_String_IReadOnlyDictionary_System_String_System_String__CancellationToken_
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.PublishAsync(System.String,System.String,IReadOnlyDictionary{System.String,System.String},CancellationToken)
+  name.vb: PublishAsync(String, String, IReadOnlyDictionary(Of String, String), CancellationToken)
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.PublishAsync(System.String, System.String, IReadOnlyDictionary<System.String, System.String>, CancellationToken)
+  fullName.vb: Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.PublishAsync(System.String, System.String, IReadOnlyDictionary(Of System.String, System.String), CancellationToken)
+  nameWithType: PeerDiscoveryAgent.PublishAsync(String, String, IReadOnlyDictionary<String, String>, CancellationToken)
+  nameWithType.vb: PeerDiscoveryAgent.PublishAsync(String, String, IReadOnlyDictionary(Of String, String), CancellationToken)
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.PublishAsync*
+  name: PublishAsync
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.html#Microsoft_MixedReality_Sharing_Matchmaking_PeerDiscoveryAgent_PublishAsync_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.PublishAsync
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.PublishAsync
+  nameWithType: PeerDiscoveryAgent.PublishAsync
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.Subscribe(System.String)
+  name: Subscribe(String)
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.html#Microsoft_MixedReality_Sharing_Matchmaking_PeerDiscoveryAgent_Subscribe_System_String_
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.Subscribe(System.String)
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.Subscribe(System.String)
+  nameWithType: PeerDiscoveryAgent.Subscribe(String)
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.Subscribe*
+  name: Subscribe
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.html#Microsoft_MixedReality_Sharing_Matchmaking_PeerDiscoveryAgent_Subscribe_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.Subscribe
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.Subscribe
+  nameWithType: PeerDiscoveryAgent.Subscribe
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport
+  name: UdpPeerDiscoveryTransport
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.html
+  commentId: T:Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport
+  nameWithType: UdpPeerDiscoveryTransport
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.#ctor(IPAddress,System.UInt16,IPAddress,Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Options)
+  name: UdpPeerDiscoveryTransport(IPAddress, UInt16, IPAddress, UdpPeerDiscoveryTransport.Options)
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_UdpPeerDiscoveryTransport__ctor_IPAddress_System_UInt16_IPAddress_Microsoft_MixedReality_Sharing_Matchmaking_UdpPeerDiscoveryTransport_Options_
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.#ctor(IPAddress,System.UInt16,IPAddress,Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Options)
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.UdpPeerDiscoveryTransport(IPAddress, System.UInt16, IPAddress, Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Options)
+  nameWithType: UdpPeerDiscoveryTransport.UdpPeerDiscoveryTransport(IPAddress, UInt16, IPAddress, UdpPeerDiscoveryTransport.Options)
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.#ctor*
+  name: UdpPeerDiscoveryTransport
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_UdpPeerDiscoveryTransport__ctor_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.#ctor
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.UdpPeerDiscoveryTransport
+  nameWithType: UdpPeerDiscoveryTransport.UdpPeerDiscoveryTransport
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Broadcast(Guid,ArraySegment{System.Byte})
+  name: Broadcast(Guid, ArraySegment<Byte>)
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_UdpPeerDiscoveryTransport_Broadcast_Guid_ArraySegment_System_Byte__
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Broadcast(Guid,ArraySegment{System.Byte})
+  name.vb: Broadcast(Guid, ArraySegment(Of Byte))
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Broadcast(Guid, ArraySegment<System.Byte>)
+  fullName.vb: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Broadcast(Guid, ArraySegment(Of System.Byte))
+  nameWithType: UdpPeerDiscoveryTransport.Broadcast(Guid, ArraySegment<Byte>)
+  nameWithType.vb: UdpPeerDiscoveryTransport.Broadcast(Guid, ArraySegment(Of Byte))
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Broadcast*
+  name: Broadcast
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_UdpPeerDiscoveryTransport_Broadcast_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Broadcast
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Broadcast
+  nameWithType: UdpPeerDiscoveryTransport.Broadcast
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Message
+  name: Message
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_UdpPeerDiscoveryTransport_Message
+  commentId: E:Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Message
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Message
+  nameWithType: UdpPeerDiscoveryTransport.Message
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Options
+  name: UdpPeerDiscoveryTransport.Options
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Options.html
+  commentId: T:Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Options
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Options
+  nameWithType: UdpPeerDiscoveryTransport.Options
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Options.MaxRetries
+  name: MaxRetries
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Options.html#Microsoft_MixedReality_Sharing_Matchmaking_UdpPeerDiscoveryTransport_Options_MaxRetries
+  commentId: F:Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Options.MaxRetries
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Options.MaxRetries
+  nameWithType: UdpPeerDiscoveryTransport.Options.MaxRetries
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Options.MaxRetryDelayMs
+  name: MaxRetryDelayMs
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Options.html#Microsoft_MixedReality_Sharing_Matchmaking_UdpPeerDiscoveryTransport_Options_MaxRetryDelayMs
+  commentId: F:Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Options.MaxRetryDelayMs
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Options.MaxRetryDelayMs
+  nameWithType: UdpPeerDiscoveryTransport.Options.MaxRetryDelayMs
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage,Guid,ArraySegment{System.Byte})
+  name: Reply(IPeerDiscoveryMessage, Guid, ArraySegment<Byte>)
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_UdpPeerDiscoveryTransport_Reply_Microsoft_MixedReality_Sharing_Matchmaking_IPeerDiscoveryMessage_Guid_ArraySegment_System_Byte__
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage,Guid,ArraySegment{System.Byte})
+  name.vb: Reply(IPeerDiscoveryMessage, Guid, ArraySegment(Of Byte))
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage, Guid, ArraySegment<System.Byte>)
+  fullName.vb: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage, Guid, ArraySegment(Of System.Byte))
+  nameWithType: UdpPeerDiscoveryTransport.Reply(IPeerDiscoveryMessage, Guid, ArraySegment<Byte>)
+  nameWithType.vb: UdpPeerDiscoveryTransport.Reply(IPeerDiscoveryMessage, Guid, ArraySegment(Of Byte))
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Reply*
+  name: Reply
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_UdpPeerDiscoveryTransport_Reply_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Reply
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Reply
+  nameWithType: UdpPeerDiscoveryTransport.Reply
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Start
+  name: Start()
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_UdpPeerDiscoveryTransport_Start
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Start
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Start()
+  nameWithType: UdpPeerDiscoveryTransport.Start()
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Start*
+  name: Start
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_UdpPeerDiscoveryTransport_Start_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Start
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Start
+  nameWithType: UdpPeerDiscoveryTransport.Start
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Started
+  name: Started
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_UdpPeerDiscoveryTransport_Started
+  commentId: E:Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Started
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Started
+  nameWithType: UdpPeerDiscoveryTransport.Started
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Stop
+  name: Stop()
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_UdpPeerDiscoveryTransport_Stop
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Stop
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Stop()
+  nameWithType: UdpPeerDiscoveryTransport.Stop()
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Stop*
+  name: Stop
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_UdpPeerDiscoveryTransport_Stop_
+  commentId: Overload:Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Stop
+  isSpec: "True"
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Stop
+  nameWithType: UdpPeerDiscoveryTransport.Stop
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Stopped
+  name: Stopped
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_UdpPeerDiscoveryTransport_Stopped
+  commentId: E:Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Stopped
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Stopped
+  nameWithType: UdpPeerDiscoveryTransport.Stopped
+- uid: roadmap
+  name: Roadmap
+  href: manual/roadmap.html

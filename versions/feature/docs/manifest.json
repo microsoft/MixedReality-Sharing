@@ -1,0 +1,340 @@
+{
+  "homepages": [],
+  "source_base_path": "D:/a/1/s/docs",
+  "xrefmap": "xrefmap.yml",
+  "files": [
+    {
+      "type": "Resource",
+      "output": {
+        "resource": {
+          "relative_path": "index.json"
+        }
+      },
+      "is_incremental": false
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "../build/docs/api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.html",
+          "hash": "5f/+VSoYxHDsX0jvOZ9d2w=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "../build/docs/api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.html",
+          "hash": "O5UATIUuU/9d4zZIwg5R1A=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "../build/docs/api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResourceEditor.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResourceEditor.html",
+          "hash": "tJLNC/yeYYL9t/RhGRu8tQ=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "../build/docs/api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoverySubscription.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoverySubscription.html",
+          "hash": "CaunUcFKnN016+0J5RT9AQ=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "../build/docs/api/Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage.html",
+          "hash": "rpI5f2oepNq5mvlRnNejgA=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "../build/docs/api/Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.html",
+          "hash": "EiFEYoqTT5kubNBHxZSmPA=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "../build/docs/api/Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.html",
+          "hash": "ols+dlZyRLi9kIWzp6N17w=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "../build/docs/api/Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.Options.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.Options.html",
+          "hash": "4izIO+JoQqnt6JKZuIsPdQ=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "../build/docs/api/Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.html",
+          "hash": "MGPiSMhWC2mK/vF118ooyQ=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "../build/docs/api/Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Options.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Options.html",
+          "hash": "y214/DIALNGqJD55gMtpsQ=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "../build/docs/api/Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.html",
+          "hash": "m/cjedi244xWogxUH/9Jxw=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "../build/docs/api/Microsoft.MixedReality.Sharing.Matchmaking.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Microsoft.MixedReality.Sharing.Matchmaking.html",
+          "hash": "GlnfbnLETR7W0z9jDorVLg=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Toc",
+      "source_relative_path": "../build/docs/api/toc.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/toc.html",
+          "hash": "wwicmnYyyr0UWrs16HKnag=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "log_codes": [
+        "InvalidFileLink"
+      ],
+      "type": "Conceptual",
+      "source_relative_path": "../libs/Matchmaking/docs/index.md",
+      "output": {
+        ".html": {
+          "relative_path": "libs/Matchmaking/docs/index.html",
+          "hash": "IelCNdrjVz5s9CvGpgPpxg=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "../libs/Matchmaking/examples/P2PChat/P2PChat.cs",
+      "output": {
+        "resource": {
+          "relative_path": "libs/Matchmaking/examples/P2PChat/P2PChat.cs"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "index.md",
+      "output": {
+        ".html": {
+          "relative_path": "index.html",
+          "hash": "C3ttTu7fWLrXxSePhdKpzw=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "manual/building.md",
+      "output": {
+        ".html": {
+          "relative_path": "manual/building.html",
+          "hash": "XK5cqJ0FCFAGdKDkeVjaLg=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "manual/installation.md",
+      "output": {
+        ".html": {
+          "relative_path": "manual/installation.html",
+          "hash": "mecIBztLNvO4FxsNCsWslQ=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "log_codes": [
+        "UidNotFound"
+      ],
+      "type": "Conceptual",
+      "source_relative_path": "manual/roadmap.md",
+      "output": {
+        ".html": {
+          "relative_path": "manual/roadmap.html",
+          "hash": "4mgm4w6wLpSRuZmKrqnX4Q=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Toc",
+      "source_relative_path": "manual/toc.md",
+      "output": {
+        ".html": {
+          "relative_path": "manual/toc.html",
+          "hash": "OiVYB3Og+1Mkl3clnUbrZQ=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "mr-sharing_icon.png",
+      "output": {
+        "resource": {
+          "relative_path": "mr-sharing_icon.png"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Toc",
+      "source_relative_path": "toc.md",
+      "output": {
+        ".html": {
+          "relative_path": "toc.html",
+          "hash": "at5Zma48+/fm1Hhow4dofQ=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    }
+  ],
+  "incremental_info": [
+    {
+      "status": {
+        "can_incremental": false,
+        "details": "Cannot build incrementally because last build info is missing.",
+        "incrementalPhase": "build",
+        "total_file_count": 0,
+        "skipped_file_count": 0,
+        "full_build_reason_code": "NoAvailableBuildCache"
+      },
+      "processors": {
+        "TocDocumentProcessor": {
+          "can_incremental": false,
+          "details": "Processor TocDocumentProcessor cannot support incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
+          "incrementalPhase": "build",
+          "total_file_count": 0,
+          "skipped_file_count": 0
+        },
+        "ManagedReferenceDocumentProcessor": {
+          "can_incremental": false,
+          "incrementalPhase": "build",
+          "total_file_count": 12,
+          "skipped_file_count": 0
+        },
+        "ConceptualDocumentProcessor": {
+          "can_incremental": false,
+          "incrementalPhase": "build",
+          "total_file_count": 5,
+          "skipped_file_count": 0
+        },
+        "ResourceDocumentProcessor": {
+          "can_incremental": false,
+          "details": "Processor ResourceDocumentProcessor cannot support incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
+          "incrementalPhase": "build",
+          "total_file_count": 0,
+          "skipped_file_count": 0
+        }
+      }
+    },
+    {
+      "status": {
+        "can_incremental": false,
+        "details": "Cannot support incremental post processing, the reason is: should not trace intermediate info.",
+        "incrementalPhase": "postProcessing",
+        "total_file_count": 0,
+        "skipped_file_count": 0
+      },
+      "processors": {}
+    }
+  ],
+  "version_info": {},
+  "groups": [
+    {
+      "xrefmap": "xrefmap.yml"
+    }
+  ]
+}
