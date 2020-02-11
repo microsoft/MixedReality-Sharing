@@ -21,12 +21,7 @@ steps:
     # Push docs if enabled, build step succeeded, and was not triggered by a PR
   - task: PowerShell@2
     displayName: 'Push docs to git if needed'
-    condition: |
-      and(
-        variables['publish'],
-        succeeded(),
-        not(eq(variables['Build.Reason'], 'PullRequest'))
-      )
+    condition: and(variables['publish'], succeeded())
     inputs:
       targetType: filePath
       filePath: tools/ci/commitGeneratedDocs.ps1
