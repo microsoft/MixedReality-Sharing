@@ -22,6 +22,8 @@ function Get-ScriptDirectory {
     Split-Path $Invocation.MyCommand.Path
 }
 
+. "$(Get-ScriptDirectory)\..\tools\ci\utils.ps1"
+
 # TODO proper escapes
 function FileNameFromUrl ($url) {
     $url -replace "[/:\?=%]", "_"
@@ -95,21 +97,13 @@ $build_root = "$repo_root\build\docs"
 $cache_root = "$repo_root\build\cache"
 Write-Host "Repo root $repo_root, build root $build_root"
 
+mkdir -Force $build_root | out-null
+mkdir -Force $cache_root | out-null
+
 # Clear output dir
 if( $incremental -eq $false ) {
     Write-Host "Clear previous version from $build_root"
-    Remove-Item -Force -Recurse $build_root -ErrorAction Ignore
-}
-
-mkdir -ErrorAction Ignore $build_root | out-null
-mkdir -ErrorAction Ignore $cache_root | out-null
-
-if ((Get-ChildItem $build_root | Measure-Object).Count -ne 0)
-{
-    $err = "Cannot clean $build_root folder"
-    Write-Error $err
-    Write-Host "##vso[task.complete result=Failed;]$err"
-    exit 1
+    Ensure-Empty $build_root
 }
 
 # Fetch docfx

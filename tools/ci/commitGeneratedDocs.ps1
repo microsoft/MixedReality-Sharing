@@ -10,26 +10,13 @@ param (
     [string]$SourceBranch
 )
 
-# Silence errors to avoid PS failing when git commands write to stderr.
-# See https://github.com/microsoft/azure-pipelines-yaml/issues/306
-function RunWithoutFailingOnStdErr($Command, $DisplayName = $Command) {
-    $oldEAPreference = $ErrorActionPreference
-    $ErrorActionPreference = "SilentlyContinue"
-
-    $out = Invoke-Expression $Command -ErrorVariable err
-
-    if ($LastExitCode -ne 0) {
-        $ErrorActionPreference = $oldEAPreference
-        $msg = "Command '$DisplayName' returned an error"
-        Write-Host $msg
-        Write-Host $out
-        Write-Host $err
-        Write-Host "##vso[task.complete result=Failed;]$msg"
-        exit 1
-    }
-    $ErrorActionPreference = $oldEAPreference
-    return $out
+# Return the directory containing this script
+function Get-ScriptDirectory {
+    $Invocation = (Get-Variable MyInvocation -Scope 1).Value
+    Split-Path $Invocation.MyCommand.Path
 }
+
+. "$(Get-ScriptDirectory)\utils.ps1"
 
 # Strip the source branch from refs/heads/ if any.
 # In general this is coming from Build.SourceBranch which has it.
@@ -63,14 +50,7 @@ Write-Host "${commitSha}: $commitTitle"
 
 # Clean the _docs/ folder to avoid any interaction with a previous build if the agent is not clean
 Write-Host "Clean output folder '_docs/' if it exists"
-Remove-Item ".\_docs" -Force -Recurse -ErrorAction Ignore
-mkdir -ErrorAction Ignore ".\_docs" | out-null
-if ((Get-ChildItem ".\_docs" | Measure-Object).Count -ne 0) {
-    $err = "Cannot clean _docs folder"
-    Write-Error $err
-    Write-Host "##vso[task.complete result=Failed;]$err"
-    exit 1
-}
+Ensure-Empty '_docs'
 
 # Compute the source and destination folders
 $DestFolder = ".\_docs\versions\$SourceBranch\"
@@ -96,7 +76,7 @@ Write-Host "Destination folder: $DestFolder"
 Write-Host "Clone the generated docs branch"
 $cloneCommand = "git -c http.extraheader=""AUTHORIZATION: $Authorization"" clone https://github.com/Microsoft/MixedReality-Sharing.git --branch gh-pages "".\_docs"""
 # Pass a custom display name so that credentials are not printed out in case of error.
-RunWithoutFailingOnStdErr $cloneCommand "git clone ..."
+Invoke-NoFailOnStdErr $cloneCommand "git clone ..."
 
 # Delete all the files in this folder, so that files deleted in the new version
 # of the documentation are effectively deleted in the commit.
@@ -123,14 +103,14 @@ git config user.email ${env:GITHUB_EMAIL}
 # Check for any change compared to previous version (if any)
 Write-Host "Check for changes"
 $statusCommand = "git status --short"
-$statusOut = RunWithoutFailingOnStdErr $statusCommand
+$statusOut = Invoke-NoFailOnStdErr $statusCommand
 if ($statusOut) {
     # Add everything. Because the current directory is _docs, this is everything from
     # the point of view of the sub-repo inside _docs, so this ignores all changes outside
     # this directory and retain only generated docs changes, which is exactly what we want.
-    RunWithoutFailingOnStdErr "git add --all"
-    RunWithoutFailingOnStdErr "git commit -m ""Generated docs for commit $commitSha ($commitTitle)"""
-    RunWithoutFailingOnStdErr "git -c http.extraheader=""AUTHORIZATION: $Authorization"" push origin ""$DestBranch"""
+    Invoke-NoFailOnStdErr "git add --all"
+    Invoke-NoFailOnStdErr "git commit -m ""Generated docs for commit $commitSha ($commitTitle)"""
+    Invoke-NoFailOnStdErr "git -c http.extraheader=""AUTHORIZATION: $Authorization"" push origin ""$DestBranch"""
     Write-Host "Docs changes committed"
 } else {
     Write-Host "Docs are up to date"
