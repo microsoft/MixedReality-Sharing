@@ -81,11 +81,7 @@ Invoke-NoFailOnStdErr $cloneCommand "git clone ..."
 # Delete all the files in this folder, so that files deleted in the new version
 # of the documentation are effectively deleted in the commit.
 Write-Host "Delete currently committed version"
-if (Test-Path "$DestFolder") {
-    Get-ChildItem "$DestFolder" -Recurse | Remove-Item -Force -Recurse
-} else {
-    New-Item "$DestFolder" -ItemType Directory
-}
+Ensure-Empty "$DestFolder"
 
 # Copy the newly-generated version of the docs
 Write-Host "Copy new generated version"
