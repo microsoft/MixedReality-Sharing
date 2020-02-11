@@ -89,25 +89,29 @@ Copy-Item ".\build\docs\generated\*" -Destination "$DestFolder" -Force -Recurse
 
 # Move inside the generated docs repository, so that subsequent git commands
 # apply to this repo/branch and not the global one with the source code.
-Set-Location ".\_docs"
+Push-Location ".\_docs"
 
-# Set author for the generated docs commit
-Write-Host "Set docs commit author to '${env:GITHUB_NAME} <${env:GITHUB_EMAIL}>'"
-git config user.name ${env:GITHUB_NAME}
-git config user.email ${env:GITHUB_EMAIL}
+try {
+    # Set author for the generated docs commit
+    Write-Host "Set docs commit author to '${env:GITHUB_NAME} <${env:GITHUB_EMAIL}>'"
+    git config user.name ${env:GITHUB_NAME}
+    git config user.email ${env:GITHUB_EMAIL}
 
-# Check for any change compared to previous version (if any)
-Write-Host "Check for changes"
-$statusCommand = "git status --short"
-$statusOut = Invoke-NoFailOnStdErr $statusCommand
-if ($statusOut) {
-    # Add everything. Because the current directory is _docs, this is everything from
-    # the point of view of the sub-repo inside _docs, so this ignores all changes outside
-    # this directory and retain only generated docs changes, which is exactly what we want.
-    Invoke-NoFailOnStdErr "git add --all"
-    Invoke-NoFailOnStdErr "git commit -m ""Generated docs for commit $commitSha ($commitTitle)"""
-    Invoke-NoFailOnStdErr "git -c http.extraheader=""AUTHORIZATION: $Authorization"" push origin ""$DestBranch"""
-    Write-Host "Docs changes committed"
-} else {
-    Write-Host "Docs are up to date"
+    # Check for any change compared to previous version (if any)
+    Write-Host "Check for changes"
+    $statusCommand = "git status --short"
+    $statusOut = Invoke-NoFailOnStdErr $statusCommand
+    if ($statusOut) {
+        # Add everything. Because the current directory is _docs, this is everything from
+        # the point of view of the sub-repo inside _docs, so this ignores all changes outside
+        # this directory and retain only generated docs changes, which is exactly what we want.
+        Invoke-NoFailOnStdErr "git add --all"
+        Invoke-NoFailOnStdErr "git commit -m ""Generated docs for commit $commitSha ($commitTitle)"""
+        Invoke-NoFailOnStdErr "git -c http.extraheader=""AUTHORIZATION: $Authorization"" push origin ""$DestBranch"""
+        Write-Host "Docs changes committed"
+    } else {
+        Write-Host "Docs are up to date"
+    }
+} finally {
+    Pop-Location
 }
