@@ -5,15 +5,14 @@
 # For the master branch, this commits the documentation at the root of
 # the branch. For other branches, this commits it under the versions/ folder.
 
-param(
+param (
     [Parameter(Position=0)]
     [string]$SourceBranch
 )
 
 # Silence errors to avoid PS failing when git commands write to stderr.
 # See https://github.com/microsoft/azure-pipelines-yaml/issues/306
-function RunWithoutFailingOnStdErr($Command, $DisplayName = $Command)
-{
+function RunWithoutFailingOnStdErr($Command, $DisplayName = $Command) {
     $oldEAPreference = $ErrorActionPreference
     $ErrorActionPreference = "SilentlyContinue"
 
@@ -51,8 +50,7 @@ $Authorization = "Basic " + [System.Convert]::ToBase64String([System.Text.Encodi
 Write-Host "Resolve source branch commit SHA1"
 $output = ""
 Invoke-Expression "git rev-parse --verify `"refs/remotes/origin/$SourceBranch^{commit}`"" | Tee-Object -Variable output | Out-Null
-if (-not $output)
-{
+if (-not $output) {
     Write-Host "Unknown branch '$SourceBranch'"
     Write-Host "##vso[task.complete result=Failed;]Unknown branch $SourceBranch."
     exit 1
@@ -68,8 +66,7 @@ Write-Host "${commitSha}: $commitTitle"
 Write-Host "Clean output folder '_docs/' if it exists"
 Remove-Item ".\_docs" -Force -Recurse -ErrorAction Ignore
 mkdir -ErrorAction Ignore ".\_docs" | out-null
-if ((Get-ChildItem ".\_docs" | Measure-Object).Count -ne 0)
-{
+if ((Get-ChildItem ".\_docs" | Measure-Object).Count -ne 0) {
     $err = "Cannot clean _docs folder"
     Write-Error $err
     Write-Host "##vso[task.complete result=Failed;]$err"
@@ -78,15 +75,13 @@ if ((Get-ChildItem ".\_docs" | Measure-Object).Count -ne 0)
 
 # Compute the source and destination folders
 $DestFolder = ".\_docs\versions\$SourceBranch\"
-if ($SourceBranch -eq "master")
-{
+if ($SourceBranch -eq "master") {
     # The master branch is the default version at the root of the website
     $DestFolder = ".\_docs\"
 }
 $output = ""
 Invoke-Expression "git rev-parse --verify `"refs/remotes/origin/gh-pages^{commit}`"" | Tee-Object -Variable output | Out-Null
-if (-not $output)
-{
+if (-not $output) {
     Write-Host "Missing docs branch 'gh-pages'"
     Write-Host "##vso[task.complete result=Failed;]Missing docs branch 'gh-pages'."
     exit 1
@@ -107,12 +102,9 @@ RunWithoutFailingOnStdErr $cloneCommand "git clone ..."
 # Delete all the files in this folder, so that files deleted in the new version
 # of the documentation are effectively deleted in the commit.
 Write-Host "Delete currently committed version"
-if (Test-Path "$DestFolder")
-{
+if (Test-Path "$DestFolder") {
     Get-ChildItem "$DestFolder" -Recurse | Remove-Item -Force -Recurse
-}
-else
-{
+} else {
     New-Item "$DestFolder" -ItemType Directory
 }
 
@@ -133,8 +125,7 @@ git config user.email ${env:GITHUB_EMAIL}
 Write-Host "Check for changes"
 $statusCommand = "git status --short"
 $statusOut = RunWithoutFailingOnStdErr $statusCommand
-if ($statusOut)
-{
+if ($statusOut) {
     # Add everything. Because the current directory is _docs, this is everything from
     # the point of view of the sub-repo inside _docs, so this ignores all changes outside
     # this directory and retain only generated docs changes, which is exactly what we want.
@@ -142,8 +133,6 @@ if ($statusOut)
     RunWithoutFailingOnStdErr "git commit -m ""Generated docs for commit $commitSha ($commitTitle)"""
     RunWithoutFailingOnStdErr "git -c http.extraheader=""AUTHORIZATION: $Authorization"" push origin ""$DestBranch"""
     Write-Host "Docs changes committed"
-}
-else
-{
+} else {
     Write-Host "Docs are up to date"
 }
