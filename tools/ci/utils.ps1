@@ -7,18 +7,24 @@ function Invoke-NoFailOnStdErr($Command, $DisplayName = $Command) {
     $oldEAPreference = $ErrorActionPreference
     $ErrorActionPreference = "SilentlyContinue"
 
-    $out = Invoke-Expression $Command -ErrorVariable err
-
-    if ($LastExitCode -ne 0) {
+    $errorHasOccurred = $False
+    try {
+        $out = Invoke-Expression $Command -ErrorVariable $errorMessage
+        $errorHasOccurred = $LastExitCode -ne 0
+    } catch {
+        $errorHasOccurred = $True
+        $errorMessage = $_
+    } finally {
         $ErrorActionPreference = $oldEAPreference
-        $msg = "Command '$DisplayName' returned an error"
-        Write-Host $msg
-        Write-Host $out
-        Write-Host $err
-        Write-Host "##vso[task.complete result=Failed;]$msg"
-        exit 1
     }
-    $ErrorActionPreference = $oldEAPreference
+
+    if ($errorHasOccurred) {
+        $msg = "Command '$DisplayName' returned an error"
+        Write-Host $out
+        Write-Host $errorMessage
+        Write-Host "##vso[task.complete result=Failed;]$msg"
+        throw $msg
+    }
     return $out
 }
 
