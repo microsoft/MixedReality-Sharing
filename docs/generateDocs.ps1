@@ -39,11 +39,9 @@ function Run-Quietly {
     $global:ProgressPreference = 'SilentlyContinue'
     try {
         return $Expression.Invoke()
-    }
-    catch [System.Management.Automation.CmdletInvocationException] {
+    } catch [System.Management.Automation.CmdletInvocationException] {
         throw $_.Exception.ErrorRecord.Exception
-    }
-    finally {
+    } finally {
         $global:ProgressPreference = $pp
     }
 }
@@ -72,8 +70,7 @@ function FetchAndCache ($url, $cache_folder) {
     Try {
         # Invoke-Webrequest has a bug which means $response.Content is wrong for binary files unless outfile is used
         $response = Run-Quietly { Invoke-WebRequest -Uri $url -Headers $headers -OutFile "$cache_file.tmp" -PassThru }
-    }
-    Catch [System.Net.WebException] {
+    } Catch [System.Net.WebException] {
         if( $_.Exception.Response.StatusCode.value__ -eq 304) { # etag matches, not modified
             return $cache_file, $true
         }
@@ -122,8 +119,7 @@ $docfx_zip, $cached = FetchAndCache $docfx_url $cache_root
 $docfx_exe = "$cache_root\docfx\docfx.exe"
 if( $cached -and (Test-Path -Path $docfx_exe -PathType leaf)) {
     Write-Host "Using cached $docfx_exe"
-}
-else {
+} else {
     Write-Host "Unzipping $docfx_zip"
     Run-Quietly { Expand-Archive $docfx_zip -DestinationPath "$cache_root\docfx" }
 }

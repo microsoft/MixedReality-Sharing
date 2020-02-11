@@ -18,8 +18,7 @@ function RunWithoutFailingOnStdErr($Command, $DisplayName = $Command) {
 
     $out = Invoke-Expression $Command -ErrorVariable err
 
-    if ($LastExitCode -ne 0)
-    {
+    if ($LastExitCode -ne 0) {
         $ErrorActionPreference = $oldEAPreference
         $msg = "Command '$DisplayName' returned an error"
         Write-Host $msg
