@@ -6,8 +6,8 @@
 # the branch. For other branches, this commits it under the versions/ folder.
 
 param (
-    [Parameter(Position=0)]
-    [string]$SourceBranch
+    [string]$SourceBranch,
+    [string]$StagingFolder
 )
 
 # Return the directory containing this script
@@ -48,15 +48,15 @@ $commitSha = git log -1 --pretty=%H
 $commitTitle = git log -1 --pretty=%s
 Write-Host "${commitSha}: $commitTitle"
 
-# Clean the _docs/ folder to avoid any interaction with a previous build if the agent is not clean
-Write-Host "Clean output folder '_docs/' if it exists"
-Ensure-Empty '_docs'
+# Clean the staging folder to avoid any interaction with a previous build if the agent is not clean
+Write-Host "Clean staging folder if it exists"
+Ensure-Empty $StagingFolder
 
 # Compute the source and destination folders
-$DestFolder = ".\_docs\versions\$SourceBranch\"
+$DestFolder = "$StagingFolder\versions\$SourceBranch\"
 if ($SourceBranch -eq "master") {
     # The master branch is the default version at the root of the website
-    $DestFolder = ".\_docs\"
+    $DestFolder = $StagingFolder
 }
 $output = ""
 Invoke-Expression "git rev-parse --verify `"refs/remotes/origin/gh-pages^{commit}`"" | Tee-Object -Variable output | Out-Null
@@ -68,20 +68,19 @@ if (-not $output) {
 Write-Host "Destination folder: $DestFolder"
 
 # Clone the destination branch locally in a temporary folder.
-# Note that this creates a second copy of the repository inside itself.
 # This will be used to only commit changes to that gh-pages branch which
 # contains only generated documentation-related files, and not the code.
-# Note that we always clone into ".\_docs", which is the repository root,
+# Note that we always clone into $StagingFolder, which is the repository root,
 # even if the destination folder is a sub-folder.
 Write-Host "Clone the generated docs branch"
-$cloneCommand = "git -c http.extraheader=""AUTHORIZATION: $Authorization"" clone https://github.com/Microsoft/MixedReality-Sharing.git --branch gh-pages "".\_docs"""
+$cloneCommand = "git -c http.extraheader=""AUTHORIZATION: $Authorization"" clone https://github.com/Microsoft/MixedReality-Sharing.git --branch gh-pages ""$StagingFolder"""
 # Pass a custom display name so that credentials are not printed out in case of error.
 Invoke-NoFailOnStdErr $cloneCommand "git clone ..."
 
 # Delete all the files in this folder, so that files deleted in the new version
 # of the documentation are effectively deleted in the commit.
 Write-Host "Delete currently committed version"
-Ensure-Empty "$DestFolder"
+Ensure-Empty $DestFolder
 
 # Copy the newly-generated version of the docs
 Write-Host "Copy new generated version"
@@ -89,7 +88,8 @@ Copy-Item ".\build\docs\generated\*" -Destination "$DestFolder" -Force -Recurse
 
 # Move inside the generated docs repository, so that subsequent git commands
 # apply to this repo/branch and not the global one with the source code.
-Push-Location ".\_docs"
+Write-Host "Move to $StagingFolder"
+Push-Location $StagingFolder
 
 try {
     # Set author for the generated docs commit
@@ -102,8 +102,8 @@ try {
     $statusCommand = "git status --short"
     $statusOut = Invoke-NoFailOnStdErr $statusCommand
     if ($statusOut) {
-        # Add everything. Because the current directory is _docs, this is everything from
-        # the point of view of the sub-repo inside _docs, so this ignores all changes outside
+        # Add everything. Because the current directory is $StagingFolder, this is everything from
+        # the point of view of the sub-repo inside $StagingFolder, so this ignores all changes outside
         # this directory and retain only generated docs changes, which is exactly what we want.
         Invoke-NoFailOnStdErr "git add --all"
         Invoke-NoFailOnStdErr "git commit -m ""Generated docs for commit $commitSha ($commitTitle)"""

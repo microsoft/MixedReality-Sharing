@@ -25,7 +25,7 @@ steps:
     inputs:
       targetType: filePath
       filePath: tools/ci/commitGeneratedDocs.ps1
-      arguments: '-SourceBranch $(Build.SourceBranch)'
+      arguments: '-SourceBranch $(Build.SourceBranch) -StagingFolder $(Agent.TempDirectory)\docs_to_push'
       failOnStderr: false
     env:
       GITHUB_PAT: $(GitHub.PAT)
