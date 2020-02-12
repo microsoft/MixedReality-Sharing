@@ -73,14 +73,9 @@ Write-Host "Destination folder: $DestFolder"
 # Note that we always clone into $StagingFolder, which is the repository root,
 # even if the destination folder is a sub-folder.
 Write-Host "Clone the generated docs branch"
-$cloneCommand = "git -c http.extraheader=""AUTHORIZATION: $Authorization"" clone https://github.com/Microsoft/MixedReality-Sharing.git --branch gh-pages ""$StagingFolder"""
+$cloneCommand = "git -c http.extraheader=""AUTHORIZATION: $Authorization"" clone https://github.com/Microsoft/MixedReality-Sharing.git --branch gh-pages ""$StagingFolder"" --no-checkout"
 # Pass a custom display name so that credentials are not printed out in case of error.
 Invoke-NoFailOnStdErr $cloneCommand "git clone ..."
-
-# Delete all the files in this folder, so that files deleted in the new version
-# of the documentation are effectively deleted in the commit.
-Write-Host "Delete currently committed version"
-Ensure-Empty $DestFolder
 
 # Copy the newly-generated version of the docs
 Write-Host "Copy new generated version"
