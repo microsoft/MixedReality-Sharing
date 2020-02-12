@@ -73,7 +73,7 @@ Write-Host "Destination folder: $DestFolder"
 # Note that we always clone into $StagingFolder, which is the repository root,
 # even if the destination folder is a sub-folder.
 Write-Host "Clone the generated docs branch"
-$cloneCommand = "git -c http.extraheader=""AUTHORIZATION: $Authorization"" clone https://github.com/Microsoft/MixedReality-Sharing.git --branch gh-pages ""$StagingFolder"" --no-checkout"
+$cloneCommand = "git -c http.extraheader=""AUTHORIZATION: $Authorization"" clone https://github.com/Microsoft/MixedReality-Sharing.git --branch gh-pages --no-checkout ""$StagingFolder"""
 # Pass a custom display name so that credentials are not printed out in case of error.
 Invoke-NoFailOnStdErr $cloneCommand -DisplayName "git clone ..."
 
@@ -91,6 +91,9 @@ try {
     Write-Host "Set docs commit author to '${env:GITHUB_NAME} <${env:GITHUB_EMAIL}>'"
     git config user.name ${env:GITHUB_NAME}
     git config user.email ${env:GITHUB_EMAIL}
+
+    # After "git clone --no-checkout" the index contains all files as deleted, clear it
+    git reset
 
     # Check for any change compared to previous version (if any)
     Write-Host "Check for changes"
