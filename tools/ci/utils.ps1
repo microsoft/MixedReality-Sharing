@@ -34,6 +34,6 @@ function Invoke-NoFailOnStdErr($Command, $DisplayName = $Command) {
 
 # Ensure that the directory at the given path exists and is empty.
 function Ensure-Empty($DirectoryPath) {
-    mkdir -Force $DirectoryPath | out-null
+    mkdir -Force "$DirectoryPath" | out-null
     Remove-Item "$DirectoryPath\*" -Force -Recurse
 }
