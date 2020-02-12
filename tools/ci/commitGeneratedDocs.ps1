@@ -75,7 +75,7 @@ Write-Host "Destination folder: $DestFolder"
 Write-Host "Clone the generated docs branch"
 $cloneCommand = "git -c http.extraheader=""AUTHORIZATION: $Authorization"" clone https://github.com/Microsoft/MixedReality-Sharing.git --branch gh-pages ""$StagingFolder"" --no-checkout"
 # Pass a custom display name so that credentials are not printed out in case of error.
-Invoke-NoFailOnStdErr $cloneCommand "git clone ..."
+Invoke-NoFailOnStdErr $cloneCommand -DisplayName "git clone ..."
 
 # Copy the newly-generated version of the docs
 Write-Host "Copy new generated version"
@@ -102,7 +102,7 @@ try {
         # this directory and retain only generated docs changes, which is exactly what we want.
         Invoke-NoFailOnStdErr "git add --all"
         Invoke-NoFailOnStdErr "git commit -m ""Generated docs for commit $commitSha ($commitTitle)"""
-        Invoke-NoFailOnStdErr "git -c http.extraheader=""AUTHORIZATION: $Authorization"" push origin ""$DestBranch""" "git push..."
+        Invoke-NoFailOnStdErr "git -c http.extraheader=""AUTHORIZATION: $Authorization"" push origin ""$DestBranch""" -DisplayName "git push..."
         Write-Host "Docs changes committed"
     } else {
         Write-Host "Docs are up to date"
