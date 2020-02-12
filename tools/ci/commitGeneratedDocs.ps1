@@ -6,7 +6,6 @@
 # the branch. For other branches, this commits it under the versions/ folder.
 
 param (
-    [string]$SourceBranch,
     [string]$StagingFolder
 )
 
@@ -18,29 +17,9 @@ function Get-ScriptDirectory {
 
 . "$(Get-ScriptDirectory)\utils.ps1"
 
-# Strip the source branch from refs/heads/ if any.
-# In general this is coming from Build.SourceBranch which has it.
-# Build.SourceBranchName cannot be used because it strips also the subfolders.
-# https://docs.microsoft.com/en-us/azure/devops/pipelines/build/variables?view=azure-devops&tabs=yaml#build-variables
-$SourceBranch = ($SourceBranch -Replace "^refs/heads/","")
-Write-Host "Source branch: '$SourceBranch'"
-
 # Create some authentication tokens to be able to connect to Azure DevOps to get changes and to GitHub to push changes
 Write-Host "Create auth tokens to connect to GitHub and Azure DevOps"
 $Authorization = "Basic " + [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("${env:GITHUB_USER}:${env:GITHUB_PAT}"))
-
-# Check that source branch exists
-# Note that the Azure DevOps checkout is a specific commit not a branch,
-# so the local repository is in detached HEAD. To test if the branch exists,
-# use the remote one from the 'origin' remote.
-Write-Host "Resolve source branch commit SHA1"
-$output = ""
-Invoke-Expression "git rev-parse --verify `"refs/remotes/origin/$SourceBranch^{commit}`"" | Tee-Object -Variable output | Out-Null
-if (-not $output) {
-    Write-Host "Unknown branch '$SourceBranch'"
-    Write-Host "##vso[task.complete result=Failed;]Unknown branch $SourceBranch."
-    exit 1
-}
 
 # Get info about last change associated with the new generated docs
 Write-Host "Get the SHA1 and title of the most recent commit"
@@ -52,12 +31,6 @@ Write-Host "${commitSha}: $commitTitle"
 Write-Host "Clean staging folder if it exists"
 Ensure-Empty $StagingFolder
 
-# Compute the source and destination folders
-$DestFolder = "$StagingFolder\versions\$SourceBranch\"
-if ($SourceBranch -eq "master") {
-    # The master branch is the default version at the root of the website
-    $DestFolder = $StagingFolder
-}
 $output = ""
 Invoke-Expression "git rev-parse --verify `"refs/remotes/origin/gh-pages^{commit}`"" | Tee-Object -Variable output | Out-Null
 if (-not $output) {
@@ -65,7 +38,7 @@ if (-not $output) {
     Write-Host "##vso[task.complete result=Failed;]Missing docs branch 'gh-pages'."
     exit 1
 }
-Write-Host "Destination folder: $DestFolder"
+Write-Host "Destination folder: $StagingFolder"
 
 # Clone the destination branch locally in a temporary folder.
 # This will be used to only commit changes to that gh-pages branch which
@@ -79,7 +52,7 @@ Invoke-NoFailOnStdErr $cloneCommand -DisplayName "git clone ..."
 
 # Copy the newly-generated version of the docs
 Write-Host "Copy new generated version"
-Copy-Item ".\build\docs\generated\*" -Destination "$DestFolder" -Force -Recurse
+Copy-Item ".\build\docs\generated\*" -Destination $StagingFolder -Force -Recurse
 
 # Move inside the generated docs repository, so that subsequent git commands
 # apply to this repo/branch and not the global one with the source code.
