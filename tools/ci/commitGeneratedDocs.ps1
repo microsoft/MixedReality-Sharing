@@ -107,7 +107,7 @@ try {
         # this directory and retain only generated docs changes, which is exactly what we want.
         Invoke-NoFailOnStdErr "git add --all"
         Invoke-NoFailOnStdErr "git commit -m ""Generated docs for commit $commitSha ($commitTitle)"""
-        Invoke-NoFailOnStdErr "git -c http.extraheader=""AUTHORIZATION: $Authorization"" push origin ""$DestBranch"""
+        Invoke-NoFailOnStdErr "git -c http.extraheader=""AUTHORIZATION: $Authorization"" push origin ""$DestBranch""" "git push..."
         Write-Host "Docs changes committed"
     } else {
         Write-Host "Docs are up to date"
