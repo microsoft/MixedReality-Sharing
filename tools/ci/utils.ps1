@@ -7,10 +7,13 @@ function Invoke-NoFailOnStdErr($Command, $DisplayName = $Command) {
     $oldEAPreference = $ErrorActionPreference
     $ErrorActionPreference = "SilentlyContinue"
 
-    $errorHasOccurred = $False
     try {
-        $out = Invoke-Expression $Command -ErrorVariable $errorMessage
-        $errorHasOccurred = $LastExitCode -ne 0
+        $out = Invoke-Expression $Command
+        # There seems to be no way to get the stderr output without the pipeline crashing,
+        # so just return an error depending on the exit code.
+        $code = $LastExitCode
+        $errorHasOccurred = $code -ne 0
+        $errorMessage = "Exit code: $code"
     } catch {
         $errorHasOccurred = $True
         $errorMessage = $_
@@ -19,9 +22,10 @@ function Invoke-NoFailOnStdErr($Command, $DisplayName = $Command) {
     }
 
     if ($errorHasOccurred) {
-        $msg = "Command '$DisplayName' returned an error"
-        Write-Host $out
-        Write-Host $errorMessage
+        if ($out) {
+            Write-Host $out
+        }
+        $msg = "Command '$DisplayName' returned an error`n$errorMessage"
         Write-Host "##vso[task.complete result=Failed;]$msg"
         throw $msg
     }
