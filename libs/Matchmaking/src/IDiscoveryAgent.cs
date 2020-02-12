@@ -27,7 +27,8 @@ namespace Microsoft.MixedReality.Sharing.Matchmaking
         IEnumerable<IDiscoveryResource> Resources { get; }
 
         /// <summary>
-        /// Event raised when the 'Resources' property will return an updated result.
+        /// Raised every time there is a change in the list of discovered resources. 
+        /// Every delegate added to this is called once even if there are no updates.
         /// </summary>
         event Action<IDiscoverySubscription> Updated;
     }
