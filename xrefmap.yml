@@ -25,13 +25,13 @@ references:
   commentId: T:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent
   fullName: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent
   nameWithType: IDiscoveryAgent
-- uid: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.PublishAsync(System.String,System.String,System.Collections.Generic.IReadOnlyDictionary{System.String,System.String},System.Threading.CancellationToken)
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.PublishAsync(System.String,System.String,IReadOnlyDictionary{System.String,System.String},CancellationToken)
   name: PublishAsync(String, String, IReadOnlyDictionary<String, String>, CancellationToken)
-  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.html#Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryAgent_PublishAsync_System_String_System_String_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Threading_CancellationToken_
-  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.PublishAsync(System.String,System.String,System.Collections.Generic.IReadOnlyDictionary{System.String,System.String},System.Threading.CancellationToken)
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.html#Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryAgent_PublishAsync_System_String_System_String_IReadOnlyDictionary_System_String_System_String__CancellationToken_
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.PublishAsync(System.String,System.String,IReadOnlyDictionary{System.String,System.String},CancellationToken)
   name.vb: PublishAsync(String, String, IReadOnlyDictionary(Of String, String), CancellationToken)
-  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.PublishAsync(System.String, System.String, System.Collections.Generic.IReadOnlyDictionary<System.String, System.String>, System.Threading.CancellationToken)
-  fullName.vb: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.PublishAsync(System.String, System.String, System.Collections.Generic.IReadOnlyDictionary(Of System.String, System.String), System.Threading.CancellationToken)
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.PublishAsync(System.String, System.String, IReadOnlyDictionary<System.String, System.String>, CancellationToken)
+  fullName.vb: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.PublishAsync(System.String, System.String, IReadOnlyDictionary(Of System.String, System.String), CancellationToken)
   nameWithType: IDiscoveryAgent.PublishAsync(String, String, IReadOnlyDictionary<String, String>, CancellationToken)
   nameWithType.vb: IDiscoveryAgent.PublishAsync(String, String, IReadOnlyDictionary(Of String, String), CancellationToken)
 - uid: Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.PublishAsync*
@@ -233,13 +233,13 @@ references:
   commentId: T:Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport
   fullName: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport
   nameWithType: IPeerDiscoveryTransport
-- uid: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Broadcast(System.Guid,System.ArraySegment{System.Byte})
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Broadcast(Guid,ArraySegment{System.Byte})
   name: Broadcast(Guid, ArraySegment<Byte>)
-  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_IPeerDiscoveryTransport_Broadcast_System_Guid_System_ArraySegment_System_Byte__
-  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Broadcast(System.Guid,System.ArraySegment{System.Byte})
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_IPeerDiscoveryTransport_Broadcast_Guid_ArraySegment_System_Byte__
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Broadcast(Guid,ArraySegment{System.Byte})
   name.vb: Broadcast(Guid, ArraySegment(Of Byte))
-  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Broadcast(System.Guid, System.ArraySegment<System.Byte>)
-  fullName.vb: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Broadcast(System.Guid, System.ArraySegment(Of System.Byte))
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Broadcast(Guid, ArraySegment<System.Byte>)
+  fullName.vb: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Broadcast(Guid, ArraySegment(Of System.Byte))
   nameWithType: IPeerDiscoveryTransport.Broadcast(Guid, ArraySegment<Byte>)
   nameWithType.vb: IPeerDiscoveryTransport.Broadcast(Guid, ArraySegment(Of Byte))
 - uid: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Broadcast*
@@ -255,13 +255,13 @@ references:
   commentId: E:Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Message
   fullName: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Message
   nameWithType: IPeerDiscoveryTransport.Message
-- uid: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage,System.Guid,System.ArraySegment{System.Byte})
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage,Guid,ArraySegment{System.Byte})
   name: Reply(IPeerDiscoveryMessage, Guid, ArraySegment<Byte>)
-  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_IPeerDiscoveryTransport_Reply_Microsoft_MixedReality_Sharing_Matchmaking_IPeerDiscoveryMessage_System_Guid_System_ArraySegment_System_Byte__
-  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage,System.Guid,System.ArraySegment{System.Byte})
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_IPeerDiscoveryTransport_Reply_Microsoft_MixedReality_Sharing_Matchmaking_IPeerDiscoveryMessage_Guid_ArraySegment_System_Byte__
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage,Guid,ArraySegment{System.Byte})
   name.vb: Reply(IPeerDiscoveryMessage, Guid, ArraySegment(Of Byte))
-  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage, System.Guid, System.ArraySegment<System.Byte>)
-  fullName.vb: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage, System.Guid, System.ArraySegment(Of System.Byte))
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage, Guid, ArraySegment<System.Byte>)
+  fullName.vb: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage, Guid, ArraySegment(Of System.Byte))
   nameWithType: IPeerDiscoveryTransport.Reply(IPeerDiscoveryMessage, Guid, ArraySegment<Byte>)
   nameWithType.vb: IPeerDiscoveryTransport.Reply(IPeerDiscoveryMessage, Guid, ArraySegment(Of Byte))
 - uid: Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryTransport.Reply*
@@ -316,13 +316,13 @@ references:
   isSpec: "True"
   fullName: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.MemoryPeerDiscoveryTransport
   nameWithType: MemoryPeerDiscoveryTransport.MemoryPeerDiscoveryTransport
-- uid: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Broadcast(System.Guid,System.ArraySegment{System.Byte})
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Broadcast(Guid,ArraySegment{System.Byte})
   name: Broadcast(Guid, ArraySegment<Byte>)
-  href: api/Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_MemoryPeerDiscoveryTransport_Broadcast_System_Guid_System_ArraySegment_System_Byte__
-  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Broadcast(System.Guid,System.ArraySegment{System.Byte})
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_MemoryPeerDiscoveryTransport_Broadcast_Guid_ArraySegment_System_Byte__
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Broadcast(Guid,ArraySegment{System.Byte})
   name.vb: Broadcast(Guid, ArraySegment(Of Byte))
-  fullName: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Broadcast(System.Guid, System.ArraySegment<System.Byte>)
-  fullName.vb: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Broadcast(System.Guid, System.ArraySegment(Of System.Byte))
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Broadcast(Guid, ArraySegment<System.Byte>)
+  fullName.vb: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Broadcast(Guid, ArraySegment(Of System.Byte))
   nameWithType: MemoryPeerDiscoveryTransport.Broadcast(Guid, ArraySegment<Byte>)
   nameWithType.vb: MemoryPeerDiscoveryTransport.Broadcast(Guid, ArraySegment(Of Byte))
 - uid: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Broadcast*
@@ -364,13 +364,13 @@ references:
   isSpec: "True"
   fullName: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.PumpMessagesInternal
   nameWithType: MemoryPeerDiscoveryTransport.PumpMessagesInternal
-- uid: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage,System.Guid,System.ArraySegment{System.Byte})
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage,Guid,ArraySegment{System.Byte})
   name: Reply(IPeerDiscoveryMessage, Guid, ArraySegment<Byte>)
-  href: api/Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_MemoryPeerDiscoveryTransport_Reply_Microsoft_MixedReality_Sharing_Matchmaking_IPeerDiscoveryMessage_System_Guid_System_ArraySegment_System_Byte__
-  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage,System.Guid,System.ArraySegment{System.Byte})
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_MemoryPeerDiscoveryTransport_Reply_Microsoft_MixedReality_Sharing_Matchmaking_IPeerDiscoveryMessage_Guid_ArraySegment_System_Byte__
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage,Guid,ArraySegment{System.Byte})
   name.vb: Reply(IPeerDiscoveryMessage, Guid, ArraySegment(Of Byte))
-  fullName: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage, System.Guid, System.ArraySegment<System.Byte>)
-  fullName.vb: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage, System.Guid, System.ArraySegment(Of System.Byte))
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage, Guid, ArraySegment<System.Byte>)
+  fullName.vb: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage, Guid, ArraySegment(Of System.Byte))
   nameWithType: MemoryPeerDiscoveryTransport.Reply(IPeerDiscoveryMessage, Guid, ArraySegment<Byte>)
   nameWithType.vb: MemoryPeerDiscoveryTransport.Reply(IPeerDiscoveryMessage, Guid, ArraySegment(Of Byte))
 - uid: Microsoft.MixedReality.Sharing.Matchmaking.MemoryPeerDiscoveryTransport.Reply*
@@ -450,13 +450,13 @@ references:
   commentId: F:Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.Options.ResourceExpirySec
   fullName: Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.Options.ResourceExpirySec
   nameWithType: PeerDiscoveryAgent.Options.ResourceExpirySec
-- uid: Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.PublishAsync(System.String,System.String,System.Collections.Generic.IReadOnlyDictionary{System.String,System.String},System.Threading.CancellationToken)
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.PublishAsync(System.String,System.String,IReadOnlyDictionary{System.String,System.String},CancellationToken)
   name: PublishAsync(String, String, IReadOnlyDictionary<String, String>, CancellationToken)
-  href: api/Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.html#Microsoft_MixedReality_Sharing_Matchmaking_PeerDiscoveryAgent_PublishAsync_System_String_System_String_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Threading_CancellationToken_
-  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.PublishAsync(System.String,System.String,System.Collections.Generic.IReadOnlyDictionary{System.String,System.String},System.Threading.CancellationToken)
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.html#Microsoft_MixedReality_Sharing_Matchmaking_PeerDiscoveryAgent_PublishAsync_System_String_System_String_IReadOnlyDictionary_System_String_System_String__CancellationToken_
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.PublishAsync(System.String,System.String,IReadOnlyDictionary{System.String,System.String},CancellationToken)
   name.vb: PublishAsync(String, String, IReadOnlyDictionary(Of String, String), CancellationToken)
-  fullName: Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.PublishAsync(System.String, System.String, System.Collections.Generic.IReadOnlyDictionary<System.String, System.String>, System.Threading.CancellationToken)
-  fullName.vb: Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.PublishAsync(System.String, System.String, System.Collections.Generic.IReadOnlyDictionary(Of System.String, System.String), System.Threading.CancellationToken)
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.PublishAsync(System.String, System.String, IReadOnlyDictionary<System.String, System.String>, CancellationToken)
+  fullName.vb: Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.PublishAsync(System.String, System.String, IReadOnlyDictionary(Of System.String, System.String), CancellationToken)
   nameWithType: PeerDiscoveryAgent.PublishAsync(String, String, IReadOnlyDictionary<String, String>, CancellationToken)
   nameWithType.vb: PeerDiscoveryAgent.PublishAsync(String, String, IReadOnlyDictionary(Of String, String), CancellationToken)
 - uid: Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.PublishAsync*
@@ -485,11 +485,11 @@ references:
   commentId: T:Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport
   fullName: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport
   nameWithType: UdpPeerDiscoveryTransport
-- uid: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.#ctor(System.Net.IPAddress,System.UInt16,System.Net.IPAddress,Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Options)
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.#ctor(IPAddress,System.UInt16,IPAddress,Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Options)
   name: UdpPeerDiscoveryTransport(IPAddress, UInt16, IPAddress, UdpPeerDiscoveryTransport.Options)
-  href: api/Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_UdpPeerDiscoveryTransport__ctor_System_Net_IPAddress_System_UInt16_System_Net_IPAddress_Microsoft_MixedReality_Sharing_Matchmaking_UdpPeerDiscoveryTransport_Options_
-  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.#ctor(System.Net.IPAddress,System.UInt16,System.Net.IPAddress,Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Options)
-  fullName: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.UdpPeerDiscoveryTransport(System.Net.IPAddress, System.UInt16, System.Net.IPAddress, Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Options)
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_UdpPeerDiscoveryTransport__ctor_IPAddress_System_UInt16_IPAddress_Microsoft_MixedReality_Sharing_Matchmaking_UdpPeerDiscoveryTransport_Options_
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.#ctor(IPAddress,System.UInt16,IPAddress,Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Options)
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.UdpPeerDiscoveryTransport(IPAddress, System.UInt16, IPAddress, Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Options)
   nameWithType: UdpPeerDiscoveryTransport.UdpPeerDiscoveryTransport(IPAddress, UInt16, IPAddress, UdpPeerDiscoveryTransport.Options)
 - uid: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.#ctor*
   name: UdpPeerDiscoveryTransport
@@ -498,13 +498,13 @@ references:
   isSpec: "True"
   fullName: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.UdpPeerDiscoveryTransport
   nameWithType: UdpPeerDiscoveryTransport.UdpPeerDiscoveryTransport
-- uid: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Broadcast(System.Guid,System.ArraySegment{System.Byte})
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Broadcast(Guid,ArraySegment{System.Byte})
   name: Broadcast(Guid, ArraySegment<Byte>)
-  href: api/Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_UdpPeerDiscoveryTransport_Broadcast_System_Guid_System_ArraySegment_System_Byte__
-  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Broadcast(System.Guid,System.ArraySegment{System.Byte})
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_UdpPeerDiscoveryTransport_Broadcast_Guid_ArraySegment_System_Byte__
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Broadcast(Guid,ArraySegment{System.Byte})
   name.vb: Broadcast(Guid, ArraySegment(Of Byte))
-  fullName: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Broadcast(System.Guid, System.ArraySegment<System.Byte>)
-  fullName.vb: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Broadcast(System.Guid, System.ArraySegment(Of System.Byte))
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Broadcast(Guid, ArraySegment<System.Byte>)
+  fullName.vb: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Broadcast(Guid, ArraySegment(Of System.Byte))
   nameWithType: UdpPeerDiscoveryTransport.Broadcast(Guid, ArraySegment<Byte>)
   nameWithType.vb: UdpPeerDiscoveryTransport.Broadcast(Guid, ArraySegment(Of Byte))
 - uid: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Broadcast*
@@ -538,13 +538,13 @@ references:
   commentId: F:Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Options.MaxRetryDelayMs
   fullName: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Options.MaxRetryDelayMs
   nameWithType: UdpPeerDiscoveryTransport.Options.MaxRetryDelayMs
-- uid: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage,System.Guid,System.ArraySegment{System.Byte})
+- uid: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage,Guid,ArraySegment{System.Byte})
   name: Reply(IPeerDiscoveryMessage, Guid, ArraySegment<Byte>)
-  href: api/Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_UdpPeerDiscoveryTransport_Reply_Microsoft_MixedReality_Sharing_Matchmaking_IPeerDiscoveryMessage_System_Guid_System_ArraySegment_System_Byte__
-  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage,System.Guid,System.ArraySegment{System.Byte})
+  href: api/Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.html#Microsoft_MixedReality_Sharing_Matchmaking_UdpPeerDiscoveryTransport_Reply_Microsoft_MixedReality_Sharing_Matchmaking_IPeerDiscoveryMessage_Guid_ArraySegment_System_Byte__
+  commentId: M:Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage,Guid,ArraySegment{System.Byte})
   name.vb: Reply(IPeerDiscoveryMessage, Guid, ArraySegment(Of Byte))
-  fullName: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage, System.Guid, System.ArraySegment<System.Byte>)
-  fullName.vb: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage, System.Guid, System.ArraySegment(Of System.Byte))
+  fullName: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage, Guid, ArraySegment<System.Byte>)
+  fullName.vb: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Reply(Microsoft.MixedReality.Sharing.Matchmaking.IPeerDiscoveryMessage, Guid, ArraySegment(Of System.Byte))
   nameWithType: UdpPeerDiscoveryTransport.Reply(IPeerDiscoveryMessage, Guid, ArraySegment<Byte>)
   nameWithType.vb: UdpPeerDiscoveryTransport.Reply(IPeerDiscoveryMessage, Guid, ArraySegment(Of Byte))
 - uid: Microsoft.MixedReality.Sharing.Matchmaking.UdpPeerDiscoveryTransport.Reply*
