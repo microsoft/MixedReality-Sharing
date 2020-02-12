@@ -10,7 +10,7 @@
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Interface IDiscoveryAgent
    | MixedReality-Sharing Documentation ">
-    <meta name="generator" content="docfx 2.47.0.0">
+    <meta name="generator" content="docfx 1.0.0.0">
     
     <link rel="shortcut icon" href="../mr-sharing_icon.png">
     <link rel="stylesheet" href="../styles/docfx.vendor.css">
@@ -86,6 +86,12 @@
   <div class="markdown level0 summary"><p>Entry point for publishing and/or subscribing to matchmaking resources on the network.</p>
 </div>
   <div class="markdown level0 conceptual"></div>
+  <div class="inheritedMembers">
+    <h5>Inherited Members</h5>
+    <div>
+      <a class="xref" href="https://docs.microsoft.com/dotnet/api/system.idisposable.dispose#System_IDisposable_Dispose">IDisposable.Dispose()</a>
+    </div>
+  </div>
   <h6><strong>Namespace</strong>: <a class="xref" href="Microsoft.MixedReality.Sharing.Matchmaking.html">Microsoft.MixedReality.Sharing.Matchmaking</a></h6>
   <h6><strong>Assembly</strong>: Microsoft.MixedReality.Sharing.Matchmaking.dll</h6>
   <h5 id="Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryAgent_syntax">Syntax</h5>
@@ -96,19 +102,19 @@
   </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/microsoft/MixedReality-Sharing/new/docs/apiSpec/new?filename=Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryAgent_PublishAsync_System_String_System_String_IReadOnlyDictionary_System_String_System_String__CancellationToken_.md&amp;value=---%0Auid%3A%20Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.PublishAsync(System.String%2CSystem.String%2CIReadOnlyDictionary%7BSystem.String%2CSystem.String%7D%2CCancellationToken)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+    <a href="https://github.com/microsoft/MixedReality-Sharing/new/4982db35cdb6e73709fa2cb5251c16d4cb5b64c5/apiSpec/new?filename=Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryAgent_PublishAsync_System_String_System_String_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Threading_CancellationToken_.md&amp;value=---%0Auid%3A%20Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.PublishAsync(System.String%2CSystem.String%2CSystem.Collections.Generic.IReadOnlyDictionary%7BSystem.String%2CSystem.String%7D%2CSystem.Threading.CancellationToken)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/microsoft/MixedReality-Sharing/blob/docs/libs/Matchmaking/src/IDiscoveryAgent.cs/#L58">View Source</a>
+    <a href="https://github.com/microsoft/MixedReality-Sharing/blob/4982db35cdb6e73709fa2cb5251c16d4cb5b64c5/libs/Matchmaking/src/IDiscoveryAgent.cs/#L58">View Source</a>
   </span>
   <a id="Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryAgent_PublishAsync_" data-uid="Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.PublishAsync*"></a>
-  <h4 id="Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryAgent_PublishAsync_System_String_System_String_IReadOnlyDictionary_System_String_System_String__CancellationToken_" data-uid="Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.PublishAsync(System.String,System.String,IReadOnlyDictionary{System.String,System.String},CancellationToken)">PublishAsync(String, String, IReadOnlyDictionary&lt;String, String&gt;, CancellationToken)</h4>
+  <h4 id="Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryAgent_PublishAsync_System_String_System_String_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Threading_CancellationToken_" data-uid="Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.PublishAsync(System.String,System.String,System.Collections.Generic.IReadOnlyDictionary{System.String,System.String},System.Threading.CancellationToken)">PublishAsync(String, String, IReadOnlyDictionary&lt;String, String&gt;, CancellationToken)</h4>
   <div class="markdown level1 summary"><p>Publish a new resource.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">Task&lt;IDiscoveryResource&gt; PublishAsync(string category, string connection, IReadOnlyDictionary&lt;string, string&gt; attributes = null, CancellationToken token = null)</code></pre>
+    <pre><code class="lang-csharp hljs">Task&lt;IDiscoveryResource&gt; PublishAsync(string category, string connection, IReadOnlyDictionary&lt;string, string&gt; attributes = null, CancellationToken token = default(CancellationToken))</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -131,13 +137,13 @@
         <td></td>
       </tr>
       <tr>
-        <td><span class="xref">IReadOnlyDictionary</span>&lt;<a class="xref" href="https://docs.microsoft.com/dotnet/api/system.string">String</a>, <a class="xref" href="https://docs.microsoft.com/dotnet/api/system.string">String</a>&gt;</td>
+        <td><a class="xref" href="https://docs.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2">IReadOnlyDictionary</a>&lt;<a class="xref" href="https://docs.microsoft.com/dotnet/api/system.string">String</a>, <a class="xref" href="https://docs.microsoft.com/dotnet/api/system.string">String</a>&gt;</td>
         <td><span class="parametername">attributes</span></td>
         <td><p>Attributes to set on the new resource.</p>
 </td>
       </tr>
       <tr>
-        <td><span class="xref">CancellationToken</span></td>
+        <td><a class="xref" href="https://docs.microsoft.com/dotnet/api/system.threading.cancellationtoken">CancellationToken</a></td>
         <td><span class="parametername">token</span></td>
         <td><p>If cancellation is requested, the method should either complete the operation and return a valid
 resource, or roll back any changes to the system state and return a canceled Task.</p>
@@ -155,7 +161,7 @@ resource, or roll back any changes to the system state and return a canceled Tas
     </thead>
     <tbody>
       <tr>
-        <td><span class="xref">Task</span>&lt;<a class="xref" href="Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.html">IDiscoveryResource</a>&gt;</td>
+        <td><a class="xref" href="https://docs.microsoft.com/dotnet/api/system.threading.tasks.task-1">Task</a>&lt;<a class="xref" href="Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryResource.html">IDiscoveryResource</a>&gt;</td>
         <td><p>The newly created resource.</p>
 </td>
       </tr>
@@ -163,10 +169,10 @@ resource, or roll back any changes to the system state and return a canceled Tas
   </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/microsoft/MixedReality-Sharing/new/docs/apiSpec/new?filename=Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryAgent_Subscribe_System_String_.md&amp;value=---%0Auid%3A%20Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.Subscribe(System.String)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+    <a href="https://github.com/microsoft/MixedReality-Sharing/new/4982db35cdb6e73709fa2cb5251c16d4cb5b64c5/apiSpec/new?filename=Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryAgent_Subscribe_System_String_.md&amp;value=---%0Auid%3A%20Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.Subscribe(System.String)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/microsoft/MixedReality-Sharing/blob/docs/libs/Matchmaking/src/IDiscoveryAgent.cs/#L45">View Source</a>
+    <a href="https://github.com/microsoft/MixedReality-Sharing/blob/4982db35cdb6e73709fa2cb5251c16d4cb5b64c5/libs/Matchmaking/src/IDiscoveryAgent.cs/#L45">View Source</a>
   </span>
   <a id="Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryAgent_Subscribe_" data-uid="Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.Subscribe*"></a>
   <h4 id="Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryAgent_Subscribe_System_String_" data-uid="Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent.Subscribe(System.String)">Subscribe(String)</h4>
@@ -219,10 +225,10 @@ The subscription will update indefinitely until disposed.</p>
               <div class="contribution">
                 <ul class="nav">
                   <li>
-                    <a href="https://github.com/microsoft/MixedReality-Sharing/new/docs/apiSpec/new?filename=Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryAgent.md&amp;value=---%0Auid%3A%20Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Improve this Doc</a>
+                    <a href="https://github.com/microsoft/MixedReality-Sharing/new/4982db35cdb6e73709fa2cb5251c16d4cb5b64c5/apiSpec/new?filename=Microsoft_MixedReality_Sharing_Matchmaking_IDiscoveryAgent.md&amp;value=---%0Auid%3A%20Microsoft.MixedReality.Sharing.Matchmaking.IDiscoveryAgent%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Improve this Doc</a>
                   </li>
                   <li>
-                    <a href="https://github.com/microsoft/MixedReality-Sharing/blob/docs/libs/Matchmaking/src/IDiscoveryAgent.cs/#L38" class="contribution-link">View Source</a>
+                    <a href="https://github.com/microsoft/MixedReality-Sharing/blob/4982db35cdb6e73709fa2cb5251c16d4cb5b64c5/libs/Matchmaking/src/IDiscoveryAgent.cs/#L38" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>

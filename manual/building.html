@@ -5,12 +5,10 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <title>Class PeerDiscoveryAgent.Options
-   | MixedReality-Sharing Documentation </title>
+    <title>Building from Source | MixedReality-Sharing Documentation </title>
     <meta name="viewport" content="width=device-width">
-    <meta name="title" content="Class PeerDiscoveryAgent.Options
-   | MixedReality-Sharing Documentation ">
-    <meta name="generator" content="docfx 2.47.0.0">
+    <meta name="title" content="Building from Source | MixedReality-Sharing Documentation ">
+    <meta name="generator" content="docfx 1.0.0.0">
     
     <link rel="shortcut icon" href="../mr-sharing_icon.png">
     <link rel="stylesheet" href="../styles/docfx.vendor.css">
@@ -78,55 +76,41 @@
         </div>
         <div class="article row grid-right">
           <div class="col-md-10">
-            <article class="content wrap" id="_content" data-uid="Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.Options">
-  
-  
-  <h1 id="Microsoft_MixedReality_Sharing_Matchmaking_PeerDiscoveryAgent_Options" data-uid="Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.Options" class="text-break">Class PeerDiscoveryAgent.Options
-  </h1>
-  <div class="markdown level0 summary"></div>
-  <div class="markdown level0 conceptual"></div>
-  <div class="inheritance">
-    <h5>Inheritance</h5>
-    <div class="level0"><a class="xref" href="https://docs.microsoft.com/dotnet/api/system.object">Object</a></div>
-    <div class="level1"><span class="xref">PeerDiscoveryAgent.Options</span></div>
-  </div>
-  <h6><strong>Namespace</strong>: <a class="xref" href="Microsoft.MixedReality.Sharing.Matchmaking.html">Microsoft.MixedReality.Sharing.Matchmaking</a></h6>
-  <h6><strong>Assembly</strong>: Microsoft.MixedReality.Sharing.Matchmaking.dll</h6>
-  <h5 id="Microsoft_MixedReality_Sharing_Matchmaking_PeerDiscoveryAgent_Options_syntax">Syntax</h5>
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public class Options : object</code></pre>
-  </div>
-  <h3 id="fields">Fields
-  </h3>
-  <span class="small pull-right mobile-hide">
-    <span class="divider">|</span>
-    <a href="https://github.com/microsoft/MixedReality-Sharing/new/docs/apiSpec/new?filename=Microsoft_MixedReality_Sharing_Matchmaking_PeerDiscoveryAgent_Options_ResourceExpirySec.md&amp;value=---%0Auid%3A%20Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.Options.ResourceExpirySec%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
-  </span>
-  <span class="small pull-right mobile-hide">
-    <a href="https://github.com/microsoft/MixedReality-Sharing/blob/docs/libs/Matchmaking/src/Peer/PeerDiscoveryAgent.cs/#L1016">View Source</a>
-  </span>
-  <h4 id="Microsoft_MixedReality_Sharing_Matchmaking_PeerDiscoveryAgent_Options_ResourceExpirySec" data-uid="Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.Options.ResourceExpirySec">ResourceExpirySec</h4>
-  <div class="markdown level1 summary"></div>
-  <div class="markdown level1 conceptual"></div>
-  <h5 class="decalaration">Declaration</h5>
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public int ResourceExpirySec</code></pre>
-  </div>
-  <h5 class="fieldValue">Field Value</h5>
-  <table class="table table-bordered table-striped table-condensed">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><a class="xref" href="https://docs.microsoft.com/dotnet/api/system.int32">Int32</a></td>
-        <td></td>
-      </tr>
-    </tbody>
-  </table>
+            <article class="content wrap" id="_content" data-uid="building">
+
+
+<p>For convenience, we supply prebuilt <a href="installation.html">nuget packages</a>, but the packages can also be built from source if needed.</p>
+<p>The MixedReality-Sharing libraries are built from the <code>Microsoft.MixedReality.Sharing.sln</code> Visual Studio solution located at the root of the repository. The solution may contain more projects than are produced by official packages.</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<p>The solution uses Visual Studio 2019 with the following features:</p>
+<ul>
+<li><p>The MSVC v142 - VS 2019 C++ x64/x86 build tools toolchain is required to build any of the C++ libraries. This is installed by default with the Desktop development with C++ workload on Visual Studio 2019.</p>
+</li>
+<li><p>For ARM support, the MSVC v142 - VS 2019 C++ ARM build tools toolchain is also required.</p>
+</li>
+<li><p>The C# library requires a .NET Standard 2.0 compiler, like the Roslyn compiler available as part of Visual Studio when installing the .NET desktop development workload.</p>
+</li>
+<li><p>The UWP libraries and projects require UWP support from the compiler, available as part of Visual Studio when installing the Universal Windows Platform development workload.</p>
+</li>
+</ul>
+<h2 id="cloning-the-repository">Cloning the Repository</h2>
+<p>The official repository containing the source code of MixedReality-Sharing is <a href="https://github.com/microsoft/MixedReality-Sharing">https://github.com/microsoft/MixedReality-Sharing</a>. Development is done on the master branch.</p>
+<pre><code class="lang-cmd">git clone https://github.com/microsoft/MixedReality-Sharing
+</code></pre>
+<h2 id="building-the-libraries">Building the Libraries</h2>
+<ol>
+<li><p>Open the <code>Microsoft.MixedReality.Sharing.sln</code> Visual Studio solution located at the root of the freshly cloned repository.</p>
+</li>
+<li><p>Choose the Platform and Configuration</p>
+</li>
+<li><p>Then Either:</p>
+<ul>
+<li>Build the entire solution with F7 or <strong>Build &gt; Build Solution</strong></li>
+<li>Select individual project(s) to build</li>
+</ul>
+</li>
+</ol>
+<p>On successful build, the binaries will be generated in <code>&lt;root&gt;/build/bin/&lt;Configuration&gt;/&lt;Platform&gt;</code></p>
 </article>
           </div>
           
@@ -135,10 +119,7 @@
               <div class="contribution">
                 <ul class="nav">
                   <li>
-                    <a href="https://github.com/microsoft/MixedReality-Sharing/new/docs/apiSpec/new?filename=Microsoft_MixedReality_Sharing_Matchmaking_PeerDiscoveryAgent_Options.md&amp;value=---%0Auid%3A%20Microsoft.MixedReality.Sharing.Matchmaking.PeerDiscoveryAgent.Options%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Improve this Doc</a>
-                  </li>
-                  <li>
-                    <a href="https://github.com/microsoft/MixedReality-Sharing/blob/docs/libs/Matchmaking/src/Peer/PeerDiscoveryAgent.cs/#L1014" class="contribution-link">View Source</a>
+                    <a href="https://github.com/microsoft/MixedReality-Sharing/blob/4982db35cdb6e73709fa2cb5251c16d4cb5b64c5/docs/manual/building.md/#L1" class="contribution-link">Improve this Doc</a>
                   </li>
                 </ul>
               </div>
