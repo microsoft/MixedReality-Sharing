@@ -2,7 +2,7 @@
 uid: index
 title: Index
 ---
-# MixedReality-Sharing 0.1
+# MixedReality-Sharing
 
 _Note_ : **The documentation writing is in progress**. Some links are not active when the associated page is not available yet.
 
